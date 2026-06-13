@@ -3,6 +3,8 @@ package ua.vn.home.bptracker.data.dto
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
+// Mirrors backend records (System.Text.Json camelCase).
+
 @Serializable
 data class NativeLoginBeginResponse(
     val challengeId: String,
@@ -21,4 +23,10 @@ data class NativeLoginResponse(
     val userId: String,
     val email: String,
     val expiresAt: String
+)
+
+@Serializable
+data class MeResponse(
+    val id: String,
+    val email: String
 )
