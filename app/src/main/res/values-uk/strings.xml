@@ -62,6 +62,13 @@
     <!-- Local OCR -->
     <string name="local_ocr_result_title">Результат розпізнавання</string>
 
+    <!-- Measurement Detail -->
+    <string name="measurement_detail_title">Замір</string>
+    <string name="measurement_delete_confirm_title">Видалити замір?</string>
+    <string name="measurement_delete_confirm_body">Цю дію неможливо скасувати.</string>
+    <string name="measurement_pulse">Пульс</string>
+    <string name="measurement_zone">Зона</string>
+
     <!-- Camera -->
     <string name="camera_hint">Наведіть на екран тонометра</string>
 </resources>

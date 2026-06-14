@@ -62,6 +62,13 @@
     <!-- Local OCR -->
     <string name="local_ocr_result_title">Recognition Result</string>
 
+    <!-- Measurement Detail -->
+    <string name="measurement_detail_title">Reading</string>
+    <string name="measurement_delete_confirm_title">Delete reading?</string>
+    <string name="measurement_delete_confirm_body">This action cannot be undone.</string>
+    <string name="measurement_pulse">Pulse</string>
+    <string name="measurement_zone">Zone</string>
+
     <!-- Camera -->
     <string name="camera_hint">Point at the blood pressure monitor screen</string>
 </resources>

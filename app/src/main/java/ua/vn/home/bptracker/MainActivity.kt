@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
 import ua.vn.home.bptracker.feature.home.*
 import ua.vn.home.bptracker.feature.login.AuthState
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
 fun MainAuthenticatedLayout(onLogout: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var activeOverlay by remember { mutableStateOf<String?>(null) } // Simple state-based routing
+    var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
     
     // When an overlay is active (e.g. Manual Entry), we show it full screen.
     // Otherwise, we show the tabbed Scaffold.
@@ -73,6 +75,24 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 onBack = { activeOverlay = null }
             )
         }
+        "measurement_detail" -> {
+            val detailVm: MeasurementDetailViewModel = viewModel()
+            val detailState by detailVm.state.collectAsState()
+            
+            // Sync selected measurement to VM
+            LaunchedEffect(selectedMeasurement) {
+                selectedMeasurement?.let { detailVm.setMeasurement(it) }
+            }
+
+            MeasurementDetailScreen(
+                state = detailState,
+                onDelete = detailVm::delete,
+                onBack = { 
+                    activeOverlay = null
+                    selectedMeasurement = null
+                }
+            )
+        }
         null -> {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -92,11 +112,15 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                             val homeState by homeVm.state.collectAsState()
                             LaunchedEffect(Unit) { homeVm.refresh() }
 
-                            HomeScreen(
-                                state = homeState,
-                                onRefresh = homeVm::refresh,
-                                onLogout = onLogout
-                            )
+                        HomeScreen(
+                            state = homeState,
+                            onRefresh = homeVm::refresh,
+                            onLogout = onLogout,
+                            onMeasurementClick = { m ->
+                                selectedMeasurement = m
+                                activeOverlay = "measurement_detail"
+                            }
+                        )
                         }
                         1 -> {
                             val scheduleVm: ScheduleViewModel = viewModel()

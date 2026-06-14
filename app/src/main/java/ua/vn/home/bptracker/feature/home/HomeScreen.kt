@@ -28,7 +28,8 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     state: HomeState,
     onRefresh: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onMeasurementClick: (MeasurementDto) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -66,21 +67,21 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.Center)
                 )
-                is HomeState.Content -> DashboardContent(state)
+                is HomeState.Content -> DashboardContent(state, onMeasurementClick)
             }
         }
     }
 }
 
 @Composable
-fun DashboardContent(content: HomeState.Content) {
+fun DashboardContent(content: HomeState.Content, onMeasurementClick: (MeasurementDto) -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            HeroCard(content.latest, content.zone)
+            HeroCard(content.latest, content.zone, onClick = { onMeasurementClick(content.latest) })
         }
         
         item {
@@ -88,7 +89,7 @@ fun DashboardContent(content: HomeState.Content) {
         }
         
         item {
-            RecentReadingsSection(content.recent)
+            RecentReadingsSection(content.recent, onMeasurementClick)
         }
         
         item {
@@ -98,7 +99,7 @@ fun DashboardContent(content: HomeState.Content) {
 }
 
 @Composable
-fun RecentReadingsSection(recent: List<MeasurementDto>) {
+fun RecentReadingsSection(recent: List<MeasurementDto>, onMeasurementClick: (MeasurementDto) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier
@@ -121,9 +122,7 @@ fun RecentReadingsSection(recent: List<MeasurementDto>) {
             )
         }
         
-        BpCard(
-            modifier = Modifier.clickable { /* TODO: Navigate to history */ }
-        ) {
+        BpCard {
             Surface(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f),
                 modifier = Modifier.fillMaxWidth()
@@ -143,7 +142,7 @@ fun RecentReadingsSection(recent: List<MeasurementDto>) {
                         )
                     } else {
                         filtered.forEachIndexed { index, m ->
-                            MeasurementRow(m)
+                            MeasurementRow(m, onClick = { onMeasurementClick(m) })
                             if (index < filtered.size - 1) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(horizontal = 20.dp),
@@ -160,7 +159,7 @@ fun RecentReadingsSection(recent: List<MeasurementDto>) {
 }
 
 @Composable
-fun MeasurementRow(m: MeasurementDto) {
+fun MeasurementRow(m: MeasurementDto, onClick: () -> Unit) {
     val zone = BpZone.classify(m.sys, m.dia)
     val dt = OffsetDateTime.parse(m.recordedAt)
     val now = OffsetDateTime.now()
@@ -179,6 +178,7 @@ fun MeasurementRow(m: MeasurementDto) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onClick() }
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -265,11 +265,11 @@ fun KpiGrid(content: HomeState.Content) {
 }
 
 @Composable
-fun HeroCard(latest: MeasurementDto, zone: BpZone) {
+fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
     val dt = OffsetDateTime.parse(latest.recordedAt)
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    BpCard {
+    BpCard(modifier = Modifier.clickable { onClick() }) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

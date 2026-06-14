@@ -9,6 +9,7 @@ import java.util.UUID
 interface MeasurementRepository {
     suspend fun getMeasurements(days: Int): List<MeasurementDto>
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
+    suspend fun deleteMeasurement(id: String)
 }
 
 class RealMeasurementRepository(private val api: MeasurementApi) : MeasurementRepository {
@@ -18,6 +19,10 @@ class RealMeasurementRepository(private val api: MeasurementApi) : MeasurementRe
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
         return api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
+    }
+
+    override suspend fun deleteMeasurement(id: String) {
+        api.deleteMeasurement(id)
     }
 }
 
@@ -45,5 +50,9 @@ class MockMeasurementRepository : MeasurementRepository {
         )
         mockList.add(0, newReading)
         return newReading
+    }
+
+    override suspend fun deleteMeasurement(id: String) {
+        mockList.removeAll { it.id == id }
     }
 }
