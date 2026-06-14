@@ -19,7 +19,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
@@ -32,6 +34,7 @@ import ua.vn.home.bptracker.feature.settings.SettingsScreen
 import ua.vn.home.bptracker.feature.settings.SettingsViewModel
 import ua.vn.home.bptracker.ui.components.BpBottomNavBar
 import ua.vn.home.bptracker.ui.theme.BPTrackerTheme
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     
@@ -59,20 +62,33 @@ class MainActivity : ComponentActivity() {
                 ua.vn.home.bptracker.core.config.AppTheme.DARK -> true
             }
 
-            BPTrackerTheme(darkTheme = isDark) {
-                val vm: AuthViewModel = viewModel()
-                val state by vm.state.collectAsState()
+            val locale = when (settingsState.language) {
+                AppLanguage.UA -> Locale.forLanguageTag("uk")
+                AppLanguage.EN -> Locale.forLanguageTag("en")
+                AppLanguage.SYSTEM -> Locale.getDefault()
+            }
 
-                when (val s = state) {
-                    is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
-                        CircularProgressIndicator(Modifier.align(Alignment.Center))
+            val context = LocalContext.current
+            val configuration = context.resources.configuration
+            configuration.setLocale(locale)
+            val localizedContext = context.createConfigurationContext(configuration)
+
+            CompositionLocalProvider(LocalContext provides localizedContext) {
+                BPTrackerTheme(darkTheme = isDark) {
+                    val vm: AuthViewModel = viewModel()
+                    val state by vm.state.collectAsState()
+
+                    when (val s = state) {
+                        is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        }
+                        is AuthState.LoggedOut -> LoginScreen(
+                            info = s.info,
+                            signingIn = s.signingIn,
+                            onSignIn = { activity -> vm.signIn(activity) }
+                        )
+                        is AuthState.LoggedIn -> MainAuthenticatedLayout(onLogout = vm::logout)
                     }
-                    is AuthState.LoggedOut -> LoginScreen(
-                        info = s.info,
-                        signingIn = s.signingIn,
-                        onSignIn = { activity -> vm.signIn(activity) }
-                    )
-                    is AuthState.LoggedIn -> MainAuthenticatedLayout(onLogout = vm::logout)
                 }
             }
         }
@@ -113,8 +129,12 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 onDiaChange = reviewVm::onDiaChange,
                 onPulseChange = reviewVm::onPulseChange,
                 onSave = reviewVm::save,
-                onRetake = { activeOverlay = "camera" },
+                onRetake = { 
+                    reviewVm.reset()
+                    activeOverlay = "camera" 
+                },
                 onBack = { 
+                    reviewVm.reset()
                     activeOverlay = null
                     capturedBitmap = null
                 }

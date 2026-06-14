@@ -48,8 +48,6 @@ class ScanReviewViewModel : ViewModel() {
     val state: StateFlow<ScanReviewState?> = _state.asStateFlow()
 
     fun initWithImage(image: Bitmap) {
-        if (_state.value != null) return
-        
         _state.value = ScanReviewState.Recognizing(image)
         
         viewModelScope.launch(Dispatchers.Default) {
@@ -107,5 +105,9 @@ class ScanReviewViewModel : ViewModel() {
                 _state.value = current.copy(saving = false, error = e.message ?: "Save failed")
             }
         }
+    }
+
+    fun reset() {
+        _state.value = null
     }
 }

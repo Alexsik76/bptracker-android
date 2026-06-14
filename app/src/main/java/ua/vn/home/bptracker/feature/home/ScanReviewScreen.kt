@@ -4,8 +4,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
@@ -75,6 +77,62 @@ fun ScanReviewScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
+        },
+        bottomBar = {
+            if (readyState != null) {
+                Column(
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = onRetake,
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(stringResource(R.string.local_ocr_retake), fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Button(
+                            onClick = onSave,
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            enabled = readyState.isValid && !readyState.saving,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DarkPrimary,
+                                disabledContainerColor = DarkPrimary.copy(alpha = 0.3f)
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            if (readyState.saving) {
+                                CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
+                            } else {
+                                Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
+                            }
+                        }
+                    }
+                    
+                    Text(
+                        text = stringResource(R.string.local_ocr_server_recognize),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { /* Fallback */ }
+                            .padding(vertical = 8.dp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline)
+                    )
+                }
+            }
         }
     ) { padding ->
         Column(
@@ -82,6 +140,7 @@ fun ScanReviewScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -163,54 +222,6 @@ fun ScanReviewScreen(
                         isValid = readyState.pulseValid
                     )
                 }
-
-                Spacer(Modifier.weight(1f))
-
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = onRetake,
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text(stringResource(R.string.local_ocr_retake), fontWeight = FontWeight.SemiBold)
-                    }
-
-                    Button(
-                        onClick = onSave,
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        enabled = readyState.isValid && !readyState.saving,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DarkPrimary,
-                            disabledContainerColor = DarkPrimary.copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        if (readyState.saving) {
-                            CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
-                        } else {
-                            Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
-                        }
-                    }
-                }
-                
-                Text(
-                    text = stringResource(R.string.local_ocr_server_recognize),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { /* Fallback */ }
-                        .padding(bottom = 8.dp),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline)
-                )
             }
         }
     }
