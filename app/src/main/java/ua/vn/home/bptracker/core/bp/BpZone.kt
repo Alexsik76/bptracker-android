@@ -2,11 +2,13 @@ package ua.vn.home.bptracker.core.bp
 
 import androidx.compose.ui.graphics.Color
 
-enum class BpZone(val label: String, val color: Color) {
-    OPTIMAL("Optimal", Color(0xFF2E7D32)),
-    NORMAL("Normal", Color(0xFF9E9D24)),
-    STAGE1("Stage 1", Color(0xFFEF6C00)),
-    STAGE2("Stage 2", Color(0xFFC62828));
+import ua.vn.home.bptracker.R
+
+enum class BpZone(val labelRes: Int, val color: Color) {
+    OPTIMAL(R.string.bp_zone_optimal, Color(0xFF2E7D32)),
+    NORMAL(R.string.bp_zone_normal, Color(0xFF9E9D24)),
+    STAGE1(R.string.bp_zone_stage1, Color(0xFFEF6C00)),
+    STAGE2(R.string.bp_zone_stage2, Color(0xFFC62828));
 
     companion object {
         fun classify(sys: Int, dia: Int): BpZone {

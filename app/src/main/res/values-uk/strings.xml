@@ -1,0 +1,42 @@
+<resources>
+    <string name="app_name">BP Tracker</string>
+
+    <!-- Common -->
+    <string name="common_save">Зберегти</string>
+    <string name="common_cancel">Скасувати</string>
+    <string name="common_delete">Видалити</string>
+    <string name="common_loading">Завантаження…</string>
+    <string name="common_error">Помилка</string>
+    <string name="common_today">Сьогодні</string>
+    <string name="common_yesterday">Вчора</string>
+    <string name="common_back">Назад</string>
+
+    <!-- Auth -->
+    <string name="auth_login_passkey">Увійти через Passkey</string>
+    <string name="auth_logout">Вийти</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_title">Дашборд</string>
+    <string name="dashboard_last_reading">ОСТАННІЙ ВИМІР · %1$s</string>
+    <string name="dashboard_recent_readings">Останні виміри</string>
+    <string name="dashboard_show_all">Всі →</string>
+    <string name="dashboard_no_measurements">Ще немає жодного вимірювання</string>
+    <string name="dashboard_units_mmHg">мм рт.ст.</string>
+    <string name="dashboard_units_bpm">уд/хв</string>
+
+    <!-- KPI -->
+    <string name="kpi_avg_7d">СЕРЕД. ЗА 7 ДНІВ</string>
+    <string name="kpi_week_change">ЗМІНА ЗА ТИЖДЕНЬ</string>
+    <string name="kpi_in_range">У НОРМІ (7Д)</string>
+    <string name="kpi_avg_pulse">ПУЛЬС СЕР.</string>
+
+    <!-- BP Zones -->
+    <string name="bp_zone_optimal">Оптимальний</string>
+    <string name="bp_zone_normal">Норма</string>
+    <string name="bp_zone_stage1">Ступінь I</string>
+    <string name="bp_zone_stage2">Ступінь II</string>
+    <!-- Tabs -->
+    <string name="tab_dashboard">Дашборд</string>
+    <string name="tab_schedule">Розклад</string>
+    <string name="tab_scan">Скан</string>
+</resources>

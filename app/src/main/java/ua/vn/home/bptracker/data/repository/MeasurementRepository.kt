@@ -17,12 +17,13 @@ class RealMeasurementRepository(private val api: MeasurementApi) : MeasurementRe
 class MockMeasurementRepository : MeasurementRepository {
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
         val now = OffsetDateTime.now()
+        // Mocking: 1 today morning, 2 yesterday
         return listOf(
-            MeasurementDto("1", now.minusHours(2).toString(), 118, 76, 68),  // Optimal
-            MeasurementDto("2", now.minusDays(1).toString(), 128, 82, 72),  // Normal
-            MeasurementDto("3", now.minusDays(2).toString(), 148, 94, 75),  // Stage 1
-            MeasurementDto("4", now.minusDays(3).toString(), 165, 105, 80), // Stage 2
-            MeasurementDto("5", now.minusDays(4).toString(), 135, 85, 70)   // Normal
+            MeasurementDto("1", now.minusHours(2).toString(), 118, 76, 68),   // Today morning (Optimal)
+            MeasurementDto("2", now.minusHours(14).toString(), 128, 82, 72),  // Yesterday evening (Normal)
+            MeasurementDto("3", now.minusHours(22).toString(), 145, 92, 75),  // Yesterday (Stage 1)
+            MeasurementDto("4", now.minusDays(2).toString(), 165, 105, 80),  // Older (Stage 2)
+            MeasurementDto("5", now.minusDays(3).toString(), 135, 85, 70)    // Older (Normal)
         )
     }
 }

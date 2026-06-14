@@ -7,13 +7,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import ua.vn.home.bptracker.R
 
 @Composable
 fun LoginScreen(
@@ -29,12 +32,15 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("BP Tracker")
+        Text(
+            text = stringResource(R.string.app_name),
+            style = MaterialTheme.typography.titleMedium
+        )
         if (signingIn) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 24.dp))
         } else {
             Button(onClick = { onSignIn(activity) }, modifier = Modifier.padding(top = 24.dp)) {
-                Text("Sign in with passkey")
+                Text(stringResource(R.string.auth_login_passkey))
             }
         }
         if (info != null) {

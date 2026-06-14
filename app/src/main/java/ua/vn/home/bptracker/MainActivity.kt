@@ -8,17 +8,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ua.vn.home.bptracker.feature.home.HomeScreen
 import ua.vn.home.bptracker.feature.home.HomeViewModel
+import ua.vn.home.bptracker.feature.home.ScheduleScreen
 import ua.vn.home.bptracker.feature.login.AuthState
 import ua.vn.home.bptracker.feature.login.AuthViewModel
 import ua.vn.home.bptracker.feature.login.LoginScreen
+import ua.vn.home.bptracker.ui.components.BpBottomNavBar
 import ua.vn.home.bptracker.ui.theme.BPTrackerTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,31 +30,52 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             BPTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val vm: AuthViewModel = viewModel()
-                    val state by vm.state.collectAsState()
-                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                        when (val s = state) {
-                            is AuthState.Loading ->
-                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                            is AuthState.LoggedOut ->
-                                LoginScreen(
-                                    info = s.info,
-                                    signingIn = s.signingIn,
-                                    onSignIn = { activity -> vm.signIn(activity) }
-                                )
-                            is AuthState.LoggedIn -> {
-                                val homeVm: HomeViewModel = viewModel()
-                                val homeState by homeVm.state.collectAsState()
-                                HomeScreen(
-                                    state = homeState,
-                                    onRefresh = homeVm::refresh,
-                                    onLogout = vm::logout
-                                )
-                            }
-                        }
+                val vm: AuthViewModel = viewModel()
+                val state by vm.state.collectAsState()
+
+                when (val s = state) {
+                    is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(Modifier.align(Alignment.Center))
                     }
+                    is AuthState.LoggedOut -> LoginScreen(
+                        info = s.info,
+                        signingIn = s.signingIn,
+                        onSignIn = { activity -> vm.signIn(activity) }
+                    )
+                    is AuthState.LoggedIn -> MainAuthenticatedLayout(onLogout = vm::logout)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MainAuthenticatedLayout(onLogout: () -> Unit) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            BpBottomNavBar(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                onScanClick = { /* TODO: Open Camera */ }
+            )
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when (selectedTab) {
+                0 -> {
+                    val homeVm: HomeViewModel = viewModel()
+                    val homeState by homeVm.state.collectAsState()
+                    HomeScreen(
+                        state = homeState,
+                        onRefresh = homeVm::refresh,
+                        onLogout = onLogout
+                    )
+                }
+                1 -> ScheduleScreen()
             }
         }
     }
