@@ -4,6 +4,9 @@ import ua.vn.home.bptracker.data.api.ReminderApi
 import ua.vn.home.bptracker.data.dto.ConfirmIntakeRequest
 import ua.vn.home.bptracker.data.dto.TodayIntake
 import ua.vn.home.bptracker.data.dto.TodayMeds
+import ua.vn.home.bptracker.data.local.dao.MedIntakeDao
+import ua.vn.home.bptracker.data.local.entity.toDto
+import ua.vn.home.bptracker.data.local.entity.toEntity
 import java.time.OffsetDateTime
 
 interface ReminderRepository {
@@ -11,10 +14,32 @@ interface ReminderRepository {
     suspend fun confirm(period: String, timezone: String)
 }
 
-class RealReminderRepository(private val api: ReminderApi) : ReminderRepository {
-    override suspend fun getToday(timezone: String): TodayMeds = api.getToday(timezone)
+class RealReminderRepository(
+    private val api: ReminderApi,
+    private val dao: MedIntakeDao
+) : ReminderRepository {
+    override suspend fun getToday(timezone: String): TodayMeds {
+        return try {
+            val remote = api.getToday(timezone)
+            dao.deleteOld(remote.date)
+            dao.insertAll(remote.intakes.map { it.toEntity(remote.date) })
+            remote
+        } catch (e: Exception) {
+            val date = OffsetDateTime.now().toLocalDate().toString()
+            val local = dao.getByDate(date)
+            TodayMeds(date, local.map { it.toDto() })
+        }
+    }
+
     override suspend fun confirm(period: String, timezone: String) {
-        api.confirm(ConfirmIntakeRequest(period, timezone))
+        val date = OffsetDateTime.now().toLocalDate().toString()
+        try {
+            api.confirm(ConfirmIntakeRequest(period, timezone))
+            dao.updateStatus(date, period, "Confirmed", OffsetDateTime.now().toString())
+        } catch (e: Exception) {
+            // Offline confirm - will need sync later
+            dao.updateStatus(date, period, "Confirmed", OffsetDateTime.now().toString())
+        }
     }
 }
 

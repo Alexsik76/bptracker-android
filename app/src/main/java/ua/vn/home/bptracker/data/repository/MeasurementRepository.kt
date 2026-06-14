@@ -3,6 +3,9 @@ package ua.vn.home.bptracker.data.repository
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.local.dao.MeasurementDao
+import ua.vn.home.bptracker.data.local.entity.toDto
+import ua.vn.home.bptracker.data.local.entity.toEntity
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -12,17 +15,44 @@ interface MeasurementRepository {
     suspend fun deleteMeasurement(id: String)
 }
 
-class RealMeasurementRepository(private val api: MeasurementApi) : MeasurementRepository {
+class RealMeasurementRepository(
+    private val api: MeasurementApi,
+    private val dao: MeasurementDao
+) : MeasurementRepository {
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
-        return api.getMeasurements(days)
+        return try {
+            val remote = api.getMeasurements(days)
+            dao.deleteAll()
+            dao.insertAll(remote.map { it.toEntity() })
+            remote
+        } catch (e: Exception) {
+            dao.getAll().map { it.toDto() }
+        }
     }
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
-        return api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
+        return try {
+            val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
+            dao.insert(created.toEntity())
+            created
+        } catch (e: Exception) {
+            // If offline, we could store it with isSynced = false
+            // For now, let's just throw or handle basic offline case if id is generated
+            val id = UUID.randomUUID().toString()
+            val local = MeasurementDto(id, OffsetDateTime.now().toString(), sys, dia, pulse)
+            dao.insert(local.toEntity(synced = false))
+            local
+        }
     }
 
     override suspend fun deleteMeasurement(id: String) {
-        api.deleteMeasurement(id)
+        try {
+            api.deleteMeasurement(id)
+            dao.deleteById(id)
+        } catch (e: Exception) {
+            // If it's a local unsynced one, just delete from DB
+            dao.deleteById(id)
+        }
     }
 }
 
