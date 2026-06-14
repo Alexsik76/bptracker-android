@@ -22,7 +22,8 @@ sealed interface ScanReviewState {
         val recognized: Boolean,
         val saving: Boolean = false,
         val saved: Boolean = false,
-        val error: String? = null
+        val error: String? = null,
+        val previewImage: Bitmap? = null
     ) : ScanReviewState {
         val sysInt = sys.toIntOrNull()
         val diaInt = dia.toIntOrNull()
@@ -59,7 +60,8 @@ class ScanReviewViewModel : ViewModel() {
                     sys = outcome.sys.toString(),
                     dia = outcome.dia.toString(),
                     pulse = outcome.pul.toString(),
-                    recognized = true
+                    recognized = true,
+                    previewImage = outcome.previewCrop
                 )
                 is OcrOutcome.Failure -> ScanReviewState.Ready(
                     image = image,
@@ -121,7 +123,8 @@ class ScanReviewViewModel : ViewModel() {
                     sys = outcome.sys.toString(),
                     dia = outcome.dia.toString(),
                     pulse = outcome.pul.toString(),
-                    recognized = true
+                    recognized = true,
+                    previewImage = outcome.previewCrop
                 )
                 is OcrOutcome.Failure -> ScanReviewState.Ready(
                     image = image,

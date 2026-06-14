@@ -2,6 +2,7 @@ package ua.vn.home.bptracker
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
@@ -20,10 +21,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import ua.vn.home.bptracker.core.config.AppLanguage
-import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
 import ua.vn.home.bptracker.feature.home.*
@@ -71,13 +73,14 @@ class MainActivity : ComponentActivity() {
             }
 
             val context = LocalContext.current
-            val configuration = context.resources.configuration
+            val configuration = Configuration(LocalConfiguration.current)
             configuration.setLocale(locale)
             val localizedContext = context.createConfigurationContext(configuration)
 
             CompositionLocalProvider(
                 LocalContext provides localizedContext,
-                LocalActivity provides this
+                LocalActivity provides this,
+                LocalActivityResultRegistryOwner provides this
             ) {
                 BPTrackerTheme(darkTheme = isDark) {
                     val vm: AuthViewModel = viewModel()

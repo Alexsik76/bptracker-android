@@ -21,7 +21,7 @@ class OcrPostprocessTest {
             OcrBox(1, 0.8f, Box(12f, 12f, 22f, 22f)), // High overlap with 0.9
             OcrBox(2, 0.7f, Box(50f, 50f, 60f, 60f))  // No overlap
         )
-        val selected = OcrPostprocess.classAgnosticNms(boxes, 0.4f)
+        val selected = OcrPostprocess.nms(boxes, 0.4f)
         assertEquals(2, selected.size)
         assertEquals(0.9f, selected[0].conf, 1e-5f)
         assertEquals(0.7f, selected[1].conf, 1e-5f)

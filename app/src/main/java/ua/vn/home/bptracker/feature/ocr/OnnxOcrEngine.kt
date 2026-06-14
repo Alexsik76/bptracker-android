@@ -46,6 +46,15 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
 
             val bestDisplay = displayBoxes.maxBy { it.conf }
             val croppedBitmap = cropDisplay(bitmap, bestDisplay.box)
+            
+            // Looser preview crop: expand vertically by 5% top and 5% bottom
+            val box = bestDisplay.box
+            val dy = box.height * 0.05f
+            val px1 = box.x1.toInt().coerceIn(0, bitmap.width - 1)
+            val py1 = (box.y1 - dy).toInt().coerceIn(0, bitmap.height - 1)
+            val px2 = box.x2.toInt().coerceIn(px1 + 1, bitmap.width)
+            val py2 = (box.y2 + dy).toInt().coerceIn(py1 + 1, bitmap.height)
+            val previewCrop = Bitmap.createBitmap(bitmap, px1, py1, px2 - px1, py2 - py1)
 
             // Stage 2: Detect Digits
             val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.20f)
@@ -68,7 +77,8 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             OcrOutcome.Success(
                 sys = sys, dia = dia, pul = pul,
                 minConf = allConfs.min(),
-                meanConf = allConfs.average().toFloat()
+                meanConf = allConfs.average().toFloat(),
+                previewCrop = previewCrop
             )
         } catch (e: Exception) {
             OcrOutcome.Failure("ocr-error: ${e.message}")
