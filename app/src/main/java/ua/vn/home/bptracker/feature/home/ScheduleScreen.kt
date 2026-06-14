@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.data.dto.TodayIntake
-import ua.vn.home.bptracker.ui.components.BpCard
+import ua.vn.home.bptracker.ui.components.*
 import ua.vn.home.bptracker.ui.theme.ColorPulse
 import ua.vn.home.bptracker.ui.theme.ColorSuccess
 import java.time.OffsetDateTime
@@ -57,15 +57,14 @@ fun ScheduleScreen(
                 .padding(padding)
         ) {
             when (state) {
-                is ScheduleState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                is ScheduleState.Empty -> Text(
-                    stringResource(R.string.schedule_empty),
-                    modifier = Modifier.align(Alignment.Center)
+                is ScheduleState.Loading -> LoadingState()
+                is ScheduleState.Empty -> EmptyState(
+                    title = stringResource(R.string.schedule_empty),
+                    description = stringResource(R.string.schedule_empty_hint)
                 )
-                is ScheduleState.Error -> Text(
-                    "Error: ${state.message}",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
+                is ScheduleState.Error -> ErrorState(
+                    message = state.message,
+                    onRetry = onRefresh
                 )
                 is ScheduleState.Content -> ScheduleContent(state.intakes, onConfirm)
             }

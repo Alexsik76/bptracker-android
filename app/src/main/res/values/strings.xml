@@ -10,6 +10,7 @@
     <string name="common_today">Today</string>
     <string name="common_yesterday">Yesterday</string>
     <string name="common_back">Back</string>
+    <string name="common_retry">Retry</string>
 
     <!-- Auth -->
     <string name="auth_login_passkey">Sign in with passkey</string>
@@ -21,6 +22,7 @@
     <string name="dashboard_recent_readings">Recent measurements</string>
     <string name="dashboard_show_all">All →</string>
     <string name="dashboard_no_measurements">No measurements yet</string>
+    <string name="dashboard_empty_hint">Take your first measurement by clicking the Scan button below.</string>
     <string name="dashboard_units_mmHg">mmHg</string>
     <string name="dashboard_units_bpm">bpm</string>
 
@@ -44,6 +46,7 @@
     <!-- Schedule -->
     <string name="schedule_title">Schedule</string>
     <string name="schedule_empty">No medications scheduled for today</string>
+    <string name="schedule_empty_hint">You will see your medication plan here once it is synced from the server.</string>
     <string name="schedule_taken">Taken</string>
     <string name="schedule_missed">Missed</string>
     <string name="schedule_pending">Pending</string>

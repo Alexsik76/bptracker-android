@@ -58,15 +58,14 @@ fun HomeScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
             when (state) {
-                is HomeState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                is HomeState.Empty -> Text(
-                    stringResource(R.string.dashboard_no_measurements),
-                    modifier = Modifier.align(Alignment.Center)
+                is HomeState.Loading -> LoadingState()
+                is HomeState.Empty -> EmptyState(
+                    title = stringResource(R.string.dashboard_no_measurements),
+                    description = stringResource(R.string.dashboard_empty_hint)
                 )
-                is HomeState.Error -> Text(
-                    "Error: ${state.message}",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
+                is HomeState.Error -> ErrorState(
+                    message = state.message,
+                    onRetry = onRefresh
                 )
                 is HomeState.Content -> DashboardContent(state, onMeasurementClick)
             }

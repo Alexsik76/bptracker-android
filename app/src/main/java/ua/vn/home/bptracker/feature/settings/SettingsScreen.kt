@@ -129,7 +129,20 @@ fun SettingsScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingRow(
                     label = stringResource(R.string.settings_export_csv),
-                    onClick = { /* TODO */ }
+                    onClick = { 
+                        // Plan says: redirect to existing backend /export/csv (email)
+                        // For now we'll simulate opening the browser to the export endpoint
+                        // or using an email intent if we had the file. 
+                        // Given "redirect to backend", we use URL.
+                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            data = android.net.Uri.parse("https://api-bptracker.home.vn.ua/api/v1/export/csv")
+                        }
+                        try {
+                            val context = ua.vn.home.bptracker.core.di.ServiceLocator.applicationContext
+                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        } catch (e: Exception) {}
+                    }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingRow(

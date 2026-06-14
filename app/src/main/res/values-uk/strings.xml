@@ -10,6 +10,7 @@
     <string name="common_today">Сьогодні</string>
     <string name="common_yesterday">Вчора</string>
     <string name="common_back">Назад</string>
+    <string name="common_retry">Повторити</string>
 
     <!-- Auth -->
     <string name="auth_login_passkey">Увійти через Passkey</string>
@@ -21,6 +22,7 @@
     <string name="dashboard_recent_readings">Останні виміри</string>
     <string name="dashboard_show_all">Всі →</string>
     <string name="dashboard_no_measurements">Ще немає жодного вимірювання</string>
+    <string name="dashboard_empty_hint">Зробіть свій перший замір, натиснувши кнопку «Скан» нижче.</string>
     <string name="dashboard_units_mmHg">мм рт.ст.</string>
     <string name="dashboard_units_bpm">уд/хв</string>
 
@@ -44,6 +46,7 @@
     <!-- Schedule -->
     <string name="schedule_title">Розклад</string>
     <string name="schedule_empty">На сьогодні немає запланованих ліків</string>
+    <string name="schedule_empty_hint">Ви побачите свій план лікування тут після синхронізації з сервером.</string>
     <string name="schedule_taken">Прийнято</string>
     <string name="schedule_missed">Пропущено</string>
     <string name="schedule_pending">Очікує</string>
