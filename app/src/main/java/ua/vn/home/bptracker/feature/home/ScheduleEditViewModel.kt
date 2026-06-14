@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.PeriodConfig
 import ua.vn.home.bptracker.data.dto.UpdateTemplateRequest
+import ua.vn.home.bptracker.feature.reminders.ReminderScheduler
 
 sealed interface ScheduleEditState {
     data object Loading : ScheduleEditState
@@ -105,6 +106,10 @@ class ScheduleEditViewModel : ViewModel() {
                     )
                 )
                 _state.value = current.copy(saving = false, saved = true)
+                
+                val scheduler = ReminderScheduler(ServiceLocator.applicationContext)
+                scheduler.cancelAllReminders()
+                scheduler.rescheduleAll()
             } catch (e: Exception) {
                 _state.value = current.copy(saving = false, error = e.message ?: "Save failed")
             }

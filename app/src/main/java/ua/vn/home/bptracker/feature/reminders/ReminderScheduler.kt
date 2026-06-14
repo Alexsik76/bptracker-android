@@ -5,40 +5,66 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.provider.Settings
+import android.util.Log
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.TimeZone
 
 class ReminderScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    suspend fun scheduleTodayReminders() {
-        if (!canScheduleExactAlarms()) return
-
+    suspend fun rescheduleAll() {
         val repository = ServiceLocator.reminderRepository
-        val today = repository.getToday(TimeZone.getDefault().id)
-        
-        today.intakes.forEach { intake ->
-            if (intake.status == null) {
-                scheduleAlarm(intake.period, intake.time)
+        val template = try {
+            repository.getActiveTemplate()
+        } catch (e: Exception) {
+            null
+        }
+
+        if (template == null || !template.isActive) {
+            cancelAllReminders()
+            return
+        }
+
+        template.periods.forEach { (period, config) ->
+            scheduleAlarm(period, config.time)
+        }
+    }
+
+    fun cancelAllReminders() {
+        // Cancel for canonical periods
+        listOf("Morning", "Day", "Evening").forEach { period ->
+            val intent = Intent(context, ReminderReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                period.hashCode(),
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
             }
         }
     }
 
-    private fun scheduleAlarm(period: String, timeStr: String) {
-        val time = LocalTime.parse(timeStr)
+    fun scheduleAlarm(period: String, timeStr: String) {
+        val time = try {
+            LocalTime.parse(timeStr)
+        } catch (e: Exception) {
+            Log.e("ReminderScheduler", "Invalid time format: $timeStr", e)
+            return
+        }
+
         val now = LocalDateTime.now()
         var alarmTime = LocalDateTime.of(LocalDate.now(), time)
 
+        // If time already passed today, schedule for tomorrow
         if (alarmTime.isBefore(now)) {
-            // Already passed today, don't schedule or schedule for tomorrow if we want continuous
-            // Plan says "Today", so we only care about future ones today for now.
-            return
+            alarmTime = alarmTime.plusDays(1)
         }
 
         val intent = Intent(context, ReminderReceiver::class.java).apply {
@@ -53,19 +79,37 @@ class ReminderScheduler(private val context: Context) {
 
         val triggerAtMillis = alarmTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
-            )
+        if (canScheduleExactAlarms()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
         } else {
-            alarmManager.setExact(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
-            )
+            // Fallback to inexact but working while idle
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.set(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
         }
+        Log.d("ReminderScheduler", "Scheduled alarm for $period at $alarmTime")
     }
 
     private fun canScheduleExactAlarms(): Boolean {

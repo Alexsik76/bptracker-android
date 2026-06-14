@@ -20,8 +20,8 @@ class BpTrackerApp : Application() {
         CoroutineScope(Dispatchers.Default).launch {
             ServiceLocator.ocrEngine.warmUp()
             
-            // Schedule reminders for today
-            ReminderScheduler(this@BpTrackerApp).scheduleTodayReminders()
+            // Schedule reminders
+            ReminderScheduler(this@BpTrackerApp).rescheduleAll()
         }
     }
 }

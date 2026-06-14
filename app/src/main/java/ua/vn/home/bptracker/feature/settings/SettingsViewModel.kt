@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.feature.reminders.ReminderScheduler
 
 data class SettingsState(
     val theme: AppTheme = AppTheme.AUTO,
@@ -68,6 +69,13 @@ class SettingsViewModel : ViewModel() {
                     ua.vn.home.bptracker.data.dto.UpdateTemplateRequest(isActive = enabled)
                 )
                 _templateState.value = currentId to enabled
+
+                val scheduler = ReminderScheduler(ServiceLocator.applicationContext)
+                if (enabled) {
+                    scheduler.rescheduleAll()
+                } else {
+                    scheduler.cancelAllReminders()
+                }
             } catch (e: Exception) {
                 // Optionally handle error
             }
