@@ -1,20 +1,32 @@
 package ua.vn.home.bptracker.feature.home
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
@@ -108,52 +120,97 @@ fun RecentReadingsSection(
     recent: List<MeasurementDto>,
     onHistoryClick: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.dashboard_recent_readings).uppercase(),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = 4.dp)
-        )
-        
-        BpCard(modifier = Modifier.clickable { onHistoryClick() }) {
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                    val now = OffsetDateTime.now()
-                    val filtered = recent
-                        .filter { OffsetDateTime.parse(it.recordedAt).isAfter(now.minusHours(24)) }
-                        .take(4)
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.985f else 1f, label = "press")
+    val borderColor by animateColorAsState(
+        if (pressed) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.07f),
+        label = "border"
+    )
 
-                    if (filtered.isEmpty()) {
-                        Text(
-                            text = "No readings in the last 24h",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(20.dp).align(Alignment.CenterHorizontally)
-                        )
-                    } else {
-                        filtered.forEachIndexed { index, m ->
-                            MeasurementRow(m)
-                            if (index < filtered.size - 1) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 20.dp),
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
-                                )
+    BpCard(
+        modifier = Modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .border(1.dp, borderColor, RoundedCornerShape(20.dp))
+            .clickable(
+                interactionSource = interaction,
+                indication = ripple(color = MaterialTheme.colorScheme.primary),
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.dashboard_show_all),
+                onClick = onHistoryClick
+            )
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                Text(
+                    text = stringResource(R.string.dashboard_recent_readings).uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                )
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                        val now = OffsetDateTime.now()
+                        val filtered = recent
+                            .filter { OffsetDateTime.parse(it.recordedAt).isAfter(now.minusHours(24)) }
+                            .take(4)
+
+                        if (filtered.isEmpty()) {
+                            Text(
+                                text = "No readings in the last 24h",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(20.dp).align(Alignment.CenterHorizontally)
+                            )
+                        } else {
+                            filtered.forEachIndexed { index, m ->
+                                MeasurementRow(m, endPadding = if (index == 0) 36.dp else 0.dp)
+                                if (index < filtered.size - 1) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 20.dp),
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                                    )
+                                }
                             }
                         }
                     }
                 }
+            }
+
+            // Chevron Indicator
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(24.dp),
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = Color(0xFFAEB8BE),
+                    modifier = Modifier.padding(4.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-fun MeasurementRow(m: MeasurementDto, onClick: (() -> Unit)? = null) {
+fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 0.dp, onClick: (() -> Unit)? = null) {
     val zone = BpZone.classify(m.sys, m.dia)
     val dt = OffsetDateTime.parse(m.recordedAt)
     val now = OffsetDateTime.now()
@@ -173,7 +230,7 @@ fun MeasurementRow(m: MeasurementDto, onClick: (() -> Unit)? = null) {
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(start = 20.dp, top = 12.dp, bottom = 12.dp, end = 20.dp + endPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
@@ -263,45 +320,84 @@ fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
     val dt = OffsetDateTime.parse(latest.recordedAt)
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    BpCard(modifier = Modifier.clickable { onClick() }) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.dashboard_last_reading, dt.format(timeFormatter)),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.985f else 1f, label = "press")
+    val borderColor by animateColorAsState(
+        if (pressed) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.07f),
+        label = "border"
+    )
+
+    BpCard(
+        modifier = Modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .border(1.dp, borderColor, RoundedCornerShape(20.dp))
+            .clickable(
+                interactionSource = interaction,
+                indication = ripple(color = MaterialTheme.colorScheme.primary),
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.measurement_detail_title),
+                onClick = onClick
+            )
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(end = 36.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_last_reading, dt.format(timeFormatter)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    ZoneBadge(zone)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ReadingValue(
+                    sys = latest.sys,
+                    dia = latest.dia,
+                    zone = zone
                 )
-                ZoneBadge(zone)
+
+                Text(
+                    text = buildString {
+                        append(stringResource(R.string.dashboard_units_mmHg))
+                        append(" · ♡")
+                        append(latest.pulse)
+                        append(" ")
+                        append(stringResource(R.string.dashboard_units_bpm))
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = MaterialTheme.typography.headlineMedium.fontFamily
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                PositionScaleBar(latest.sys, latest.dia)
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ReadingValue(
-                sys = latest.sys,
-                dia = latest.dia,
-                zone = zone
-            )
-
-            Text(
-                text = buildString {
-                    append(stringResource(R.string.dashboard_units_mmHg))
-                    append(" · ♡")
-                    append(latest.pulse)
-                    append(" ")
-                    append(stringResource(R.string.dashboard_units_bpm))
-                },
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = MaterialTheme.typography.headlineMedium.fontFamily
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            PositionScaleBar(latest.sys, latest.dia)
+            // Chevron Indicator
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(14.dp)
+                    .size(28.dp),
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = Color(0xFFAEB8BE),
+                    modifier = Modifier.padding(5.dp)
+                )
+            }
         }
     }
 }
