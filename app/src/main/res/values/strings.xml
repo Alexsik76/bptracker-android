@@ -71,4 +71,5 @@
 
     <!-- Camera -->
     <string name="camera_hint">Point at the blood pressure monitor screen</string>
+    <string name="camera_enter_manually">Enter manually</string>
 </resources>

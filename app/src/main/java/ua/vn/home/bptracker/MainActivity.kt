@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -51,16 +52,42 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainAuthenticatedLayout(onLogout: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    var activeOverlay by remember { mutableStateOf<String?>(null) } // Simple state-based routing
+    var activeOverlay by remember { mutableStateOf<String?>(null) }
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     
-    // When an overlay is active (e.g. Manual Entry), we show it full screen.
-    // Otherwise, we show the tabbed Scaffold.
     when (activeOverlay) {
         "camera" -> {
             CameraScanScreen(
-                onCapture = { activeOverlay = "manual_entry" }, // TODO: Pass captured image
+                onCapture = { bitmap ->
+                    capturedBitmap = bitmap
+                    activeOverlay = "ocr_review"
+                },
+                onEnterManually = { activeOverlay = "manual_entry" },
                 onCancel = { activeOverlay = null }
+            )
+        }
+        "ocr_review" -> {
+            val reviewVm: ScanReviewViewModel = viewModel()
+            val reviewState by reviewVm.state.collectAsState()
+            
+            capturedBitmap?.let { bitmap ->
+                LaunchedEffect(bitmap) {
+                    reviewVm.initWithImage(bitmap)
+                }
+            }
+
+            ScanReviewScreen(
+                state = reviewState,
+                onSysChange = reviewVm::onSysChange,
+                onDiaChange = reviewVm::onDiaChange,
+                onPulseChange = reviewVm::onPulseChange,
+                onSave = reviewVm::save,
+                onRetake = { activeOverlay = "camera" },
+                onBack = { 
+                    activeOverlay = null
+                    capturedBitmap = null
+                }
             )
         }
         "manual_entry" -> {
@@ -79,7 +106,6 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
             val detailVm: MeasurementDetailViewModel = viewModel()
             val detailState by detailVm.state.collectAsState()
             
-            // Sync selected measurement to VM
             LaunchedEffect(selectedMeasurement) {
                 selectedMeasurement?.let { detailVm.setMeasurement(it) }
             }
@@ -112,15 +138,15 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                             val homeState by homeVm.state.collectAsState()
                             LaunchedEffect(Unit) { homeVm.refresh() }
 
-                        HomeScreen(
-                            state = homeState,
-                            onRefresh = homeVm::refresh,
-                            onLogout = onLogout,
-                            onMeasurementClick = { m ->
-                                selectedMeasurement = m
-                                activeOverlay = "measurement_detail"
-                            }
-                        )
+                            HomeScreen(
+                                state = homeState,
+                                onRefresh = homeVm::refresh,
+                                onLogout = onLogout,
+                                onMeasurementClick = { m ->
+                                    selectedMeasurement = m
+                                    activeOverlay = "measurement_detail"
+                                }
+                            )
                         }
                         1 -> {
                             val scheduleVm: ScheduleViewModel = viewModel()

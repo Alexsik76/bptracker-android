@@ -2,12 +2,13 @@ package ua.vn.home.bptracker.feature.camera
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
@@ -28,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -36,7 +38,8 @@ import ua.vn.home.bptracker.R
 
 @Composable
 fun CameraScanScreen(
-    onCapture: () -> Unit, // TODO: Pass the actual image/data later
+    onCapture: (Bitmap) -> Unit,
+    onEnterManually: () -> Unit,
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
@@ -116,7 +119,7 @@ fun CameraScanScreen(
                 Surface(
                     color = Color.Black.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.padding(bottom = 120.dp)
+                    modifier = Modifier.padding(bottom = 80.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.camera_hint),
@@ -125,6 +128,16 @@ fun CameraScanScreen(
                         fontSize = 16.sp
                     )
                 }
+
+                // Enter Manually
+                Text(
+                    text = stringResource(R.string.camera_enter_manually),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge.copy(textDecoration = TextDecoration.Underline),
+                    modifier = Modifier
+                        .padding(bottom = 40.dp)
+                        .clickable { onEnterManually() }
+                )
 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
@@ -146,7 +159,9 @@ fun CameraScanScreen(
                             .clip(CircleShape)
                             .background(Color.White)
                             .border(4.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
-                            .clickable { onCapture() }
+                            .clickable {
+                                capturePhoto(imageCapture, context, onCapture)
+                            }
                     )
 
                     // Spacer to balance the Cancel button
@@ -159,4 +174,64 @@ fun CameraScanScreen(
             Text("Camera permission required", color = Color.White)
         }
     }
+}
+
+private fun capturePhoto(
+    imageCapture: ImageCapture,
+    context: android.content.Context,
+    onCapture: (Bitmap) -> Unit
+) {
+    imageCapture.takePicture(
+        ContextCompat.getMainExecutor(context),
+        object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(image: ImageProxy) {
+                val rotation = image.imageInfo.rotationDegrees
+                val bitmap = image.toBitmap()
+                image.close()
+
+                val processed = processBitmap(bitmap, rotation)
+                onCapture(processed)
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                Log.e("CameraScan", "Capture failed", exception)
+            }
+        }
+    )
+}
+
+private fun processBitmap(bitmap: Bitmap, rotation: Int): Bitmap {
+    val matrix = Matrix().apply {
+        postRotate(rotation.toFloat())
+    }
+    
+    val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    
+    // Downscale to ~1024px on long edge
+    val targetSize = 1024f
+    val scale = if (rotated.width > rotated.height) {
+        targetSize / rotated.width
+    } else {
+        targetSize / rotated.height
+    }
+    
+    if (scale >= 1f) return rotated
+
+    val scaled = Bitmap.createScaledBitmap(
+        rotated,
+        (rotated.width * scale).toInt(),
+        (rotated.height * scale).toInt(),
+        true
+    )
+    return scaled
+}
+
+/**
+ * ImageProxy to Bitmap helper
+ */
+private fun ImageProxy.toBitmap(): Bitmap {
+    val buffer = planes[0].buffer
+    val bytes = ByteArray(buffer.remaining())
+    buffer.get(bytes)
+    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 }

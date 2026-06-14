@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -18,16 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.ui.theme.*
+import ua.vn.home.bptracker.ui.components.*
 
 @Composable
 fun ManualEntryScreen(
@@ -82,7 +78,7 @@ fun ManualEntryScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Photo Placeholder
+            // Photo Placeholder (Manual entry doesn't have one, but we keep the structure consistent)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -97,26 +93,6 @@ fun ManualEntryScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                     modifier = Modifier.size(48.dp)
                 )
-                
-                Surface(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Fullscreen, 
-                            contentDescription = null, 
-                            modifier = Modifier.size(16.dp), 
-                            tint = Color.White
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Збільшити", color = Color.White, fontSize = 12.sp)
-                    }
-                }
             }
 
             // Entry Fields
@@ -185,77 +161,6 @@ fun ManualEntryScreen(
                         Text("Зберегти", fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                 }
-            }
-            
-            Text(
-                text = "Розпізнати через сервер",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { /* Fallback */ }
-                    .padding(bottom = 8.dp),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline)
-            )
-        }
-    }
-}
-
-@Composable
-fun ValueField(
-    label: String,
-    secondary: String,
-    dotColor: Color,
-    value: String,
-    unit: String,
-    onValueChange: (String) -> Unit,
-    isValid: Boolean
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(dotColor))
-            Spacer(Modifier.width(8.dp))
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            if (secondary.isNotEmpty()) {
-                Spacer(Modifier.width(8.dp))
-                Text(secondary, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(72.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f))
-                .padding(horizontal = 20.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                BasicTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier.weight(1f),
-                    textStyle = MaterialTheme.typography.displaySmall.copy(
-                        color = if (value.isNotEmpty() && !isValid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                    ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    singleLine = true
-                )
-                Text(
-                    text = unit,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelMedium
-                )
             }
         }
     }

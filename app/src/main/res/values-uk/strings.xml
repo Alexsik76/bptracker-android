@@ -71,4 +71,5 @@
 
     <!-- Camera -->
     <string name="camera_hint">Наведіть на екран тонометра</string>
+    <string name="camera_enter_manually">Ввести вручну</string>
 </resources>
