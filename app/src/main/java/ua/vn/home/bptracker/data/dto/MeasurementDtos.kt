@@ -10,3 +10,10 @@ data class MeasurementDto(
     val dia: Int,
     val pulse: Int
 )
+
+@Serializable
+data class CreateMeasurementRequest(
+    val sys: Int,
+    val dia: Int,
+    val pulse: Int
+)

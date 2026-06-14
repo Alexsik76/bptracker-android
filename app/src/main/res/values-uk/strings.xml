@@ -48,4 +48,20 @@
     <string name="schedule_pending">Очікує</string>
     <string name="schedule_confirm_btn">Прийняв</string>
     <string name="schedule_taken_at">Прийнято о %1$s</string>
+
+    <!-- Measurement Entry -->
+    <string name="entry_title">Новий замір</string>
+    <string name="entry_sys">Систолічний (СИС)</string>
+    <string name="entry_dia">Діастолічний (ДІА)</string>
+    <string name="entry_pulse">Пульс</string>
+    <string name="entry_save">Зберегти замір</string>
+    <string name="entry_range_sys">Діапазон: 40–300</string>
+    <string name="entry_range_dia">Діапазон: 20–200</string>
+    <string name="entry_range_pulse">Діапазон: 30–250</string>
+
+    <!-- Local OCR -->
+    <string name="local_ocr_result_title">Результат розпізнавання</string>
+
+    <!-- Camera -->
+    <string name="camera_hint">Наведіть на екран тонометра</string>
 </resources>

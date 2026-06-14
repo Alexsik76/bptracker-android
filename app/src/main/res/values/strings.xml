@@ -48,4 +48,20 @@
     <string name="schedule_pending">Pending</string>
     <string name="schedule_confirm_btn">Taken</string>
     <string name="schedule_taken_at">Taken at %1$s</string>
+
+    <!-- Measurement Entry -->
+    <string name="entry_title">New Reading</string>
+    <string name="entry_sys">Systolic (SYS)</string>
+    <string name="entry_dia">Diastolic (DIA)</string>
+    <string name="entry_pulse">Pulse</string>
+    <string name="entry_save">Save Reading</string>
+    <string name="entry_range_sys">Range: 40–300</string>
+    <string name="entry_range_dia">Range: 20–200</string>
+    <string name="entry_range_pulse">Range: 30–250</string>
+
+    <!-- Local OCR -->
+    <string name="local_ocr_result_title">Recognition Result</string>
+
+    <!-- Camera -->
+    <string name="camera_hint">Point at the blood pressure monitor screen</string>
 </resources>
