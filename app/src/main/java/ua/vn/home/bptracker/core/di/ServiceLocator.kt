@@ -9,6 +9,9 @@ import ua.vn.home.bptracker.data.api.AuthApi
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.api.ReminderApi
 import ua.vn.home.bptracker.data.repository.*
+import ua.vn.home.bptracker.feature.ocr.MockOcrEngine
+import ua.vn.home.bptracker.feature.ocr.OcrEngine
+import ua.vn.home.bptracker.feature.ocr.OnnxOcrEngine
 
 object ServiceLocator {
 
@@ -31,7 +34,15 @@ object ServiceLocator {
         else RealReminderRepository(reminderApi)
     }
 
+    val ocrEngine: OcrEngine by lazy {
+        if (MOCK_MODE) MockOcrEngine()
+        else OnnxOcrEngine(applicationContext)
+    }
+
+    private lateinit var applicationContext: Context
+
     fun init(context: Context) {
-        tokenStore = TokenStore(context.applicationContext)
+        applicationContext = context.applicationContext
+        tokenStore = TokenStore(applicationContext)
     }
 }
