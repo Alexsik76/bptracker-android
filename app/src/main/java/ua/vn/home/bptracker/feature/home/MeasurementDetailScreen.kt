@@ -107,7 +107,7 @@ fun MeasurementDetailScreen(
             ZoneBadge(zone)
 
             val dt = OffsetDateTime.parse(m.recordedAt)
-            val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG)
+            val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
             
             Text(
                 text = dt.format(formatter),

@@ -94,7 +94,7 @@ fun DashboardContent(
         }
         
         item {
-            RecentReadingsSection(content.recent, onHistoryClick, onMeasurementClick)
+            RecentReadingsSection(content.recent, onHistoryClick)
         }
         
         item {
@@ -106,32 +106,17 @@ fun DashboardContent(
 @Composable
 fun RecentReadingsSection(
     recent: List<MeasurementDto>,
-    onHistoryClick: () -> Unit,
-    onMeasurementClick: (MeasurementDto) -> Unit
+    onHistoryClick: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onHistoryClick() }
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.dashboard_recent_readings).uppercase(),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        Text(
+            text = stringResource(R.string.dashboard_recent_readings).uppercase(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
         
-        BpCard {
+        BpCard(modifier = Modifier.clickable { onHistoryClick() }) {
             Surface(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f),
                 modifier = Modifier.fillMaxWidth()
@@ -151,7 +136,7 @@ fun RecentReadingsSection(
                         )
                     } else {
                         filtered.forEachIndexed { index, m ->
-                            MeasurementRow(m, onClick = { onMeasurementClick(m) })
+                            MeasurementRow(m)
                             if (index < filtered.size - 1) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(horizontal = 20.dp),
@@ -168,7 +153,7 @@ fun RecentReadingsSection(
 }
 
 @Composable
-fun MeasurementRow(m: MeasurementDto, onClick: () -> Unit) {
+fun MeasurementRow(m: MeasurementDto, onClick: (() -> Unit)? = null) {
     val zone = BpZone.classify(m.sys, m.dia)
     val dt = OffsetDateTime.parse(m.recordedAt)
     val now = OffsetDateTime.now()
@@ -187,7 +172,7 @@ fun MeasurementRow(m: MeasurementDto, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,6 +34,7 @@ import ua.vn.home.bptracker.feature.settings.BpScaleHelpScreen
 import ua.vn.home.bptracker.feature.settings.SettingsScreen
 import ua.vn.home.bptracker.feature.settings.SettingsViewModel
 import ua.vn.home.bptracker.ui.components.BpBottomNavBar
+import ua.vn.home.bptracker.ui.components.LocalActivity
 import ua.vn.home.bptracker.ui.theme.BPTrackerTheme
 import java.util.Locale
 
@@ -73,7 +75,10 @@ class MainActivity : ComponentActivity() {
             configuration.setLocale(locale)
             val localizedContext = context.createConfigurationContext(configuration)
 
-            CompositionLocalProvider(LocalContext provides localizedContext) {
+            CompositionLocalProvider(
+                LocalContext provides localizedContext,
+                LocalActivity provides this
+            ) {
                 BPTrackerTheme(darkTheme = isDark) {
                     val vm: AuthViewModel = viewModel()
                     val state by vm.state.collectAsState()
@@ -104,6 +109,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
     
     when (activeOverlay) {
         "camera" -> {
+            BackHandler { activeOverlay = null }
             CameraScanScreen(
                 onCapture = { bitmap ->
                     capturedBitmap = bitmap
@@ -117,6 +123,11 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
             val reviewVm: ScanReviewViewModel = viewModel()
             val reviewState by reviewVm.state.collectAsState()
             
+            BackHandler {
+                reviewVm.reset()
+                activeOverlay = "camera"
+            }
+
             capturedBitmap?.let { bitmap ->
                 LaunchedEffect(bitmap) {
                     reviewVm.initWithImage(bitmap)
@@ -144,6 +155,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
         "manual_entry" -> {
             val entryVm: ManualEntryViewModel = viewModel()
             val entryState by entryVm.state.collectAsState()
+            BackHandler { activeOverlay = null }
             ManualEntryScreen(
                 state = entryState,
                 onSysChange = entryVm::onSysChange,
@@ -157,6 +169,11 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
             val detailVm: MeasurementDetailViewModel = viewModel()
             val detailState by detailVm.state.collectAsState()
             
+            BackHandler {
+                activeOverlay = null
+                selectedMeasurement = null
+            }
+
             LaunchedEffect(selectedMeasurement) {
                 selectedMeasurement?.let { detailVm.setMeasurement(it) }
             }
@@ -173,6 +190,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
         "settings" -> {
             val settingsVm: SettingsViewModel = viewModel()
             val settingsState by settingsVm.state.collectAsState()
+            BackHandler { activeOverlay = null }
             SettingsScreen(
                 state = settingsState,
                 onThemeSelect = settingsVm::setTheme,
@@ -184,6 +202,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
             )
         }
         "bp_scale" -> {
+            BackHandler { activeOverlay = "settings" }
             BpScaleHelpScreen(
                 latestMeasurement = selectedMeasurement, // Simplified for now
                 onBack = { activeOverlay = "settings" }
@@ -192,8 +211,12 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
         "history" -> {
             val homeVm: HomeViewModel = viewModel()
             val homeState by homeVm.state.collectAsState()
+            
+            BackHandler { activeOverlay = null }
+
             MeasurementHistoryScreen(
                 state = homeState,
+                onRefresh = homeVm::refresh,
                 onMeasurementClick = { m ->
                     selectedMeasurement = m
                     activeOverlay = "measurement_detail"
@@ -202,6 +225,9 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
             )
         }
         null -> {
+            BackHandler(enabled = selectedTab != 0) {
+                selectedTab = 0
+            }
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 containerColor = MaterialTheme.colorScheme.background,

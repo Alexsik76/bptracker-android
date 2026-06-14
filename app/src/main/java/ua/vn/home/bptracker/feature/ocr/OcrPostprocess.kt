@@ -109,11 +109,15 @@ object OcrPostprocess {
         return interArea / (area1 + area2 - interArea)
     }
 
+    /**
+     * Groups boxes into 3 rows using Lloyd's k-means on center-Y.
+     * Improved stability for digit detection.
+     */
     fun kmeansRows(boxes: List<OcrBox>): List<List<OcrBox>> {
         if (boxes.isEmpty()) return emptyList()
 
         // If very few boxes, just return them as sorted by Y (effectively one or more rows)
-        if (boxes.size < 3) {
+        if (boxes.size < 2) {
             return listOf(boxes.sortedBy { it.box.x1 })
         }
 
@@ -121,8 +125,12 @@ object OcrPostprocess {
         val yMax = boxes.maxOf { it.box.cy }
         val yRange = yMax - yMin
 
-        // Initial centers
-        var centers = floatArrayOf(yMin + yRange * 0.15f, yMin + yRange * 0.5f, yMin + yRange * 0.85f)
+        // Initial centers: spread them out
+        var centers = floatArrayOf(
+            yMin + yRange * 0.10f, 
+            yMin + yRange * 0.50f, 
+            yMin + yRange * 0.90f
+        )
         
         repeat(20) {
             val clusters = Array(3) { mutableListOf<OcrBox>() }
@@ -139,7 +147,7 @@ object OcrPostprocess {
                     newCenters[i] = centers[i]
                 } else {
                     newCenters[i] = clusters[i].map { it.box.cy }.average().toFloat()
-                    if (kotlin.math.abs(newCenters[i] - centers[i]) > 1e-3f) {
+                    if (kotlin.math.abs(newCenters[i] - centers[i]) > 0.1f) {
                         converged = false
                     }
                 }

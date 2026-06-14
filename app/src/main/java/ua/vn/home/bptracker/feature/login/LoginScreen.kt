@@ -12,11 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.ui.components.LocalActivity
 
 @Composable
 fun LoginScreen(
@@ -24,8 +24,7 @@ fun LoginScreen(
     signingIn: Boolean = false,
     onSignIn: (Activity) -> Unit
 ) {
-    val context = LocalContext.current
-    val activity = context as Activity
+    val activity = LocalActivity.current
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -39,7 +38,11 @@ fun LoginScreen(
         if (signingIn) {
             CircularProgressIndicator(modifier = Modifier.padding(top = 24.dp))
         } else {
-            Button(onClick = { onSignIn(activity) }, modifier = Modifier.padding(top = 24.dp)) {
+            Button(
+                onClick = { activity?.let { onSignIn(it) } },
+                enabled = activity != null,
+                modifier = Modifier.padding(top = 24.dp)
+            ) {
                 Text(stringResource(R.string.auth_login_passkey))
             }
         }

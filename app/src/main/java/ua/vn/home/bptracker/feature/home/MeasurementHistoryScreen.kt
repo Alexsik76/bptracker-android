@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -16,11 +15,13 @@ import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.ui.components.LoadingState
 import ua.vn.home.bptracker.ui.components.EmptyState
+import ua.vn.home.bptracker.ui.components.ErrorState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeasurementHistoryScreen(
     state: HomeState,
+    onRefresh: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit,
     onBack: () -> Unit
 ) {
@@ -48,15 +49,20 @@ fun MeasurementHistoryScreen(
             when (state) {
                 is HomeState.Loading -> LoadingState()
                 is HomeState.Empty -> EmptyState(title = stringResource(R.string.dashboard_no_measurements))
-                is HomeState.Error -> Text(state.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.Center))
+                is HomeState.Error -> ErrorState(message = state.message, onRetry = onRefresh)
                 is HomeState.Content -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         items(state.recent) { m ->
                             MeasurementRow(m, onClick = { onMeasurementClick(m) })
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 20.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                            )
                         }
                     }
                 }

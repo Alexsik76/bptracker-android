@@ -40,7 +40,12 @@ class HomeViewModel : ViewModel() {
 
     fun refresh() {
         viewModelScope.launch {
-            _state.value = HomeState.Loading
+            // Only set Loading if we don't have content already to avoid UI flickering
+            val current = _state.value
+            if (current !is HomeState.Content) {
+                _state.value = HomeState.Loading
+            }
+            
             try {
                 // Fetch 14 days to calculate week-over-week change
                 val allList = repository.getMeasurements(days = 14)
@@ -65,7 +70,7 @@ class HomeViewModel : ViewModel() {
                     _state.value = HomeState.Content(
                         latest = latest,
                         zone = BpZone.classify(latest.sys, latest.dia),
-                        recent = allList.take(5),
+                        recent = allList.take(50),
                         avgSys = 0, avgDia = 0, avgPulse = 0, inRangePercent = 0, sysChange = 0, diaChange = 0
                     )
                     return@launch
@@ -96,7 +101,7 @@ class HomeViewModel : ViewModel() {
                 _state.value = HomeState.Content(
                     latest = latest,
                     zone = zone,
-                    recent = allList.take(5),
+                    recent = allList.take(50),
                     avgSys = avgSys,
                     avgDia = avgDia,
                     avgPulse = avgPulse,
