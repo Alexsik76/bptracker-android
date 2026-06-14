@@ -22,3 +22,27 @@ data class ConfirmIntakeRequest(
     val period: String,
     val timezone: String
 )
+
+@Serializable
+data class ReminderTemplate(
+    val id: String,
+    val schemaId: String,
+    val isActive: Boolean,
+    val durationMinutes: Int,
+    val maxReminders: Int,
+    val periods: Map<String, PeriodConfig>
+)
+
+@Serializable
+data class PeriodConfig(
+    val time: String = "08:00",
+    val meds: List<String> = emptyList()
+)
+
+@Serializable
+data class UpdateTemplateRequest(
+    val periods: Map<String, PeriodConfig>? = null,
+    val durationMinutes: Int? = null,
+    val maxReminders: Int? = null,
+    val isActive: Boolean? = null
+)

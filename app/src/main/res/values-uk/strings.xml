@@ -52,6 +52,14 @@
     <string name="schedule_pending">Очікує</string>
     <string name="schedule_confirm_btn">Прийняв</string>
     <string name="schedule_taken_at">Прийнято о %1$s</string>
+    <string name="schedule_edit_title">Редагування розкладу</string>
+    <string name="schedule_edit_empty">Не знайдено активного шаблону ліків. Будь ласка, налаштуйте свій план у веб-додатку.</string>
+    <string name="schedule_edit_periods">Періоди прийому</string>
+    <string name="schedule_edit_general">Загальні налаштування</string>
+    <string name="schedule_edit_duration">Вікно підтвердження</string>
+    <string name="schedule_edit_minutes">хвилин</string>
+    <string name="schedule_edit_max_reminders">Ліміт нагадувань</string>
+    <string name="schedule_edit_per_period">на період</string>
 
     <!-- Measurement Entry -->
     <string name="entry_title">Новий замір</string>
@@ -93,6 +101,8 @@
     <string name="settings_group_privacy">Приватність</string>
     <string name="settings_ocr_improve">Покращення моделі OCR</string>
     <string name="settings_ocr_improve_hint">Надсилати фото дисплея анонімно</string>
+    <string name="settings_reminders">Нагадування про прийом ліків</string>
+    <string name="settings_reminders_no_template">Будь ласка, спочатку налаштуйте розклад у веб-додатку.</string>
     <string name="settings_group_help">Довідка</string>
     <string name="settings_bp_scale">Шкала тиску ESC →</string>
     <string name="settings_group_account">Акаунт</string>

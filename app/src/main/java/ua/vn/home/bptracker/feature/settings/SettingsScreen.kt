@@ -27,6 +27,7 @@ fun SettingsScreen(
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
+    onRemindersToggle: (Boolean) -> Unit,
     onLogout: () -> Unit,
     onHelpClick: () -> Unit,
     onBack: () -> Unit
@@ -107,6 +108,32 @@ fun SettingsScreen(
                     Switch(
                         checked = state.ocrImprovement,
                         onCheckedChange = onOcrImprovementToggle
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.bodyLarge)
+                        if (state.remindersActive == null) {
+                            Text(
+                                stringResource(R.string.settings_reminders_no_template),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = state.remindersActive == true,
+                        onCheckedChange = onRemindersToggle,
+                        enabled = state.remindersActive != null
                     )
                 }
             }

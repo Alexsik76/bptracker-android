@@ -199,6 +199,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 onThemeSelect = settingsVm::setTheme,
                 onLanguageSelect = settingsVm::setLanguage,
                 onOcrImprovementToggle = settingsVm::setOcrImprovement,
+                onRemindersToggle = settingsVm::setRemindersEnabled,
                 onLogout = onLogout,
                 onHelpClick = { activeOverlay = "bp_scale" },
                 onBack = { activeOverlay = null }
@@ -225,6 +226,28 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                     activeOverlay = "measurement_detail"
                 },
                 onBack = { activeOverlay = null }
+            )
+        }
+        "schedule_edit" -> {
+            val editVm: ScheduleEditViewModel = viewModel()
+            val editState by editVm.state.collectAsState()
+            val scheduleVm: ScheduleViewModel = viewModel()
+
+            BackHandler { activeOverlay = null }
+
+            ScheduleEditScreen(
+                state = editState,
+                onTimeChange = editVm::onTimeChange,
+                onDurationChange = editVm::onDurationChange,
+                onMaxRemindersChange = editVm::onMaxRemindersChange,
+                onSave = {
+                    editVm.save()
+                },
+                onRetry = editVm::load,
+                onBack = { 
+                    activeOverlay = null
+                    scheduleVm.refresh()
+                }
             )
         }
         null -> {
@@ -272,7 +295,8 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                             ScheduleScreen(
                                 state = scheduleState,
                                 onConfirm = scheduleVm::confirm,
-                                onRefresh = scheduleVm::refresh
+                                onRefresh = scheduleVm::refresh,
+                                onEditClick = { activeOverlay = "schedule_edit" }
                             )
                         }
                     }

@@ -1,9 +1,7 @@
 package ua.vn.home.bptracker.data.repository
 
 import ua.vn.home.bptracker.data.api.ReminderApi
-import ua.vn.home.bptracker.data.dto.ConfirmIntakeRequest
-import ua.vn.home.bptracker.data.dto.TodayIntake
-import ua.vn.home.bptracker.data.dto.TodayMeds
+import ua.vn.home.bptracker.data.dto.*
 import ua.vn.home.bptracker.data.local.dao.MedIntakeDao
 import ua.vn.home.bptracker.data.local.entity.toDto
 import ua.vn.home.bptracker.data.local.entity.toEntity
@@ -12,6 +10,8 @@ import java.time.OffsetDateTime
 interface ReminderRepository {
     suspend fun getToday(timezone: String): TodayMeds
     suspend fun confirm(period: String, timezone: String)
+    suspend fun getActiveTemplate(): ReminderTemplate?
+    suspend fun updateTemplate(id: String, req: UpdateTemplateRequest): ReminderTemplate
 }
 
 class RealReminderRepository(
@@ -41,9 +41,33 @@ class RealReminderRepository(
             dao.updateStatus(date, period, "Confirmed", OffsetDateTime.now().toString())
         }
     }
+
+    override suspend fun getActiveTemplate(): ReminderTemplate? {
+        return try {
+            api.getActiveTemplate()
+        } catch (e: retrofit2.HttpException) {
+            if (e.code() == 404) null else throw e
+        }
+    }
+
+    override suspend fun updateTemplate(id: String, req: UpdateTemplateRequest): ReminderTemplate {
+        return api.updateTemplate(id, req)
+    }
 }
 
 class MockReminderRepository : ReminderRepository {
+    private var mockTemplate = ReminderTemplate(
+        id = "mock-id",
+        schemaId = "mock-schema",
+        isActive = true,
+        durationMinutes = 15,
+        maxReminders = 1,
+        periods = mapOf(
+            "Morning" to PeriodConfig("08:00", listOf("Bisoprolol 5mg")),
+            "Evening" to PeriodConfig("20:00", listOf("Atorvastatin 20mg"))
+        )
+    )
+
     private var mockIntakes = mutableListOf(
         TodayIntake("Morning", "08:00", listOf("Bisoprolol 5mg", "Aspirin 75mg"), "Confirmed", OffsetDateTime.now().minusHours(4).toString()),
         TodayIntake("Day", "14:00", listOf("Omega-3"), null, null),
@@ -63,5 +87,19 @@ class MockReminderRepository : ReminderRepository {
                 timeTaken = OffsetDateTime.now().toString()
             )
         }
+    }
+
+    override suspend fun getActiveTemplate(): ReminderTemplate? {
+        return mockTemplate
+    }
+
+    override suspend fun updateTemplate(id: String, req: UpdateTemplateRequest): ReminderTemplate {
+        mockTemplate = mockTemplate.copy(
+            isActive = req.isActive ?: mockTemplate.isActive,
+            durationMinutes = req.durationMinutes ?: mockTemplate.durationMinutes,
+            maxReminders = req.maxReminders ?: mockTemplate.maxReminders,
+            periods = req.periods ?: mockTemplate.periods
+        )
+        return mockTemplate
     }
 }

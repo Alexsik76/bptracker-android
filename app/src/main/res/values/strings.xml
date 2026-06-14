@@ -52,6 +52,14 @@
     <string name="schedule_pending">Pending</string>
     <string name="schedule_confirm_btn">Taken</string>
     <string name="schedule_taken_at">Taken at %1$s</string>
+    <string name="schedule_edit_title">Edit Schedule</string>
+    <string name="schedule_edit_empty">No active medication template found. Please set up your plan in the web application.</string>
+    <string name="schedule_edit_periods">Daily Periods</string>
+    <string name="schedule_edit_general">General Settings</string>
+    <string name="schedule_edit_duration">Confirmation Window</string>
+    <string name="schedule_edit_minutes">minutes</string>
+    <string name="schedule_edit_max_reminders">Reminder limit</string>
+    <string name="schedule_edit_per_period">per period</string>
 
     <!-- Measurement Entry -->
     <string name="entry_title">New Reading</string>
@@ -93,6 +101,8 @@
     <string name="settings_group_privacy">Privacy</string>
     <string name="settings_ocr_improve">Improve OCR model</string>
     <string name="settings_ocr_improve_hint">Send monitor photos anonymously</string>
+    <string name="settings_reminders">Medication reminders</string>
+    <string name="settings_reminders_no_template">Please set up a schedule in the web app first.</string>
     <string name="settings_group_help">Help</string>
     <string name="settings_bp_scale">BP Scale (ESC) →</string>
     <string name="settings_group_account">Account</string>
