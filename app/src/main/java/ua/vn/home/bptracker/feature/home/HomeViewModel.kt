@@ -20,7 +20,7 @@ sealed interface HomeState {
 
 class HomeViewModel : ViewModel() {
 
-    private val api = ServiceLocator.measurementApi
+    private val repository = ServiceLocator.measurementRepository
     private val _state = MutableStateFlow<HomeState>(HomeState.Loading)
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
@@ -32,7 +32,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = HomeState.Loading
             try {
-                val list = api.getMeasurements(days = 7)
+                val list = repository.getMeasurements(days = 7)
                 if (list.isEmpty()) {
                     _state.value = HomeState.Empty
                 } else {

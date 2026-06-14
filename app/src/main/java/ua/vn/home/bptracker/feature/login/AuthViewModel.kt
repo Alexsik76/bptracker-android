@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.NativeLoginBeginResponse
 import ua.vn.home.bptracker.data.dto.NativeLoginCompleteRequest
@@ -36,11 +37,15 @@ class AuthViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            tokenStore.load()
-            _state.value = try {
-                AuthState.LoggedIn(api.me().email)
-            } catch (e: Exception) {
-                AuthState.LoggedOut(info = null) // expected when no token: backend 401
+            if (MOCK_MODE) {
+                _state.value = AuthState.LoggedIn("mock@local")
+            } else {
+                tokenStore.load()
+                _state.value = try {
+                    AuthState.LoggedIn(api.me().email)
+                } catch (e: Exception) {
+                    AuthState.LoggedOut(info = null) // expected when no token: backend 401
+                }
             }
         }
     }
