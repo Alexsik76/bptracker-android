@@ -15,5 +15,6 @@ sealed interface OcrOutcome {
 }
 
 interface OcrEngine {
+    fun warmUp()
     suspend fun recognize(bitmap: Bitmap): OcrOutcome
 }

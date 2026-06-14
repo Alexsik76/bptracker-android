@@ -4,6 +4,10 @@ import android.graphics.Bitmap
 import kotlinx.coroutines.delay
 
 class MockOcrEngine : OcrEngine {
+    override fun warmUp() {
+        // No-op for mock
+    }
+
     override suspend fun recognize(bitmap: Bitmap): OcrOutcome {
         delay(1000) // Simulate processing
         return OcrOutcome.Success(

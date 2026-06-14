@@ -23,6 +23,16 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
         ortEnv.createSession(model)
     }
 
+    override fun warmUp() {
+        // Touch both lazy sessions to trigger eager model loading
+        try {
+            val d1 = displaySession.inputNames
+            val d2 = digitSession.inputNames
+        } catch (e: Exception) {
+            // Warm-up is best effort; don't crash app launch
+        }
+    }
+
     override suspend fun recognize(bitmap: Bitmap): OcrOutcome = withContext(Dispatchers.Default) {
         try {
             // Stage 1: Detect Display
@@ -70,18 +80,19 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
         val params = OcrPostprocess.getLetterboxParams(bitmap.width, bitmap.height, targetSize)
         val tensor = bitmapToTensor(bitmap, targetSize, params)
 
-        val inputName = session.inputNames.first()
-        val outputName = session.outputNames.first()
+        return tensor.use { t ->
+            val inputName = session.inputNames.first()
+            session.run(mapOf(inputName to t)).use { results ->
+                @Suppress("UNCHECKED_CAST")
+                val output = results[0].value as Array<Array<FloatArray>> // [1, 4+numClasses, numAnchors]
 
-        val results = session.run(mapOf(inputName to tensor))
-        @Suppress("UNCHECKED_CAST")
-        val output = results[0].value as Array<Array<FloatArray>> // [1, 4+numClasses, numAnchors]
-        
-        // Flatten output for postprocessor
-        val flatOutput = flattenYoloOutput(output[0])
-        val numAnchors = flatOutput.size / (4 + numClasses)
+                // Flatten output for postprocessor
+                val flatOutput = flattenYoloOutput(output[0])
+                val numAnchors = flatOutput.size / (4 + numClasses)
 
-        return OcrPostprocess.decodeOutput(flatOutput, numClasses, numAnchors, confThreshold, params)
+                OcrPostprocess.decodeOutput(flatOutput, numClasses, numAnchors, confThreshold, params)
+            }
+        }
     }
 
     private fun bitmapToTensor(bitmap: Bitmap, targetSize: Int, params: LetterboxParams): OnnxTensor {
