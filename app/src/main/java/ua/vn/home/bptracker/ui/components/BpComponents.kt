@@ -1,15 +1,13 @@
 package ua.vn.home.bptracker.ui.components
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.GridView
@@ -333,5 +331,98 @@ fun PositionScaleBar(
         Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneNormalDark))
         Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneStage1Dark))
         Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneStage2Dark))
+    }
+}
+
+@Composable
+fun SegmentedControl(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+    ) {
+        Row(modifier = Modifier.padding(4.dp)) {
+            options.forEachIndexed { index, option ->
+                val isSelected = index == selectedIndex
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f) else Color.Transparent)
+                        .clickable { onSelect(index) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = option,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingRow(
+    label: String,
+    value: String? = null,
+    onClick: () -> Unit = {},
+    showChevron: Boolean = true,
+    labelColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, color = labelColor)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (value != null) {
+                Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (showChevron) {
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ListGroupCard(
+    title: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (title != null) {
+            Text(
+                title.uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+        BpCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                content()
+            }
+        }
     }
 }

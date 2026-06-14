@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -15,12 +16,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
 import ua.vn.home.bptracker.feature.home.*
 import ua.vn.home.bptracker.feature.login.AuthState
 import ua.vn.home.bptracker.feature.login.AuthViewModel
 import ua.vn.home.bptracker.feature.login.LoginScreen
+import ua.vn.home.bptracker.feature.settings.BpScaleHelpScreen
+import ua.vn.home.bptracker.feature.settings.SettingsScreen
+import ua.vn.home.bptracker.feature.settings.SettingsViewModel
 import ua.vn.home.bptracker.ui.components.BpBottomNavBar
 import ua.vn.home.bptracker.ui.theme.BPTrackerTheme
 
@@ -29,7 +34,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            BPTrackerTheme {
+            val settingsVm: SettingsViewModel = viewModel()
+            val settingsState by settingsVm.state.collectAsState()
+            
+            val isDark = when (settingsState.theme) {
+                ua.vn.home.bptracker.core.config.AppTheme.AUTO -> isSystemInDarkTheme()
+                ua.vn.home.bptracker.core.config.AppTheme.LIGHT -> false
+                ua.vn.home.bptracker.core.config.AppTheme.DARK -> true
+            }
+
+            BPTrackerTheme(darkTheme = isDark) {
                 val vm: AuthViewModel = viewModel()
                 val state by vm.state.collectAsState()
 
@@ -119,6 +133,25 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 }
             )
         }
+        "settings" -> {
+            val settingsVm: SettingsViewModel = viewModel()
+            val settingsState by settingsVm.state.collectAsState()
+            SettingsScreen(
+                state = settingsState,
+                onThemeSelect = settingsVm::setTheme,
+                onLanguageSelect = settingsVm::setLanguage,
+                onOcrImprovementToggle = settingsVm::setOcrImprovement,
+                onLogout = onLogout,
+                onHelpClick = { activeOverlay = "bp_scale" },
+                onBack = { activeOverlay = null }
+            )
+        }
+        "bp_scale" -> {
+            BpScaleHelpScreen(
+                latestMeasurement = selectedMeasurement, // Simplified for now
+                onBack = { activeOverlay = "settings" }
+            )
+        }
         null -> {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -142,6 +175,12 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                                 state = homeState,
                                 onRefresh = homeVm::refresh,
                                 onLogout = onLogout,
+                                onSettingsClick = { 
+                                    if (homeState is HomeState.Content) {
+                                        selectedMeasurement = (homeState as HomeState.Content).latest
+                                    }
+                                    activeOverlay = "settings" 
+                                },
                                 onMeasurementClick = { m ->
                                     selectedMeasurement = m
                                     activeOverlay = "measurement_detail"

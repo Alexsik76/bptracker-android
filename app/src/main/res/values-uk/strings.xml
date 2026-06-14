@@ -78,4 +78,31 @@
     <!-- Camera -->
     <string name="camera_hint">Наведіть на екран тонометра</string>
     <string name="camera_enter_manually">Ввести вручну</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_group_appearance">Вигляд</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_theme_auto">Авто</string>
+    <string name="settings_theme_light">Світла</string>
+    <string name="settings_theme_dark">Темна</string>
+    <string name="settings_group_language">Мова</string>
+    <string name="settings_group_privacy">Приватність</string>
+    <string name="settings_ocr_improve">Покращення моделі OCR</string>
+    <string name="settings_ocr_improve_hint">Надсилати фото дисплея анонімно</string>
+    <string name="settings_group_help">Довідка</string>
+    <string name="settings_bp_scale">Шкала тиску ESC →</string>
+    <string name="settings_group_account">Акаунт</string>
+    <string name="settings_export_csv">Експорт CSV на email</string>
+    <string name="settings_logout">Вийти з акаунта</string>
+
+    <!-- BP Scale Help -->
+    <string name="settings_bp_scale_title">Шкала тиску ESC</string>
+    <string name="bp_scale_intro">Тиск класифікується за вищим показником (правило worst-of). Якщо ваші систолічний та діастолічний показники потрапляють у різні категорії, використовується вища.</string>
+    <string name="bp_scale_optimal_desc">Ідеальний стан. Продовжуйте здоровий спосіб життя.</string>
+    <string name="bp_scale_normal_desc">Нормальний діапазон, але стежте за ним, якщо він зростає.</string>
+    <string name="bp_scale_stage1_desc">Високий кровʼяний тиск. Проконсультуйтеся з лікарем.</string>
+    <string name="bp_scale_stage2_desc">Значно підвищений. Рекомендована медична допомога.</string>
+    <string name="bp_scale_your_latest">Ваш останній замір</string>
+    <string name="bp_scale_disclaimer">Ця шкала базується на рекомендаціях ESC/ESH і носить виключно інформаційний характер. Вона не замінює професійну медичну пораду або діагноз.</string>
 </resources>

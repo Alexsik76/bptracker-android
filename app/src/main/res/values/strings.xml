@@ -78,4 +78,31 @@
     <!-- Camera -->
     <string name="camera_hint">Point at the blood pressure monitor screen</string>
     <string name="camera_enter_manually">Enter manually</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_auto">Auto</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_group_language">Language</string>
+    <string name="settings_group_privacy">Privacy</string>
+    <string name="settings_ocr_improve">Improve OCR model</string>
+    <string name="settings_ocr_improve_hint">Send monitor photos anonymously</string>
+    <string name="settings_group_help">Help</string>
+    <string name="settings_bp_scale">BP Scale (ESC) →</string>
+    <string name="settings_group_account">Account</string>
+    <string name="settings_export_csv">Export CSV to email</string>
+    <string name="settings_logout">Log out</string>
+
+    <!-- BP Scale Help -->
+    <string name="settings_bp_scale_title">ESC BP Scale</string>
+    <string name="bp_scale_intro">Blood pressure is classified by the higher value (worst-of rule). If your systolic and diastolic fall into different categories, the higher one is used.</string>
+    <string name="bp_scale_optimal_desc">Ideal state. Continue your healthy lifestyle.</string>
+    <string name="bp_scale_normal_desc">Healthy range, but keep an eye on it if it trends up.</string>
+    <string name="bp_scale_stage1_desc">High blood pressure. Consult your doctor.</string>
+    <string name="bp_scale_stage2_desc">Significantly high. Medical attention recommended.</string>
+    <string name="bp_scale_your_latest">Your latest reading</string>
+    <string name="bp_scale_disclaimer">This scale is based on ESC/ESH guidelines and is for informational purposes only. It does not replace professional medical advice or diagnosis.</string>
 </resources>

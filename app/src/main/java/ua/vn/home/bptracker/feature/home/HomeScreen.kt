@@ -29,6 +29,7 @@ fun HomeScreen(
     state: HomeState,
     onRefresh: () -> Unit,
     onLogout: () -> Unit,
+    onSettingsClick: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit
 ) {
     Column(
@@ -49,7 +50,7 @@ fun HomeScreen(
                 titleContentColor = MaterialTheme.colorScheme.onBackground
             ),
             actions = {
-                IconButton(onClick = { /* TODO: Settings */ }) {
+                IconButton(onClick = onSettingsClick) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
                 }
             }
