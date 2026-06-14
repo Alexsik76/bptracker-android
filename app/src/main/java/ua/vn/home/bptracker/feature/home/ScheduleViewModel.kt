@@ -34,6 +34,8 @@ class ScheduleViewModel : ViewModel() {
             _state.value = ScheduleState.Loading
             try {
                 val todayMeds = repository.getToday(timezone)
+                android.util.Log.d("ScheduleViewModel", "Fetched meds: $todayMeds")
+
                 if (todayMeds.intakes.isEmpty()) {
                     _state.value = ScheduleState.Empty
                 } else {

@@ -43,7 +43,7 @@ class ReminderReceiver : BroadcastReceiver() {
             
             if (template != null && template.isActive) {
                 val config = template.periods[period]
-                if (config != null) {
+                if (config?.time != null) {
                     val scheduler = ReminderScheduler(context)
                     scheduler.scheduleAlarm(period, config.time)
                 }

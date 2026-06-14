@@ -1,20 +1,33 @@
 package ua.vn.home.bptracker.data.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNames
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class TodayMeds(
+    @JsonNames("Date", "date")
     val date: String,
+    @JsonNames("Intakes", "intakes")
     val intakes: List<TodayIntake>
 )
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class TodayIntake(
+    @JsonNames("Period", "period")
     val period: String,
+    @SerialName("Time")
+    @JsonNames("time")
     val time: String,
-    val meds: List<String>,
-    val status: String?, // "Confirmed", "Missed", or null (pending)
-    val timeTaken: String?
+    @SerialName("Meds")
+    @JsonNames("meds", "medications", "medicine")
+    val meds: List<String> = emptyList(),
+    @JsonNames("Status", "status")
+    val status: String? = null,
+    @JsonNames("TimeTaken", "timeTaken")
+    val timeTaken: String? = null
 )
 
 @Serializable
@@ -23,20 +36,32 @@ data class ConfirmIntakeRequest(
     val timezone: String
 )
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class ReminderTemplate(
+    @JsonNames("Id", "id")
     val id: String,
+    @JsonNames("SchemaId", "schemaId")
     val schemaId: String,
+    @JsonNames("IsActive", "isActive")
     val isActive: Boolean,
+    @JsonNames("DurationMinutes", "durationMinutes")
     val durationMinutes: Int,
+    @JsonNames("MaxReminders", "maxReminders")
     val maxReminders: Int,
+    @JsonNames("Periods", "periods")
     val periods: Map<String, PeriodConfig>
 )
 
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 @Serializable
 data class PeriodConfig(
-    val time: String = "08:00",
-    val meds: List<String> = emptyList()
+    @SerialName("Time")
+    @JsonNames("time")
+    val time: String? = null,
+    @SerialName("Meds")
+    @JsonNames("meds", "medications")
+    val meds: List<String>? = null
 )
 
 @Serializable

@@ -19,10 +19,33 @@ import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.data.dto.TodayIntake
 import ua.vn.home.bptracker.ui.components.*
-import ua.vn.home.bptracker.ui.theme.ColorPulse
 import ua.vn.home.bptracker.ui.theme.ColorSuccess
 import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
+@Composable
+fun getLocalizedTime(timeStr: String?): String {
+    if (timeStr == null) return ""
+    return try {
+        // Try parsing various timestamp formats and convert to device local time
+        val dt = try {
+            ZonedDateTime.parse(timeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS Z"))
+        } catch (e: Exception) {
+            OffsetDateTime.parse(timeStr.replace(" ", "T")).toZonedDateTime()
+        }
+        dt.withZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
+    } catch (e: Exception) {
+        // Fallback for simple "HH:mm" or "H:mm" strings
+        if (timeStr.contains(":")) {
+            val parts = timeStr.split(":")
+            val h = if (parts[0].length == 1) "0${parts[0]}" else parts[0]
+            val m = if (parts[1].length == 1) "0${parts[1]}" else parts[1]
+            "$h:$m".take(5)
+        } else timeStr.takeLast(5)
+    }
+}
 
 @Composable
 fun getLocalizedPeriod(period: String): String {
@@ -124,7 +147,7 @@ fun IntakeCard(intake: TodayIntake, onConfirm: (String) -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${getLocalizedPeriod(intake.period)} · ${intake.time}",
+                        text = "${getLocalizedPeriod(intake.period)} · ${getLocalizedTime(intake.time)}",
                         style = MaterialTheme.typography.titleSmall
                     )
                 }
@@ -170,10 +193,9 @@ fun IntakeCard(intake: TodayIntake, onConfirm: (String) -> Unit) {
                 }
             } else if (isConfirmed && intake.timeTaken != null) {
                 Spacer(modifier = Modifier.height(12.dp))
-                val dt = OffsetDateTime.parse(intake.timeTaken)
-                val timeStr = dt.format(DateTimeFormatter.ofPattern("HH:mm"))
+                val timeDisplay = getLocalizedTime(intake.timeTaken)
                 Text(
-                    text = stringResource(R.string.schedule_taken_at, timeStr),
+                    text = stringResource(R.string.schedule_taken_at, timeDisplay),
                     style = MaterialTheme.typography.labelMedium,
                     color = ColorSuccess
                 )

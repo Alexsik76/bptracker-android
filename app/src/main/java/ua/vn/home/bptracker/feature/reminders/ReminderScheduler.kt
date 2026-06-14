@@ -33,7 +33,9 @@ class ReminderScheduler(private val context: Context) {
         }
 
         template.periods.forEach { (period, config) ->
-            scheduleAlarm(period, config.time)
+            if (config.time != null) {
+                scheduleAlarm(period, config.time)
+            }
         }
     }
 

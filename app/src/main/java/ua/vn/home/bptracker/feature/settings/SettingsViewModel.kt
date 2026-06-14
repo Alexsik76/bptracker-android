@@ -41,9 +41,10 @@ class SettingsViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val t = reminderRepository.getActiveTemplate()
-                _templateState.value = t?.id to t?.isActive
+                // Explicitly set template ID first to ensure switch becomes enabled
+                _templateState.value = (t?.id) to (t?.isActive)
             } catch (e: Exception) {
-                // Keep current state, just log if needed
+                // Keep current state
             }
         }
     }

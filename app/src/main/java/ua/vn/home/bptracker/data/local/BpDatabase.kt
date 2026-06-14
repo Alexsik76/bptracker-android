@@ -9,7 +9,7 @@ import ua.vn.home.bptracker.data.local.dao.MedIntakeDao
 import ua.vn.home.bptracker.data.local.entity.MeasurementEntity
 import ua.vn.home.bptracker.data.local.entity.MedIntakeEntity
 
-@Database(entities = [MeasurementEntity::class, MedIntakeEntity::class], version = 1, exportSchema = false)
+@Database(entities = [MeasurementEntity::class, MedIntakeEntity::class], version = 2, exportSchema = false)
 abstract class BpDatabase : RoomDatabase() {
     abstract fun measurementDao(): MeasurementDao
     abstract fun medIntakeDao(): MedIntakeDao

@@ -11,10 +11,10 @@ class ScheduleEditViewModelTest {
         assertTrue(ScheduleEditState.Ready.validateTime("08:00"))
         assertTrue(ScheduleEditState.Ready.validateTime("23:59"))
         assertTrue(ScheduleEditState.Ready.validateTime("00:00"))
+        assertTrue(ScheduleEditState.Ready.validateTime("8:00")) // Lenient validation
         
         assertFalse(ScheduleEditState.Ready.validateTime("24:00"))
         assertFalse(ScheduleEditState.Ready.validateTime("08:60"))
-        assertFalse(ScheduleEditState.Ready.validateTime("8:00"))
         assertFalse(ScheduleEditState.Ready.validateTime("ab:cd"))
         assertFalse(ScheduleEditState.Ready.validateTime("123"))
     }

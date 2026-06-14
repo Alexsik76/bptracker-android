@@ -1,16 +1,20 @@
 package ua.vn.home.bptracker.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import ua.vn.home.bptracker.data.dto.TodayIntake
 
-@Entity(tableName = "med_intakes")
+private val dbJson = Json {
+    ignoreUnknownKeys = true
+}
+
+@Entity(tableName = "med_intakes", primaryKeys = ["date", "period"])
 data class MedIntakeEntity(
-    @PrimaryKey(autoGenerate = true) val localId: Long = 0,
     val date: String, // YYYY-MM-DD
     val period: String,
     val time: String,
-    val meds: String, // Comma separated
+    val medsJson: String, // JSON array string
     val status: String?,
     val timeTaken: String?
 )
@@ -18,7 +22,11 @@ data class MedIntakeEntity(
 fun MedIntakeEntity.toDto() = TodayIntake(
     period = period,
     time = time,
-    meds = meds.split(",").filter { it.isNotBlank() },
+    meds = try {
+        dbJson.decodeFromString<List<String>>(medsJson)
+    } catch (e: Exception) {
+        emptyList()
+    },
     status = status,
     timeTaken = timeTaken
 )
@@ -27,7 +35,7 @@ fun TodayIntake.toEntity(date: String) = MedIntakeEntity(
     date = date,
     period = period,
     time = time,
-    meds = meds.joinToString(","),
+    medsJson = dbJson.encodeToString(meds),
     status = status,
     timeTaken = timeTaken
 )

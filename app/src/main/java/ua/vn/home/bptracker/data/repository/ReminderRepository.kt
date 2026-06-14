@@ -21,11 +21,17 @@ class RealReminderRepository(
     override suspend fun getToday(timezone: String): TodayMeds {
         return try {
             val remote = api.getToday(timezone)
+            // Clear current date and older to avoid duplicates/stale data
             dao.deleteOld(remote.date)
+            // Explicitly clear today's cache before inserting fresh remote data
+            remote.intakes.forEach { 
+                dao.deleteByDateAndPeriod(remote.date, it.period)
+            }
             dao.insertAll(remote.intakes.map { it.toEntity(remote.date) })
             remote
         } catch (e: Exception) {
-            val date = OffsetDateTime.now().toLocalDate().toString()
+            android.util.Log.e("ReminderRepository", "Failed to fetch today meds", e)
+            val date = java.time.LocalDate.now().toString()
             val local = dao.getByDate(date)
             TodayMeds(date, local.map { it.toDto() })
         }

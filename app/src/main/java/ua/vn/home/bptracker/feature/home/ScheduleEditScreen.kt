@@ -1,7 +1,6 @@
 package ua.vn.home.bptracker.feature.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -67,7 +66,10 @@ fun ScheduleEditScreen(
                         .navigationBarsPadding()
                 ) {
                     Button(
-                        onClick = onSave,
+                        onClick = { 
+                            android.util.Log.d("ScheduleEdit", "Save Button Clicked")
+                            onSave() 
+                        },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         enabled = readyState.isValid && !readyState.saving,
                         colors = ButtonDefaults.buttonColors(
@@ -173,9 +175,10 @@ fun PeriodEditRow(
     onTimeChange: (String) -> Unit
 ) {
     var showTimePicker by remember { mutableStateOf(false) }
+    val timeParts = (config.time ?: "08:00").split(":")
     val timeState = rememberTimePickerState(
-        initialHour = config.time.split(":")[0].toInt(),
-        initialMinute = config.time.split(":")[1].toInt()
+        initialHour = timeParts[0].toInt(),
+        initialMinute = timeParts[1].toInt()
     )
 
     if (showTimePicker) {
@@ -215,7 +218,7 @@ fun PeriodEditRow(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = config.meds.joinToString(", "),
+                    text = (config.meds ?: emptyList()).joinToString(", "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -233,7 +236,7 @@ fun PeriodEditRow(
                     Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = config.time,
+                        text = config.time ?: "08:00",
                         style = MaterialTheme.typography.titleMedium,
                         fontFamily = MaterialTheme.typography.headlineMedium.fontFamily
                     )
