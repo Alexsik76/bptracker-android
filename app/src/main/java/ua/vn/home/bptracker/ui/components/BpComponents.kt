@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
+import ua.vn.home.bptracker.ui.theme.*
 
 @Composable
 fun BpBottomNavBar(
@@ -37,20 +38,18 @@ fun BpBottomNavBar(
 ) {
     val isDark = isSystemInDarkTheme()
     
-    // Using a Box to allow the FAB to overlap the bottom bar
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .padding(bottom = 24.dp), // Island effect: floating above bottom
+            .padding(bottom = 24.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // The "Island" Bar
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(72.dp),
-            color = MaterialTheme.colorScheme.secondary, // #11151C in Dark
+            color = MaterialTheme.colorScheme.secondary,
             shape = RoundedCornerShape(24.dp),
             border = BorderStroke(
                 1.dp, 
@@ -62,7 +61,6 @@ fun BpBottomNavBar(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Dashboard Tab
                 NavItem(
                     label = stringResource(R.string.tab_dashboard),
                     icon = Icons.Default.GridView,
@@ -71,10 +69,8 @@ fun BpBottomNavBar(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Placeholder for the overlapping FAB
                 Spacer(modifier = Modifier.width(72.dp))
 
-                // Schedule Tab
                 NavItem(
                     label = stringResource(R.string.tab_schedule),
                     icon = Icons.Default.CalendarMonth,
@@ -85,20 +81,19 @@ fun BpBottomNavBar(
             }
         }
 
-        // Protruding Scan Button (FAB)
         Box(
             modifier = Modifier
-                .offset(y = (-36).dp) // Move up to overlap
+                .offset(y = (-36).dp)
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF22C55E))
+                .background(ZoneOptimalDark) // Green brand color
                 .clickable { onScanClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.CenterFocusStrong, // Icon with the dash in the center
+                imageVector = Icons.Default.CenterFocusStrong,
                 contentDescription = stringResource(R.string.tab_scan),
-                tint = Color.Black,
+                tint = DarkOnPrimary,
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -170,16 +165,19 @@ fun ReadingValue(
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 56.sp
 ) {
+    val isDark = isSystemInDarkTheme()
+    val zoneColor = zone.color(isDark)
+
     Text(
         modifier = modifier,
         text = buildAnnotatedString {
-            withStyle(SpanStyle(color = zone.color, fontFamily = MaterialTheme.typography.displayLarge.fontFamily)) {
+            withStyle(SpanStyle(color = zoneColor, fontFamily = MaterialTheme.typography.displayLarge.fontFamily)) {
                 append(sys.toString())
             }
             withStyle(SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f))) {
                 append("/")
             }
-            withStyle(SpanStyle(color = zone.color, fontFamily = MaterialTheme.typography.displayLarge.fontFamily)) {
+            withStyle(SpanStyle(color = zoneColor, fontFamily = MaterialTheme.typography.displayLarge.fontFamily)) {
                 append(dia.toString())
             }
         },
@@ -194,26 +192,16 @@ fun ReadingValue(
 @Composable
 fun ZoneBadge(zone: BpZone, modifier: Modifier = Modifier) {
     val isDark = isSystemInDarkTheme()
-    val (bgColor, fgColor) = if (isDark) {
-        zone.color.copy(alpha = 0.12f) to zone.color
-    } else {
-        when(zone) {
-            BpZone.OPTIMAL -> Color(0xFFDCFCE7) to Color(0xFF16A34A)
-            BpZone.NORMAL -> Color(0xFFECFCCB) to Color(0xFF65A30D)
-            BpZone.STAGE1 -> Color(0xFFFED7AA) to Color(0xFFC2410C)
-            BpZone.STAGE2 -> Color(0xFFFEE2E2) to Color(0xFFDC2626)
-        }
-    }
-
+    
     Surface(
         modifier = modifier,
-        color = bgColor,
+        color = zone.bgColor(isDark),
         shape = RoundedCornerShape(50) // Pill
     ) {
         Text(
             text = stringResource(zone.labelRes).uppercase(),
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            color = fgColor,
+            color = zone.color(isDark),
             style = MaterialTheme.typography.labelLarge
         )
     }
@@ -273,9 +261,9 @@ fun PositionScaleBar(
             .height(8.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(Color(0xFF22C55E)))
-        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(Color(0xFF84CC16)))
-        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(Color(0xFFF97316)))
-        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(Color(0xFFEF4444)))
+        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneOptimalDark))
+        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneNormalDark))
+        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneStage1Dark))
+        Box(Modifier.weight(0.25f).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(ZoneStage2Dark))
     }
 }

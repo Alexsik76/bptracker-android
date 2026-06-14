@@ -39,4 +39,13 @@
     <string name="tab_dashboard">Dashboard</string>
     <string name="tab_schedule">Schedule</string>
     <string name="tab_scan">Scan</string>
+
+    <!-- Schedule -->
+    <string name="schedule_title">Schedule</string>
+    <string name="schedule_empty">No medications scheduled for today</string>
+    <string name="schedule_taken">Taken</string>
+    <string name="schedule_missed">Missed</string>
+    <string name="schedule_pending">Pending</string>
+    <string name="schedule_confirm_btn">Taken</string>
+    <string name="schedule_taken_at">Taken at %1$s</string>
 </resources>

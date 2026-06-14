@@ -41,5 +41,10 @@ val ZoneStage2Light = Color(0xFFDC2626)
 val ZoneStage2BgLight = Color(0xFFFEE2E2)
 
 val ColorSys = Color(0xFF818CF8)
-val ColorDia = Color(0xFF38BDF8)
+val ColorDia = Color(0xFF60A5FA) // Aligned with web/chart-dia
 val ColorPulse = Color(0xFF4ADE80)
+
+// Semantic colors from design plan
+val ColorSuccess = Color(0xFF22C55E)
+val ColorWarning = Color(0xFFF97316)
+val ColorDanger = Color(0xFFEF4444)

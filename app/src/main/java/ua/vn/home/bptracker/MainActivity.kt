@@ -18,6 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ua.vn.home.bptracker.feature.home.HomeScreen
 import ua.vn.home.bptracker.feature.home.HomeViewModel
 import ua.vn.home.bptracker.feature.home.ScheduleScreen
+import ua.vn.home.bptracker.feature.home.ScheduleViewModel
 import ua.vn.home.bptracker.feature.login.AuthState
 import ua.vn.home.bptracker.feature.login.AuthViewModel
 import ua.vn.home.bptracker.feature.login.LoginScreen
@@ -75,7 +76,15 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                         onLogout = onLogout
                     )
                 }
-                1 -> ScheduleScreen()
+                1 -> {
+                    val scheduleVm: ScheduleViewModel = viewModel()
+                    val scheduleState by scheduleVm.state.collectAsState()
+                    ScheduleScreen(
+                        state = scheduleState,
+                        onConfirm = scheduleVm::confirm,
+                        onRefresh = scheduleVm::refresh
+                    )
+                }
             }
         }
     }

@@ -2,6 +2,7 @@ package ua.vn.home.bptracker.feature.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.ui.components.*
+import ua.vn.home.bptracker.ui.theme.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -89,7 +91,6 @@ fun DashboardContent(content: HomeState.Content) {
             RecentReadingsSection(content.recent)
         }
         
-        // Extra space so the FAB doesn't cover the last list items
         item {
             Spacer(Modifier.height(80.dp))
         }
@@ -163,6 +164,7 @@ fun MeasurementRow(m: MeasurementDto) {
     val zone = BpZone.classify(m.sys, m.dia)
     val dt = OffsetDateTime.parse(m.recordedAt)
     val now = OffsetDateTime.now()
+    val isDark = isSystemInDarkTheme()
     
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     val isToday = dt.toLocalDate().isEqual(now.toLocalDate())
@@ -182,7 +184,7 @@ fun MeasurementRow(m: MeasurementDto) {
     ) {
         Surface(
             modifier = Modifier.size(10.dp),
-            color = zone.color,
+            color = zone.color(isDark),
             shape = RoundedCornerShape(50)
         ) {}
         
@@ -198,7 +200,7 @@ fun MeasurementRow(m: MeasurementDto) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "♡",
-                color = Color(0xFF4ADE80),
+                color = ColorPulse,
                 style = MaterialTheme.typography.labelMedium
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -221,6 +223,7 @@ fun MeasurementRow(m: MeasurementDto) {
 
 @Composable
 fun KpiGrid(content: HomeState.Content) {
+    val isDark = isSystemInDarkTheme()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             val avgZone = BpZone.classify(content.avgSys, content.avgDia)
@@ -228,13 +231,13 @@ fun KpiGrid(content: HomeState.Content) {
                 label = stringResource(R.string.kpi_avg_7d),
                 value = "${content.avgSys}/${content.avgDia}",
                 sub = stringResource(avgZone.labelRes),
-                valueColor = avgZone.color,
+                valueColor = avgZone.color(isDark),
                 modifier = Modifier.weight(1f)
             )
             
             val changeSign = if (content.sysChange >= 0) "+" else ""
             val changeColor = if (content.sysChange > 0 || content.diaChange > 0) 
-                Color(0xFFEF4444) else Color(0xFF22C55E)
+                ColorDanger else ColorSuccess
             
             KpiTile(
                 label = stringResource(R.string.kpi_week_change),

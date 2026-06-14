@@ -39,4 +39,13 @@
     <string name="tab_dashboard">Дашборд</string>
     <string name="tab_schedule">Розклад</string>
     <string name="tab_scan">Скан</string>
+
+    <!-- Schedule -->
+    <string name="schedule_title">Розклад</string>
+    <string name="schedule_empty">На сьогодні немає запланованих ліків</string>
+    <string name="schedule_taken">Прийнято</string>
+    <string name="schedule_missed">Пропущено</string>
+    <string name="schedule_pending">Очікує</string>
+    <string name="schedule_confirm_btn">Прийняв</string>
+    <string name="schedule_taken_at">Прийнято о %1$s</string>
 </resources>
