@@ -23,4 +23,7 @@ interface MedIntakeDao {
 
     @Query("DELETE FROM med_intakes")
     suspend fun deleteAll()
+
+    @Query("DELETE FROM med_intakes WHERE date = :date AND period = :period")
+    suspend fun deleteByDateAndPeriod(date: String, period: String)
 }

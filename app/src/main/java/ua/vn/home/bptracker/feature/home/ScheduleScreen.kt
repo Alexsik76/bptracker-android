@@ -25,6 +25,16 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
+fun getLocalizedPeriod(period: String): String {
+    return when (period.lowercase()) {
+        "morning" -> stringResource(R.string.period_morning)
+        "day" -> stringResource(R.string.period_day)
+        "evening" -> stringResource(R.string.period_evening)
+        else -> period
+    }
+}
+
+@Composable
 fun ScheduleScreen(
     state: ScheduleState,
     onConfirm: (String) -> Unit,
@@ -114,7 +124,7 @@ fun IntakeCard(intake: TodayIntake, onConfirm: (String) -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "${intake.period} · ${intake.time}",
+                        text = "${getLocalizedPeriod(intake.period)} · ${intake.time}",
                         style = MaterialTheme.typography.titleSmall
                     )
                 }
@@ -124,12 +134,23 @@ fun IntakeCard(intake: TodayIntake, onConfirm: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            intake.meds.forEach { med ->
+            if (intake.meds.isEmpty()) {
                 Text(
-                    text = med,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    text = "• Немає вказаних ліків",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else {
+                intake.meds.forEach { med ->
+                    Row(verticalAlignment = Alignment.Top) {
+                        Text("• ", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = med,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
 
             if (isPending) {

@@ -34,16 +34,16 @@ class SettingsViewModel : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsState())
 
     init {
-        loadTemplate()
+        refresh()
     }
 
-    private fun loadTemplate() {
+    fun refresh() {
         viewModelScope.launch {
             try {
                 val t = reminderRepository.getActiveTemplate()
                 _templateState.value = t?.id to t?.isActive
             } catch (e: Exception) {
-                // Ignore for settings
+                // Keep current state, just log if needed
             }
         }
     }
@@ -64,11 +64,13 @@ class SettingsViewModel : ViewModel() {
         val currentId = state.value.templateId ?: return
         viewModelScope.launch {
             try {
+                // Update state immediately for better UI response
+                _templateState.value = currentId to enabled
+                
                 reminderRepository.updateTemplate(
                     currentId,
                     ua.vn.home.bptracker.data.dto.UpdateTemplateRequest(isActive = enabled)
                 )
-                _templateState.value = currentId to enabled
 
                 val scheduler = ReminderScheduler(ServiceLocator.applicationContext)
                 if (enabled) {
@@ -77,7 +79,8 @@ class SettingsViewModel : ViewModel() {
                     scheduler.cancelAllReminders()
                 }
             } catch (e: Exception) {
-                // Optionally handle error
+                // Rollback state on error
+                refresh()
             }
         }
     }

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +31,13 @@ fun SettingsScreen(
     onRemindersToggle: (Boolean) -> Unit,
     onLogout: () -> Unit,
     onHelpClick: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onRefresh: () -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        onRefresh()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -136,14 +142,6 @@ fun SettingsScreen(
                         enabled = state.remindersActive != null
                     )
                 }
-            }
-
-            // Help
-            ListGroupCard(title = stringResource(R.string.settings_group_help)) {
-                SettingRow(
-                    label = stringResource(R.string.settings_bp_scale),
-                    onClick = onHelpClick
-                )
             }
 
             // Account

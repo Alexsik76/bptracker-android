@@ -202,7 +202,8 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 onRemindersToggle = settingsVm::setRemindersEnabled,
                 onLogout = onLogout,
                 onHelpClick = { activeOverlay = "bp_scale" },
-                onBack = { activeOverlay = null }
+                onBack = { activeOverlay = null },
+                onRefresh = settingsVm::refresh
             )
         }
         "bp_scale" -> {

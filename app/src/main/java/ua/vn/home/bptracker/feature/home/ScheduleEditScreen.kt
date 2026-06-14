@@ -210,7 +210,7 @@ fun PeriodEditRow(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = name, // TODO: Localize period name if possible
+                    text = getLocalizedPeriod(name),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )

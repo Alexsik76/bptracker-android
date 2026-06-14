@@ -61,6 +61,11 @@
     <string name="schedule_edit_max_reminders">Reminder limit</string>
     <string name="schedule_edit_per_period">per period</string>
 
+    <!-- Periods -->
+    <string name="period_morning">Morning</string>
+    <string name="period_day">Day</string>
+    <string name="period_evening">Evening</string>
+
     <!-- Measurement Entry -->
     <string name="entry_title">New Reading</string>
     <string name="entry_sys">Systolic</string>

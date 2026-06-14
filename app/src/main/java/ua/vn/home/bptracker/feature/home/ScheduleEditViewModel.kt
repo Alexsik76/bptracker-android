@@ -59,11 +59,16 @@ class ScheduleEditViewModel : ViewModel() {
                 if (template == null) {
                     _state.value = ScheduleEditState.Empty
                 } else {
+                    // Sort periods by time
+                    val sortedPeriods = template.periods.toList()
+                        .sortedBy { it.second.time }
+                        .toMap()
+
                     _state.value = ScheduleEditState.Ready(
                         id = template.id,
                         durationMinutes = template.durationMinutes.toString(),
                         maxReminders = template.maxReminders.toString(),
-                        periods = template.periods
+                        periods = sortedPeriods
                     )
                 }
             } catch (e: Exception) {
@@ -105,6 +110,14 @@ class ScheduleEditViewModel : ViewModel() {
                         maxReminders = current.maxReminders.toInt()
                     )
                 )
+
+                // Clear local cache for today to reset "Missed" statuses
+                val database = ua.vn.home.bptracker.data.local.BpDatabase.build(ServiceLocator.applicationContext)
+                val today = java.time.LocalDate.now().toString()
+                current.periods.keys.forEach { period ->
+                    database.medIntakeDao().deleteByDateAndPeriod(today, period)
+                }
+
                 _state.value = current.copy(saving = false, saved = true)
                 
                 val scheduler = ReminderScheduler(ServiceLocator.applicationContext)

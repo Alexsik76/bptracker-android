@@ -37,7 +37,8 @@ class ScheduleViewModel : ViewModel() {
                 if (todayMeds.intakes.isEmpty()) {
                     _state.value = ScheduleState.Empty
                 } else {
-                    _state.value = ScheduleState.Content(todayMeds.intakes)
+                    val sortedIntakes = todayMeds.intakes.sortedBy { it.time }
+                    _state.value = ScheduleState.Content(sortedIntakes)
                 }
             } catch (e: Exception) {
                 _state.value = ScheduleState.Error(e.message ?: "Unknown error")

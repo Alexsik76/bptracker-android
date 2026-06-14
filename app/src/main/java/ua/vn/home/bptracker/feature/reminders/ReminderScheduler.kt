@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -65,6 +68,13 @@ class ReminderScheduler(private val context: Context) {
         // If time already passed today, schedule for tomorrow
         if (alarmTime.isBefore(now)) {
             alarmTime = alarmTime.plusDays(1)
+        } else {
+            // If it's a new time for TODAY, we should clear the local 'Missed' status
+            // so that getToday() fetches/shows the updated status from server or becomes null (pending)
+            val database = ua.vn.home.bptracker.data.local.BpDatabase.build(context)
+            CoroutineScope(Dispatchers.IO).launch {
+                database.medIntakeDao().deleteByDateAndPeriod(LocalDate.now().toString(), period)
+            }
         }
 
         val intent = Intent(context, ReminderReceiver::class.java).apply {
