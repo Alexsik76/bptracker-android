@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.TodayIntake
+import ua.vn.home.bptracker.feature.reminders.NotificationHelper
 import java.util.TimeZone
 
 sealed interface ScheduleState {
@@ -48,6 +49,8 @@ class ScheduleViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 repository.confirm(period, timezone)
+                // Dismiss notification if it was showing
+                NotificationHelper(ServiceLocator.applicationContext).cancelNotification(period)
                 refresh() // Refresh after confirmation
             } catch (e: Exception) {
                 // Optionally handle confirmation error, e.g., show a snackbar

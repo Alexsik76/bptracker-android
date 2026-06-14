@@ -46,7 +46,8 @@ object ServiceLocator {
         else OnnxOcrEngine(applicationContext)
     }
 
-    private lateinit var applicationContext: Context
+    lateinit var applicationContext: Context
+        private set
 
     fun init(context: Context) {
         applicationContext = context.applicationContext
