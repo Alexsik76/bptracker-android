@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,8 +25,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +50,7 @@ fun CameraScanScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val density = LocalDensity.current
     
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -65,45 +72,83 @@ fun CameraScanScreen(
     if (hasCameraPermission) {
         val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
         val imageCapture = remember { ImageCapture.Builder().build() }
-        val previewView = remember { PreviewView(context) }
+        val previewView = remember { 
+            PreviewView(context).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+        }
 
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             AndroidView(
                 factory = { previewView },
                 modifier = Modifier.fillMaxSize()
             ) { view ->
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(view.surfaceProvider)
-                    }
+                view.post {
+                    cameraProviderFuture.addListener({
+                        val cameraProvider = cameraProviderFuture.get()
+                        val preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(view.surfaceProvider)
+                        }
 
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA,
-                            preview,
-                            imageCapture
-                        )
-                    } catch (e: Exception) {
-                        Log.e("CameraScan", "Use case binding failed", e)
-                    }
-                }, ContextCompat.getMainExecutor(context))
+                        val viewPort = view.viewPort
+                        if (viewPort != null) {
+                            val useCaseGroup = UseCaseGroup.Builder()
+                                .addUseCase(preview)
+                                .addUseCase(imageCapture)
+                                .setViewPort(viewPort)
+                                .build()
+
+                            try {
+                                cameraProvider.unbindAll()
+                                cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    CameraSelector.DEFAULT_BACK_CAMERA,
+                                    useCaseGroup
+                                )
+                            } catch (e: Exception) {
+                                Log.e("CameraScan", "Use case binding failed", e)
+                            }
+                        }
+                    }, ContextCompat.getMainExecutor(context))
+                }
             }
 
-            // Viewfinder
+            // Viewfinder with Dimmed Background
+            val viewfinderSize = with(density) { Size(280.dp.toPx(), 220.dp.toPx()) }
+            
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                val left = (canvasWidth - viewfinderSize.width) / 2
+                val top = (canvasHeight - viewfinderSize.height) / 2
+                
+                val viewfinderRect = Rect(Offset(left, top), viewfinderSize)
+
+                // 1. Draw dimmed overlay
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    size = size
+                )
+
+                // 2. "Cut out" the viewfinder area
+                drawRect(
+                    color = Color.Transparent,
+                    topLeft = viewfinderRect.topLeft,
+                    size = viewfinderRect.size,
+                    blendMode = BlendMode.Clear
+                )
+            }
+
+            // Viewfinder Border
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(40.dp),
+                    .fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1.5f)
-                        .border(2.dp, Color.White, RoundedCornerShape(24.dp))
+                        .size(280.dp, 220.dp)
+                        .border(2.dp, Color.White, RoundedCornerShape(12.dp))
                 )
             }
 
@@ -119,7 +164,7 @@ fun CameraScanScreen(
                 Surface(
                     color = Color.Black.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.padding(bottom = 80.dp)
+                    modifier = Modifier.padding(bottom = 24.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.camera_hint),
@@ -186,10 +231,21 @@ private fun capturePhoto(
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val rotation = image.imageInfo.rotationDegrees
-                val bitmap = image.toBitmap()
+                val cropRect = image.cropRect
+                val fullBitmap = image.toBitmap()
+                
+                // Crop the bitmap to the viewfinder area (ViewPort)
+                val croppedBitmap = Bitmap.createBitmap(
+                    fullBitmap,
+                    cropRect.left,
+                    cropRect.top,
+                    cropRect.width(),
+                    cropRect.height()
+                )
+                
                 image.close()
 
-                val processed = processBitmap(bitmap, rotation)
+                val processed = processBitmap(croppedBitmap, rotation)
                 onCapture(processed)
             }
 

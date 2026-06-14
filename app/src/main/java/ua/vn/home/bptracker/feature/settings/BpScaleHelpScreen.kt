@@ -80,7 +80,7 @@ fun BpScaleHelpScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            ReadingValue(sys = latestMeasurement.sys, dia = latestMeasurement.dia, zone = zone, fontSize = 33.sp)
+                            ReadingValue(sys = latestMeasurement.sys, dia = latestMeasurement.dia, zone = zone, fontSize = 22.sp)
                             ZoneBadge(zone)
                         }
                         Spacer(modifier = Modifier.height(16.dp))

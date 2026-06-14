@@ -194,7 +194,7 @@ fun ScanReviewScreen(
 
             if (readyState != null) {
                 // Entry Fields
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     ValueField(
                         label = stringResource(R.string.entry_sys),
                         secondary = stringResource(R.string.entry_sys_sub),

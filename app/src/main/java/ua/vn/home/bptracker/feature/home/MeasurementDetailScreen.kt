@@ -101,7 +101,7 @@ fun MeasurementDetailScreen(
                 sys = m.sys,
                 dia = m.dia,
                 zone = zone,
-                fontSize = 66.sp
+                fontSize = 44.sp
             )
 
             ZoneBadge(zone)

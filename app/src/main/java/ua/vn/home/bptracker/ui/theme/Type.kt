@@ -32,26 +32,26 @@ val Typography = Typography(
     displayLarge = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 56.sp,
-        letterSpacing = (-2).sp
+        fontSize = 38.sp,
+        letterSpacing = (-1).sp
     ),
     // Details hero numbers
     displayMedium = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 66.sp
+        fontSize = 44.sp
     ),
     // Form value field
     displaySmall = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 33.sp
+        fontSize = 22.sp
     ),
     // KPI values
     headlineMedium = TextStyle(
         fontFamily = DmMono,
         fontWeight = FontWeight.Medium,
-        fontSize = 25.sp
+        fontSize = 17.sp
     ),
     // App bar title
     titleLarge = TextStyle(
