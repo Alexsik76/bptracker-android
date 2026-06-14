@@ -18,4 +18,8 @@ class MockOcrEngine : OcrEngine {
             meanConf = 0.98f
         )
     }
+
+    override suspend fun recognizeRemote(bitmap: Bitmap): OcrOutcome {
+        return recognize(bitmap)
+    }
 }

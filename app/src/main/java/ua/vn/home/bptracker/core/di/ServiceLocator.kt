@@ -30,6 +30,7 @@ object ServiceLocator {
     val authApi: AuthApi by lazy { retrofit.create() }
     private val measurementApi: MeasurementApi by lazy { retrofit.create() }
     private val reminderApi: ReminderApi by lazy { retrofit.create() }
+    val ocrApi: ua.vn.home.bptracker.data.api.OcrApi by lazy { retrofit.create() }
 
     val measurementRepository: MeasurementRepository by lazy {
         if (MOCK_MODE) MockMeasurementRepository()

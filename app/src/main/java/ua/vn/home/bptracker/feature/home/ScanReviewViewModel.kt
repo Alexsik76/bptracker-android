@@ -107,6 +107,32 @@ class ScanReviewViewModel : ViewModel() {
         }
     }
 
+    fun recognizeRemote() {
+        val current = _state.value as? ScanReviewState.Ready ?: return
+        val image = current.image
+        
+        _state.value = ScanReviewState.Recognizing(image)
+        
+        viewModelScope.launch(Dispatchers.Default) {
+            val outcome = ocrEngine.recognizeRemote(image)
+            _state.value = when (outcome) {
+                is OcrOutcome.Success -> ScanReviewState.Ready(
+                    image = image,
+                    sys = outcome.sys.toString(),
+                    dia = outcome.dia.toString(),
+                    pulse = outcome.pul.toString(),
+                    recognized = true
+                )
+                is OcrOutcome.Failure -> ScanReviewState.Ready(
+                    image = image,
+                    sys = "", dia = "", pulse = "",
+                    recognized = false,
+                    error = "Remote OCR failed: ${outcome.reason}"
+                )
+            }
+        }
+    }
+
     fun reset() {
         _state.value = null
     }

@@ -9,6 +9,11 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import ua.vn.home.bptracker.core.di.ServiceLocator
+import java.io.ByteArrayOutputStream
 import java.nio.FloatBuffer
 
 class OnnxOcrEngine(private val context: Context) : OcrEngine {
@@ -43,10 +48,10 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             val croppedBitmap = cropDisplay(bitmap, bestDisplay.box)
 
             // Stage 2: Detect Digits
-            val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.25f)
+            val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.20f)
             if (digitBoxes.isEmpty()) return@withContext OcrOutcome.Failure("digits-not-found")
 
-            val nmsBoxes = OcrPostprocess.classAgnosticNms(digitBoxes, 0.4f)
+            val nmsBoxes = OcrPostprocess.nms(digitBoxes, 0.5f)
             val rows = OcrPostprocess.kmeansRows(nmsBoxes)
 
             if (rows.size != 3) return@withContext OcrOutcome.Failure("wrong-row-count")
@@ -67,6 +72,28 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             )
         } catch (e: Exception) {
             OcrOutcome.Failure("ocr-error: ${e.message}")
+        }
+    }
+
+    override suspend fun recognizeRemote(bitmap: Bitmap): OcrOutcome = withContext(Dispatchers.IO) {
+        try {
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+            val byteArray = stream.toByteArray()
+            
+            val requestBody = byteArray.toRequestBody("image/jpeg".toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("image", "scan.jpg", requestBody)
+            
+            val response = ServiceLocator.ocrApi.recognize(part)
+            OcrOutcome.Success(
+                sys = response.sys,
+                dia = response.dia,
+                pul = response.pulse,
+                minConf = 1.0f,
+                meanConf = 1.0f
+            )
+        } catch (e: Exception) {
+            OcrOutcome.Failure("remote-ocr-error: ${e.message}")
         }
     }
 

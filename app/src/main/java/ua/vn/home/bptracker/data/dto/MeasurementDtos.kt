@@ -17,3 +17,10 @@ data class CreateMeasurementRequest(
     val dia: Int,
     val pulse: Int
 )
+
+@Serializable
+data class OcrResponse(
+    val sys: Int,
+    val dia: Int,
+    val pulse: Int
+)

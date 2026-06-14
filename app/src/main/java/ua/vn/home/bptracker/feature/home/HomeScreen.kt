@@ -30,6 +30,7 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onLogout: () -> Unit,
     onSettingsClick: () -> Unit,
+    onHistoryClick: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit
 ) {
     Column(
@@ -67,14 +68,18 @@ fun HomeScreen(
                     message = state.message,
                     onRetry = onRefresh
                 )
-                is HomeState.Content -> DashboardContent(state, onMeasurementClick)
+                is HomeState.Content -> DashboardContent(state, onHistoryClick, onMeasurementClick)
             }
         }
     }
 }
 
 @Composable
-fun DashboardContent(content: HomeState.Content, onMeasurementClick: (MeasurementDto) -> Unit) {
+fun DashboardContent(
+    content: HomeState.Content,
+    onHistoryClick: () -> Unit,
+    onMeasurementClick: (MeasurementDto) -> Unit
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -89,7 +94,7 @@ fun DashboardContent(content: HomeState.Content, onMeasurementClick: (Measuremen
         }
         
         item {
-            RecentReadingsSection(content.recent, onMeasurementClick)
+            RecentReadingsSection(content.recent, onHistoryClick, onMeasurementClick)
         }
         
         item {
@@ -99,12 +104,16 @@ fun DashboardContent(content: HomeState.Content, onMeasurementClick: (Measuremen
 }
 
 @Composable
-fun RecentReadingsSection(recent: List<MeasurementDto>, onMeasurementClick: (MeasurementDto) -> Unit) {
+fun RecentReadingsSection(
+    recent: List<MeasurementDto>,
+    onHistoryClick: () -> Unit,
+    onMeasurementClick: (MeasurementDto) -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { /* TODO: Navigate to history */ }
+                .clickable { onHistoryClick() }
                 .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

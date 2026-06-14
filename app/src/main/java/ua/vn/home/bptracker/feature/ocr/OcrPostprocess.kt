@@ -77,13 +77,14 @@ object OcrPostprocess {
         return boxes
     }
 
-    fun classAgnosticNms(boxes: List<OcrBox>, iouThreshold: Float): List<OcrBox> {
+    fun nms(boxes: List<OcrBox>, iouThreshold: Float): List<OcrBox> {
         val sorted = boxes.sortedByDescending { it.conf }.toMutableList()
         val selected = mutableListOf<OcrBox>()
 
         while (sorted.isNotEmpty()) {
             val best = sorted.removeAt(0)
             selected.add(best)
+            // Class-agnostic NMS to avoid overlapping digits of different classes
             sorted.removeAll { it.calculateIoU(best) > iouThreshold }
         }
         return selected
@@ -108,18 +109,20 @@ object OcrPostprocess {
         return interArea / (area1 + area2 - interArea)
     }
 
-    /**
-     * Groups boxes into 3 rows using Lloyd's k-means on center-Y.
-     */
     fun kmeansRows(boxes: List<OcrBox>): List<List<OcrBox>> {
         if (boxes.isEmpty()) return emptyList()
+
+        // If very few boxes, just return them as sorted by Y (effectively one or more rows)
+        if (boxes.size < 3) {
+            return listOf(boxes.sortedBy { it.box.x1 })
+        }
 
         val yMin = boxes.minOf { it.box.cy }
         val yMax = boxes.maxOf { it.box.cy }
         val yRange = yMax - yMin
 
-        // Init centers at 1/6, 3/6, 5/6 of range
-        var centers = floatArrayOf(yMin + yRange * 1/6f, yMin + yRange * 3/6f, yMin + yRange * 5/6f)
+        // Initial centers
+        var centers = floatArrayOf(yMin + yRange * 0.15f, yMin + yRange * 0.5f, yMin + yRange * 0.85f)
         
         repeat(20) {
             val clusters = Array(3) { mutableListOf<OcrBox>() }
@@ -145,15 +148,14 @@ object OcrPostprocess {
             if (converged) return@repeat
         }
 
-        // Final assignment
-        val clusters = Array(3) { mutableListOf<OcrBox>() }
+        val finalClusters = Array(3) { mutableListOf<OcrBox>() }
         for (box in boxes) {
             val cy = box.box.cy
             val nearestIdx = centers.indices.minByOrNull { kotlin.math.abs(centers[it] - cy) } ?: 0
-            clusters[nearestIdx].add(box)
+            finalClusters[nearestIdx].add(box)
         }
 
-        return clusters
+        return finalClusters
             .filter { it.isNotEmpty() }
             .sortedBy { row -> row.map { it.box.cy }.average() } // top to bottom
             .map { row -> row.sortedBy { it.box.x1 } } // left to right

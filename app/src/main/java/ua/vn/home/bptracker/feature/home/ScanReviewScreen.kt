@@ -38,6 +38,7 @@ fun ScanReviewScreen(
     onPulseChange: (String) -> Unit,
     onSave: () -> Unit,
     onRetake: () -> Unit,
+    onRemoteOcr: () -> Unit,
     onBack: () -> Unit
 ) {
     val readyState = state as? ScanReviewState.Ready
@@ -125,7 +126,7 @@ fun ScanReviewScreen(
                         text = stringResource(R.string.local_ocr_server_recognize),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { /* Fallback */ }
+                            .clickable { onRemoteOcr() }
                             .padding(vertical = 8.dp),
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

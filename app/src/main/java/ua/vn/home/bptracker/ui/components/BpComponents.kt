@@ -45,7 +45,7 @@ fun BpBottomNavBar(
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp),
+            .padding(bottom = 20.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
         Surface(

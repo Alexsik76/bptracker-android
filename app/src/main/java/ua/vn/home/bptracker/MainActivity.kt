@@ -133,6 +133,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                     reviewVm.reset()
                     activeOverlay = "camera" 
                 },
+                onRemoteOcr = reviewVm::recognizeRemote,
                 onBack = { 
                     reviewVm.reset()
                     activeOverlay = null
@@ -188,6 +189,18 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 onBack = { activeOverlay = "settings" }
             )
         }
+        "history" -> {
+            val homeVm: HomeViewModel = viewModel()
+            val homeState by homeVm.state.collectAsState()
+            MeasurementHistoryScreen(
+                state = homeState,
+                onMeasurementClick = { m ->
+                    selectedMeasurement = m
+                    activeOverlay = "measurement_detail"
+                },
+                onBack = { activeOverlay = null }
+            )
+        }
         null -> {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -217,6 +230,7 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                                     }
                                     activeOverlay = "settings" 
                                 },
+                                onHistoryClick = { activeOverlay = "history" },
                                 onMeasurementClick = { m ->
                                     selectedMeasurement = m
                                     activeOverlay = "measurement_detail"
