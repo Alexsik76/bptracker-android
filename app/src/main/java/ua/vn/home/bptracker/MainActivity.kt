@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ua.vn.home.bptracker.feature.home.HomeScreen
+import ua.vn.home.bptracker.feature.home.HomeViewModel
 import ua.vn.home.bptracker.feature.login.AuthState
 import ua.vn.home.bptracker.feature.login.AuthViewModel
 import ua.vn.home.bptracker.feature.login.LoginScreen
@@ -34,9 +35,20 @@ class MainActivity : ComponentActivity() {
                             is AuthState.Loading ->
                                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                             is AuthState.LoggedOut ->
-                                LoginScreen(info = s.info, onSignIn = { /* TODO 2b: passkey */ })
-                            is AuthState.LoggedIn ->
-                                HomeScreen(email = s.email, onLogout = vm::logout)
+                                LoginScreen(
+                                    info = s.info,
+                                    signingIn = s.signingIn,
+                                    onSignIn = { activity -> vm.signIn(activity) }
+                                )
+                            is AuthState.LoggedIn -> {
+                                val homeVm: HomeViewModel = viewModel()
+                                val homeState by homeVm.state.collectAsState()
+                                HomeScreen(
+                                    state = homeState,
+                                    onRefresh = homeVm::refresh,
+                                    onLogout = vm::logout
+                                )
+                            }
                         }
                     }
                 }
