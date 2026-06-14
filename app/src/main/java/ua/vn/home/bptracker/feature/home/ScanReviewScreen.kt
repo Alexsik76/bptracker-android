@@ -65,7 +65,7 @@ fun ScanReviewScreen(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.common_back),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -126,7 +126,7 @@ fun ScanReviewScreen(
                         ) {
                             Icon(Icons.Default.Fullscreen, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
                             Spacer(Modifier.width(4.dp))
-                            Text("Збільшити", color = Color.White, fontSize = 12.sp)
+                            Text(stringResource(R.string.local_ocr_zoom), color = Color.White, fontSize = 12.sp)
                         }
                     }
                 }
@@ -136,8 +136,8 @@ fun ScanReviewScreen(
                 // Entry Fields
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     ValueField(
-                        label = "Систолічний",
-                        secondary = "верхній",
+                        label = stringResource(R.string.entry_sys),
+                        secondary = stringResource(R.string.entry_sys_sub),
                         dotColor = ColorSys,
                         value = readyState.sys,
                         unit = stringResource(R.string.dashboard_units_mmHg),
@@ -145,8 +145,8 @@ fun ScanReviewScreen(
                         isValid = readyState.sysValid
                     )
                     ValueField(
-                        label = "Діастолічний",
-                        secondary = "нижній",
+                        label = stringResource(R.string.entry_dia),
+                        secondary = stringResource(R.string.entry_dia_sub),
                         dotColor = ColorDia,
                         value = readyState.dia,
                         unit = stringResource(R.string.dashboard_units_mmHg),
@@ -154,7 +154,7 @@ fun ScanReviewScreen(
                         isValid = readyState.diaValid
                     )
                     ValueField(
-                        label = "Пульс",
+                        label = stringResource(R.string.entry_pulse),
                         secondary = "",
                         dotColor = ColorPulse,
                         value = readyState.pulse,
@@ -180,7 +180,7 @@ fun ScanReviewScreen(
                         ),
                         shape = RoundedCornerShape(14.dp)
                     ) {
-                        Text("Перезняти", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.local_ocr_retake), fontWeight = FontWeight.SemiBold)
                     }
 
                     Button(
@@ -196,13 +196,13 @@ fun ScanReviewScreen(
                         if (readyState.saving) {
                             CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                         } else {
-                            Text("Зберегти", fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
                         }
                     }
                 }
                 
                 Text(
-                    text = "Розпізнати через сервер",
+                    text = stringResource(R.string.local_ocr_server_recognize),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { /* Fallback */ }

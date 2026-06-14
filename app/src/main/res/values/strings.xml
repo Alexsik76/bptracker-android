@@ -35,6 +35,7 @@
     <string name="bp_zone_normal">Normal</string>
     <string name="bp_zone_stage1">Stage 1</string>
     <string name="bp_zone_stage2">Stage 2</string>
+
     <!-- Tabs -->
     <string name="tab_dashboard">Dashboard</string>
     <string name="tab_schedule">Schedule</string>
@@ -51,8 +52,10 @@
 
     <!-- Measurement Entry -->
     <string name="entry_title">New Reading</string>
-    <string name="entry_sys">Systolic (SYS)</string>
-    <string name="entry_dia">Diastolic (DIA)</string>
+    <string name="entry_sys">Systolic</string>
+    <string name="entry_sys_sub">upper</string>
+    <string name="entry_dia">Diastolic</string>
+    <string name="entry_dia_sub">lower</string>
     <string name="entry_pulse">Pulse</string>
     <string name="entry_save">Save Reading</string>
     <string name="entry_range_sys">Range: 40–300</string>
@@ -61,6 +64,9 @@
 
     <!-- Local OCR -->
     <string name="local_ocr_result_title">Recognition Result</string>
+    <string name="local_ocr_zoom">Zoom</string>
+    <string name="local_ocr_retake">Retake</string>
+    <string name="local_ocr_server_recognize">Recognize via server</string>
 
     <!-- Measurement Detail -->
     <string name="measurement_detail_title">Reading</string>

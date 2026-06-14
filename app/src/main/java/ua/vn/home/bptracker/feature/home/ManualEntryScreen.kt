@@ -1,14 +1,12 @@
 package ua.vn.home.bptracker.feature.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddAPhoto
-import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,9 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.ui.theme.*
 import ua.vn.home.bptracker.ui.components.*
@@ -58,7 +54,7 @@ fun ManualEntryScreen(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.common_back),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -78,7 +74,7 @@ fun ManualEntryScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Photo Placeholder (Manual entry doesn't have one, but we keep the structure consistent)
+            // Photo Placeholder
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -98,8 +94,8 @@ fun ManualEntryScreen(
             // Entry Fields
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 ValueField(
-                    label = "Систолічний",
-                    secondary = "верхній",
+                    label = stringResource(R.string.entry_sys),
+                    secondary = stringResource(R.string.entry_sys_sub),
                     dotColor = ColorSys,
                     value = state.sys,
                     unit = stringResource(R.string.dashboard_units_mmHg),
@@ -107,8 +103,8 @@ fun ManualEntryScreen(
                     isValid = state.sysValid
                 )
                 ValueField(
-                    label = "Діастолічний",
-                    secondary = "нижній",
+                    label = stringResource(R.string.entry_dia),
+                    secondary = stringResource(R.string.entry_dia_sub),
                     dotColor = ColorDia,
                     value = state.dia,
                     unit = stringResource(R.string.dashboard_units_mmHg),
@@ -116,7 +112,7 @@ fun ManualEntryScreen(
                     isValid = state.diaValid
                 )
                 ValueField(
-                    label = "Пульс",
+                    label = stringResource(R.string.entry_pulse),
                     secondary = "",
                     dotColor = ColorPulse,
                     value = state.pulse,
@@ -142,7 +138,7 @@ fun ManualEntryScreen(
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Скасувати", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.common_cancel), fontWeight = FontWeight.SemiBold)
                 }
 
                 Button(
@@ -158,7 +154,7 @@ fun ManualEntryScreen(
                     if (state.saving) {
                         CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                     } else {
-                        Text("Зберегти", fontWeight = FontWeight.SemiBold, color = Color.White)
+                        Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                 }
             }
