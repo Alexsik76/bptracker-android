@@ -8,8 +8,7 @@ sealed interface OcrOutcome {
         val dia: Int,
         val pul: Int,
         val minConf: Float,
-        val meanConf: Float,
-        val previewCrop: Bitmap? = null
+        val meanConf: Float
     ) : OcrOutcome
 
     data class Failure(val reason: String) : OcrOutcome

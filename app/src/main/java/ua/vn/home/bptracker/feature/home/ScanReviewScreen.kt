@@ -4,8 +4,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
@@ -139,16 +141,17 @@ fun ScanReviewScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            val image = readyState?.previewImage ?: readyState?.image ?: recognizingState?.image
+            val image = readyState?.image ?: recognizingState?.image
             
             // Photo Area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(200.dp)
                     .clip(RoundedCornerShape(18.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
@@ -158,7 +161,7 @@ fun ScanReviewScreen(
                         bitmap = image.asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Crop
                     )
                 }
 
@@ -191,7 +194,7 @@ fun ScanReviewScreen(
 
             if (readyState != null) {
                 // Entry Fields
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     ValueField(
                         label = stringResource(R.string.entry_sys),
                         secondary = stringResource(R.string.entry_sys_sub),

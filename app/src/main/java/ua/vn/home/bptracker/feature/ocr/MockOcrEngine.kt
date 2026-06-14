@@ -15,8 +15,7 @@ class MockOcrEngine : OcrEngine {
             dia = 80,
             pul = 70,
             minConf = 0.95f,
-            meanConf = 0.98f,
-            previewCrop = bitmap
+            meanConf = 0.98f
         )
     }
 
