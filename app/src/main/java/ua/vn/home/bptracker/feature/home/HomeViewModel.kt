@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import java.time.OffsetDateTime
 
@@ -49,7 +50,7 @@ class HomeViewModel : ViewModel() {
             try {
                 // Fetch 14 days to calculate week-over-week change
                 val allList = repository.getMeasurements(days = 14)
-                    .sortedByDescending { OffsetDateTime.parse(it.recordedAt) }
+                    .sortedByDescending { TimeUtils.parseToLocal(it.recordedAt) }
                 
                 if (allList.isEmpty()) {
                     _state.value = HomeState.Empty
@@ -58,10 +59,10 @@ class HomeViewModel : ViewModel() {
 
                 val now = OffsetDateTime.now()
                 val thisWeek = allList.filter { 
-                    OffsetDateTime.parse(it.recordedAt).isAfter(now.minusDays(7)) 
+                    TimeUtils.parseToLocal(it.recordedAt).isAfter(now.minusDays(7)) 
                 }
                 val lastWeek = allList.filter {
-                    val dt = OffsetDateTime.parse(it.recordedAt)
+                    val dt = TimeUtils.parseToLocal(it.recordedAt)
                     dt.isAfter(now.minusDays(14)) && dt.isBefore(now.minusDays(7))
                 }
 

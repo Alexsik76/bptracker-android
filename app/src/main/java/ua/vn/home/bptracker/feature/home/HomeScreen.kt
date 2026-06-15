@@ -33,7 +33,10 @@ import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.ui.components.*
 import ua.vn.home.bptracker.ui.theme.*
+import ua.vn.home.bptracker.core.utils.TimeUtils
 import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -162,7 +165,7 @@ fun RecentReadingsSection(
                     Column(modifier = Modifier.padding(vertical = 8.dp)) {
                         val now = OffsetDateTime.now()
                         val filtered = recent
-                            .filter { OffsetDateTime.parse(it.recordedAt).isAfter(now.minusHours(24)) }
+                            .filter { TimeUtils.parseToLocal(it.recordedAt).isAfter(now.minusHours(24)) }
                             .take(4)
 
                         if (filtered.isEmpty()) {
@@ -212,7 +215,7 @@ fun RecentReadingsSection(
 @Composable
 fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 0.dp, onClick: (() -> Unit)? = null) {
     val zone = BpZone.classify(m.sys, m.dia)
-    val dt = OffsetDateTime.parse(m.recordedAt)
+    val dt = TimeUtils.parseToLocal(m.recordedAt)
     val now = OffsetDateTime.now()
     val isDark = isSystemInDarkTheme()
     
@@ -317,7 +320,7 @@ fun KpiGrid(content: HomeState.Content) {
 
 @Composable
 fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
-    val dt = OffsetDateTime.parse(latest.recordedAt)
+    val dt = TimeUtils.parseToLocal(latest.recordedAt)
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
     val interaction = remember { MutableInteractionSource() }

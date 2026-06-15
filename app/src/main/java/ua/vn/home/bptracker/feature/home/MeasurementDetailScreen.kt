@@ -17,8 +17,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
+import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.ui.components.*
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -106,7 +108,7 @@ fun MeasurementDetailScreen(
 
             ZoneBadge(zone)
 
-            val dt = OffsetDateTime.parse(m.recordedAt)
+            val dt = TimeUtils.parseToLocal(m.recordedAt)
             val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
             
             Text(
