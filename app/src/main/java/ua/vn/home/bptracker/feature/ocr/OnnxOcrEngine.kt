@@ -48,10 +48,10 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             val croppedBitmap = cropDisplay(bitmap, bestDisplay.box)
 
             // Stage 2: Detect Digits
-            val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.20f)
+            val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.25f)
             if (digitBoxes.isEmpty()) return@withContext OcrOutcome.Failure("digits-not-found")
 
-            val nmsBoxes = OcrPostprocess.nms(digitBoxes, 0.5f)
+            val nmsBoxes = OcrPostprocess.nms(digitBoxes, 0.4f)
             val rows = OcrPostprocess.kmeansRows(nmsBoxes)
 
             if (rows.size != 3) return@withContext OcrOutcome.Failure("wrong-row-count")
