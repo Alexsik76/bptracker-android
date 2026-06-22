@@ -84,8 +84,8 @@ fun ScanReviewScreen(
                 Column(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
-                        .padding(16.dp)
-                        .navigationBarsPadding(),
+                        .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(
@@ -141,7 +141,6 @@ fun ScanReviewScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
-                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
