@@ -49,6 +49,7 @@ fun ScanReviewScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
@@ -84,7 +85,7 @@ fun ScanReviewScreen(
                 Column(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
-                        .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
+                        .navigationBarsPadding()
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
