@@ -9,28 +9,39 @@ object TimeUtils {
     fun parseToLocal(recordedAt: String): OffsetDateTime {
         if (recordedAt.isBlank()) return OffsetDateTime.now()
         
+        // Log for debugging if needed (removed for production)
+        val input = recordedAt.trim()
+        
         return try {
-            // Try ISO format with T (2024-05-20T20:54:57.655+03:00)
-            OffsetDateTime.parse(recordedAt.replace(" ", "T"))
-                .atZoneSameInstant(ZoneId.systemDefault())
+            // 1. Try format: "2024-05-20 20:54:57.655 +0300"
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS Z")
+            ZonedDateTime.parse(input, formatter)
+                .withZoneSameInstant(ZoneId.systemDefault())
                 .toOffsetDateTime()
         } catch (e: Exception) {
             try {
-                // Try parsing with space and offset (2024-05-20 20:54:57.655 +0300)
-                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS Z")
-                ZonedDateTime.parse(recordedAt, formatter)
-                    .withZoneSameInstant(ZoneId.systemDefault())
+                // 2. Try standard ISO: "2024-05-20T20:54:57.655+03:00"
+                OffsetDateTime.parse(input)
+                    .atZoneSameInstant(ZoneId.systemDefault())
                     .toOffsetDateTime()
             } catch (e2: Exception) {
                 try {
-                    // Try another common format if space is present but offset is Z
-                    val cleaned = recordedAt.replace(" ", "T")
-                    OffsetDateTime.parse(cleaned)
-                        .atZoneSameInstant(ZoneId.systemDefault())
+                    // 3. Try format with T but no colon in offset: "2024-05-20T20:54:57.655+0300"
+                    val isoNoColonFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+                    ZonedDateTime.parse(input.replace(" ", "T"), isoNoColonFormatter)
+                        .withZoneSameInstant(ZoneId.systemDefault())
                         .toOffsetDateTime()
                 } catch (e3: Exception) {
-                    // Fallback to now
-                    OffsetDateTime.now()
+                    // Fallback: If it contains a space but isn't matching above, try to sanitize it to ISO
+                    try {
+                        // "2024-05-20 20:54:57" -> ISO
+                        val sanitized = input.replace(" ", "T")
+                        OffsetDateTime.parse(sanitized)
+                            .atZoneSameInstant(ZoneId.systemDefault())
+                            .toOffsetDateTime()
+                    } catch (e4: Exception) {
+                        OffsetDateTime.now()
+                    }
                 }
             }
         }
