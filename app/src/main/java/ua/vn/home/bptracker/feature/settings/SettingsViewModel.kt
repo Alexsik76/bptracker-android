@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.BuildConfig
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -13,7 +14,7 @@ data class SettingsState(
     val theme: AppTheme = AppTheme.AUTO,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val ocrImprovement: Boolean = true,
-    val version: String = "1.0.0",
+    val version: String = BuildConfig.VERSION_NAME,
     val remindersActive: Boolean? = null, // null if no template
     val templateId: String? = null
 )
@@ -30,7 +31,14 @@ class SettingsViewModel : ViewModel() {
         settingsStore.ocrImprovement,
         _templateState
     ) { theme, lang, ocr, template ->
-        SettingsState(theme, lang, ocr, remindersActive = template.second, templateId = template.first)
+        SettingsState(
+            theme = theme,
+            language = lang,
+            ocrImprovement = ocr,
+            version = BuildConfig.VERSION_NAME,
+            remindersActive = template.second,
+            templateId = template.first
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsState())
 
     init {
