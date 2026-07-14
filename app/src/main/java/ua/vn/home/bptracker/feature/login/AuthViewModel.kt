@@ -52,7 +52,7 @@ class AuthViewModel : ViewModel() {
                 tokenStore.load()
                 _state.value = try {
                     AuthState.LoggedIn(userApi.me().email)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     AuthState.LoggedOut(info = null)
                 }
             }

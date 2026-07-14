@@ -41,7 +41,7 @@ class TokenAuthenticator(
                     val pair = authApi.refresh(RefreshRequest(refresh))
                     tokenStore.save(pair.accessToken, pair.refreshToken)
                     response.request.withToken(pair.accessToken)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     tokenStore.clear()   // refresh rejected: the session is dead
                     null                 // OkHttp surfaces the original 401
                 }
