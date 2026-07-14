@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ fun SettingsScreen(
     onOcrImprovementToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
     onLogout: () -> Unit,
+    onAddPasskey: () -> Unit,
     onHelpClick: () -> Unit,
     onBack: () -> Unit,
     onRefresh: () -> Unit
@@ -147,27 +149,9 @@ fun SettingsScreen(
             // Account
             ListGroupCard(title = stringResource(R.string.settings_group_account)) {
                 SettingRow(
-                    label = "Server",
-                    value = "https://api-bptracker...",
-                    showChevron = false
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                SettingRow(
-                    label = stringResource(R.string.settings_export_csv),
-                    onClick = { 
-                        // Plan says: redirect to existing backend /export/csv (email)
-                        // For now we'll simulate opening the browser to the export endpoint
-                        // or using an email intent if we had the file. 
-                        // Given "redirect to backend", we use URL.
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            data = android.net.Uri.parse("https://api-bptracker.home.vn.ua/api/v1/export/csv")
-                        }
-                        try {
-                            val context = ua.vn.home.bptracker.core.di.ServiceLocator.applicationContext
-                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {}
-                    }
+                    label = stringResource(R.string.auth_add_passkey),
+                    icon = Icons.Outlined.Fingerprint,
+                    onClick = onAddPasskey
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingRow(

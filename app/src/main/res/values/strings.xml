@@ -14,7 +14,14 @@
 
     <!-- Auth -->
     <string name="auth_login_passkey">Sign in with passkey</string>
+    <string name="auth_login_email_hint">Email address</string>
+    <string name="auth_login_send_link">Send magic link</string>
+    <string name="auth_login_link_sent">Check your inbox. If you have an account, we\'ve sent a login link.</string>
+    <string name="auth_login_link_error">Failed to send link. Please try again.</string>
+    <string name="auth_login_link_expired">The link is invalid, expired, or already used.</string>
     <string name="auth_logout">Log out</string>
+    <string name="auth_add_passkey">Add passkey to this device</string>
+    <string name="auth_passkey_registered">Passkey registered successfully!</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Dashboard</string>

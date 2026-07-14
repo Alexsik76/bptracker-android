@@ -376,6 +376,7 @@ fun SegmentedControl(
 fun SettingRow(
     label: String,
     value: String? = null,
+    icon: ImageVector? = null,
     onClick: () -> Unit = {},
     showChevron: Boolean = true,
     labelColor: Color = MaterialTheme.colorScheme.onSurface
@@ -385,13 +386,30 @@ fun SettingRow(
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, color = labelColor)
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = labelColor.copy(alpha = 0.7f),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(16.dp))
+        }
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = labelColor,
+            modifier = Modifier.weight(1f)
+        )
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (value != null) {
-                Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             if (showChevron) {
                 Spacer(Modifier.width(8.dp))

@@ -20,6 +20,10 @@ class TokenAuthenticator(
     private val mutex = Mutex()
 
     override fun authenticate(route: Route?, response: Response): Request? {
+        // A refresh already happened for this request and the retry still failed.
+        // Give up: the session is not recoverable by rotating the token again.
+        if (responseCount(response) > 2) return null
+
         val staleHeader = response.request.header("Authorization")
 
         return runBlocking {
@@ -43,6 +47,16 @@ class TokenAuthenticator(
                 }
             }
         }
+    }
+
+    private fun responseCount(response: Response): Int {
+        var count = 1
+        var prior = response.priorResponse
+        while (prior != null) {
+            count++
+            prior = prior.priorResponse
+        }
+        return count
     }
 }
 

@@ -1,18 +1,14 @@
 package ua.vn.home.bptracker.feature.login
 
 import android.app.Activity
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
@@ -22,32 +18,87 @@ import ua.vn.home.bptracker.ui.components.LocalActivity
 fun LoginScreen(
     info: String? = null,
     signingIn: Boolean = false,
-    onSignIn: (Activity) -> Unit
+    linkSent: Boolean = false,
+    onSignIn: (Activity) -> Unit,
+    onRequestMagicLink: (String) -> Unit
 ) {
     val activity = LocalActivity.current
+    var email by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.primary
         )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
         if (signingIn) {
-            CircularProgressIndicator(modifier = Modifier.padding(top = 24.dp))
+            CircularProgressIndicator()
+        } else if (linkSent) {
+            Text(
+                text = stringResource(R.string.auth_login_link_sent),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge
+            )
         } else {
             Button(
                 onClick = { activity?.let { onSignIn(it) } },
                 enabled = activity != null,
-                modifier = Modifier.padding(top = 24.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.auth_login_passkey))
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "— OR —",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.outline
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text(stringResource(R.string.auth_login_email_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { onRequestMagicLink(email) },
+                enabled = email.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Text(stringResource(R.string.auth_login_send_link))
+            }
         }
+
         if (info != null) {
-            Text(text = info, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = info,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }

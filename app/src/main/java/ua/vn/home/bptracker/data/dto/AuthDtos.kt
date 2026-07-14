@@ -19,3 +19,18 @@ data class MeResponse(
     val email: String,
     val createdAt: String,
 )
+
+@Serializable
+data class MagicLinkRequest(val email: String)
+
+@Serializable
+data class MagicLinkConfirmRequest(val token: String)
+
+@Serializable
+data class WebAuthnCredentialDto(
+    val id: String,
+    val label: String? = null,
+    val transports: List<String>? = null,
+    val createdAt: String,
+    val lastUsedAt: String? = null,
+)

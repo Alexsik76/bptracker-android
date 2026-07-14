@@ -15,14 +15,13 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import ua.vn.home.bptracker.core.config.AppLanguage
@@ -82,29 +81,66 @@ class MainActivity : ComponentActivity() {
                 LocalActivity provides this,
                 LocalActivityResultRegistryOwner provides this
             ) {
-                BPTrackerTheme(darkTheme = isDark) {
-                    val vm: AuthViewModel = viewModel()
-                    val state by vm.state.collectAsState()
+                        BPTrackerTheme(darkTheme = isDark) {
+                            val authVm: AuthViewModel = viewModel()
+                            val state by authVm.state.collectAsState()
 
-                    when (val s = state) {
-                        is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
-                            CircularProgressIndicator(Modifier.align(Alignment.Center))
+                            when (val s = state) {
+                                is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
+                                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                                }
+                                is AuthState.LoggedOut -> LoginScreen(
+                                    info = s.info,
+                                    signingIn = s.signingIn,
+                                    linkSent = s.linkSent,
+                                    onSignIn = { activity -> authVm.signIn(activity) },
+                                    onRequestMagicLink = { email -> authVm.requestMagicLink(email) }
+                                )
+                                is AuthState.LoggedIn -> {
+                                    MainAuthenticatedLayout(
+                                        authVm = authVm,
+                                        onLogout = authVm::logout
+                                    )
+                                    
+                                    if (s.showEnrollPrompt) {
+                                        val activity = LocalActivity.current
+                                        AlertDialog(
+                                            onDismissRequest = { authVm.dismissEnrollPrompt() },
+                                            title = { Text(stringResource(R.string.auth_add_passkey)) },
+                                            text = { Text("Since you signed in via email, would you like to add a passkey for easier access next time?") },
+                                            confirmButton = {
+                                                TextButton(onClick = {
+                                                    activity?.let {
+                                                        authVm.registerPasskey(it) { error ->
+                                                            authVm.dismissEnrollPrompt()
+                                                        }
+                                                    }
+                                                }) {
+                                                    Text(stringResource(R.string.common_save))
+                                                }
+                                            },
+                                            dismissButton = {
+                                                TextButton(onClick = { authVm.dismissEnrollPrompt() }) {
+                                                    Text(stringResource(R.string.common_cancel))
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            LaunchedEffect(Unit) {
+                                authVm.handleIntent(intent?.data)
+                                intent?.data = null
+                            }
                         }
-                        is AuthState.LoggedOut -> LoginScreen(
-                            info = s.info,
-                            signingIn = s.signingIn,
-                            onSignIn = { activity -> vm.signIn(activity) }
-                        )
-                        is AuthState.LoggedIn -> MainAuthenticatedLayout(onLogout = vm::logout)
-                    }
-                }
             }
         }
     }
 }
 
 @Composable
-fun MainAuthenticatedLayout(onLogout: () -> Unit) {
+fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var activeOverlay by remember { mutableStateOf<String?>(null) }
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
@@ -190,22 +226,30 @@ fun MainAuthenticatedLayout(onLogout: () -> Unit) {
                 }
             )
         }
-        "settings" -> {
-            val settingsVm: SettingsViewModel = viewModel()
-            val settingsState by settingsVm.state.collectAsState()
-            BackHandler { activeOverlay = null }
-            SettingsScreen(
-                state = settingsState,
-                onThemeSelect = settingsVm::setTheme,
-                onLanguageSelect = settingsVm::setLanguage,
-                onOcrImprovementToggle = settingsVm::setOcrImprovement,
-                onRemindersToggle = settingsVm::setRemindersEnabled,
-                onLogout = onLogout,
-                onHelpClick = { activeOverlay = "bp_scale" },
-                onBack = { activeOverlay = null },
-                onRefresh = settingsVm::refresh
-            )
-        }
+                        "settings" -> {
+                            val settingsVm: SettingsViewModel = viewModel()
+                            val settingsState by settingsVm.state.collectAsState()
+                            BackHandler { activeOverlay = null }
+                            val activity = LocalActivity.current
+                            SettingsScreen(
+                                state = settingsState,
+                                onThemeSelect = settingsVm::setTheme,
+                                onLanguageSelect = settingsVm::setLanguage,
+                                onOcrImprovementToggle = settingsVm::setOcrImprovement,
+                                onRemindersToggle = settingsVm::setRemindersEnabled,
+                                onLogout = onLogout,
+                                onAddPasskey = {
+                                    activity?.let {
+                                        authVm.registerPasskey(it) { error ->
+                                            // Optional: show snackbar if error
+                                        }
+                                    }
+                                },
+                                onHelpClick = { activeOverlay = "bp_scale" },
+                                onBack = { activeOverlay = null },
+                                onRefresh = settingsVm::refresh
+                            )
+                        }
         "bp_scale" -> {
             BackHandler { activeOverlay = "settings" }
             BpScaleHelpScreen(

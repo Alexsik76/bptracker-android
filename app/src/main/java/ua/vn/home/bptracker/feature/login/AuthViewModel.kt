@@ -1,10 +1,10 @@
 package ua.vn.home.bptracker.feature.login
 
 import android.app.Activity
-import androidx.credentials.CredentialManager
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.GetPublicKeyCredentialOption
-import androidx.credentials.PublicKeyCredential
+import android.net.Uri
+import androidx.credentials.*
+import androidx.credentials.exceptions.CreateCredentialCancellationException
+import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.ViewModel
@@ -15,16 +15,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
 import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.data.dto.MagicLinkConfirmRequest
+import ua.vn.home.bptracker.data.dto.MagicLinkRequest
 import ua.vn.home.bptracker.data.dto.RefreshRequest
 
 sealed interface AuthState {
     data object Loading : AuthState
-    data class LoggedOut(val info: String? = null, val signingIn: Boolean = false) : AuthState
-    data class LoggedIn(val email: String) : AuthState
+    data class LoggedOut(
+        val info: String? = null,
+        val signingIn: Boolean = false,
+        val linkSent: Boolean = false
+    ) : AuthState
+    data class LoggedIn(
+        val email: String,
+        val showEnrollPrompt: Boolean = false
+    ) : AuthState
 }
 
 class AuthViewModel : ViewModel() {
@@ -46,8 +53,38 @@ class AuthViewModel : ViewModel() {
                 _state.value = try {
                     AuthState.LoggedIn(userApi.me().email)
                 } catch (e: Exception) {
-                    AuthState.LoggedOut(info = null) // expected when no token: backend 401
+                    AuthState.LoggedOut(info = null)
                 }
+            }
+        }
+    }
+
+    fun handleIntent(uri: Uri?) {
+        val token = uri?.getQueryParameter("token") ?: return
+        confirmMagicLink(token)
+    }
+
+    fun requestMagicLink(email: String) {
+        viewModelScope.launch {
+            try {
+                api.requestMagicLink(MagicLinkRequest(email))
+                _state.value = AuthState.LoggedOut(linkSent = true)
+            } catch (e: Exception) {
+                _state.value = AuthState.LoggedOut(info = "Failed to send link: ${e.message}")
+            }
+        }
+    }
+
+    private fun confirmMagicLink(token: String) {
+        _state.value = AuthState.Loading
+        viewModelScope.launch {
+            try {
+                val result = api.confirmMagicLink(MagicLinkConfirmRequest(token))
+                tokenStore.save(result.accessToken, result.refreshToken)
+                val me = userApi.me()
+                _state.value = AuthState.LoggedIn(me.email, showEnrollPrompt = true)
+            } catch (e: Exception) {
+                _state.value = AuthState.LoggedOut(info = "Link expired or already used.")
             }
         }
     }
@@ -57,7 +94,7 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val begin = api.authenticateOptions()
-                val requestJson = toCredentialManagerRequestJson(begin)
+                val requestJson = begin.toString()
 
                 val credentialManager = CredentialManager.create(activity)
                 val response = credentialManager.getCredential(
@@ -68,22 +105,54 @@ class AuthViewModel : ViewModel() {
                 )
 
                 val publicKeyCredential = response.credential as PublicKeyCredential
-                val assertionJson = publicKeyCredential.authenticationResponseJson
-                val assertionElement = Json.parseToJsonElement(assertionJson)
+                val assertionElement = Json.parseToJsonElement(publicKeyCredential.authenticationResponseJson)
 
                 val result = api.authenticateVerify(assertionElement)
                 tokenStore.save(result.accessToken, result.refreshToken)
                 
-                // Get user info to show email
                 val me = userApi.me()
                 _state.value = AuthState.LoggedIn(me.email)
             } catch (e: GetCredentialCancellationException) {
-                _state.value = AuthState.LoggedOut(info = null) // user dismissed the sheet
+                _state.value = AuthState.LoggedOut(info = null)
             } catch (e: GetCredentialException) {
                 _state.value = AuthState.LoggedOut(info = "Passkey: ${e.type} | ${e.errorMessage}")
             } catch (e: Exception) {
                 _state.value = AuthState.LoggedOut(info = "Sign-in failed: ${e.message}")
             }
+        }
+    }
+
+    fun registerPasskey(activity: Activity, onComplete: (String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val options = sessionApi.registerOptions()
+                val requestJson = options.toString()
+                
+                val credentialManager = CredentialManager.create(activity)
+                val response = credentialManager.createCredential(
+                    context = activity,
+                    request = CreatePublicKeyCredentialRequest(requestJson)
+                )
+                
+                val credential = response as CreatePublicKeyCredentialResponse
+                val registrationElement = Json.parseToJsonElement(credential.registrationResponseJson)
+                
+                sessionApi.registerVerify(registrationElement)
+                onComplete(null) // Success
+            } catch (e: CreateCredentialCancellationException) {
+                onComplete(null) // User canceled, not an error to show
+            } catch (e: CreateCredentialException) {
+                onComplete("Failed to register: ${e.type} ${e.errorMessage}")
+            } catch (e: Exception) {
+                onComplete("Failed to register: ${e.message}")
+            }
+        }
+    }
+
+    fun dismissEnrollPrompt() {
+        val current = _state.value
+        if (current is AuthState.LoggedIn) {
+            _state.value = current.copy(showEnrollPrompt = false)
         }
     }
 
@@ -96,19 +165,5 @@ class AuthViewModel : ViewModel() {
             tokenStore.clear()
             _state.value = AuthState.LoggedOut()
         }
-    }
-
-    /**
-     * Fido2NetLib's assertion options include non-standard "status"/"errorMessage"
-     * fields. Credential Manager expects a clean WebAuthn PublicKeyCredentialRequestOptions,
-     * so strip those keys. (If CM still rejects the request, also try removing "extensions".)
-     */
-    private fun toCredentialManagerRequestJson(begin: JsonElement): String {
-        // TODO(auth): the C# stack (Fido2NetLib) emitted non-standard keys that Credential
-        // Manager rejects. The Python `webauthn` library likely does not. Remove this once
-        // a live authentication against the new backend confirms it.
-        val obj: JsonObject = begin.jsonObject
-        val cleaned = JsonObject(obj.filterKeys { it != "status" && it != "errorMessage" && it != "hints" })
-        return cleaned.toString()
     }
 }
