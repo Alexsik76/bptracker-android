@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.di.ServiceLocator
-import ua.vn.home.bptracker.data.dto.NativeLoginBeginResponse
-import ua.vn.home.bptracker.data.dto.NativeLoginCompleteRequest
+import ua.vn.home.bptracker.data.dto.RefreshRequest
 
 sealed interface AuthState {
     data object Loading : AuthState
@@ -30,6 +30,8 @@ sealed interface AuthState {
 class AuthViewModel : ViewModel() {
 
     private val api = ServiceLocator.authApi
+    private val userApi = ServiceLocator.userApi
+    private val sessionApi = ServiceLocator.sessionApi
     private val tokenStore = ServiceLocator.tokenStore
 
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -42,7 +44,7 @@ class AuthViewModel : ViewModel() {
             } else {
                 tokenStore.load()
                 _state.value = try {
-                    AuthState.LoggedIn(api.me().email)
+                    AuthState.LoggedIn(userApi.me().email)
                 } catch (e: Exception) {
                     AuthState.LoggedOut(info = null) // expected when no token: backend 401
                 }
@@ -54,7 +56,7 @@ class AuthViewModel : ViewModel() {
         _state.value = AuthState.LoggedOut(signingIn = true)
         viewModelScope.launch {
             try {
-                val begin = api.loginBegin()
+                val begin = api.authenticateOptions()
                 val requestJson = toCredentialManagerRequestJson(begin)
 
                 val credentialManager = CredentialManager.create(activity)
@@ -69,11 +71,12 @@ class AuthViewModel : ViewModel() {
                 val assertionJson = publicKeyCredential.authenticationResponseJson
                 val assertionElement = Json.parseToJsonElement(assertionJson)
 
-                val result = api.loginComplete(
-                    NativeLoginCompleteRequest(begin.challengeId, assertionElement)
-                )
-                tokenStore.save(result.token)
-                _state.value = AuthState.LoggedIn(result.email)
+                val result = api.authenticateVerify(assertionElement)
+                tokenStore.save(result.accessToken, result.refreshToken)
+                
+                // Get user info to show email
+                val me = userApi.me()
+                _state.value = AuthState.LoggedIn(me.email)
             } catch (e: GetCredentialCancellationException) {
                 _state.value = AuthState.LoggedOut(info = null) // user dismissed the sheet
             } catch (e: GetCredentialException) {
@@ -86,7 +89,10 @@ class AuthViewModel : ViewModel() {
 
     fun logout() {
         viewModelScope.launch {
-            try { api.logout() } catch (_: Exception) { }
+            val refresh = tokenStore.cachedRefreshToken
+            if (refresh != null) {
+                try { sessionApi.logout(RefreshRequest(refresh)) } catch (_: Exception) { }
+            }
             tokenStore.clear()
             _state.value = AuthState.LoggedOut()
         }
@@ -97,8 +103,11 @@ class AuthViewModel : ViewModel() {
      * fields. Credential Manager expects a clean WebAuthn PublicKeyCredentialRequestOptions,
      * so strip those keys. (If CM still rejects the request, also try removing "extensions".)
      */
-    private fun toCredentialManagerRequestJson(begin: NativeLoginBeginResponse): String {
-        val obj: JsonObject = begin.options.jsonObject
+    private fun toCredentialManagerRequestJson(begin: JsonElement): String {
+        // TODO(auth): the C# stack (Fido2NetLib) emitted non-standard keys that Credential
+        // Manager rejects. The Python `webauthn` library likely does not. Remove this once
+        // a live authentication against the new backend confirms it.
+        val obj: JsonObject = begin.jsonObject
         val cleaned = JsonObject(obj.filterKeys { it != "status" && it != "errorMessage" && it != "hints" })
         return cleaned.toString()
     }

@@ -6,7 +6,7 @@ import ua.vn.home.bptracker.core.auth.TokenStore
 
 class AuthInterceptor(private val tokenStore: TokenStore) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val token = tokenStore.cachedToken
+        val token = tokenStore.cachedAccessToken
         val request = if (token.isNullOrEmpty()) {
             chain.request()
         } else {

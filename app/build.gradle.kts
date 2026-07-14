@@ -21,7 +21,7 @@ android {
         versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "API_BASE_URL", "\"https://api-bptracker.home.vn.ua/api/v1/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://api2-bptracker.home.vn.ua/\"")
     }
 
     buildTypes {

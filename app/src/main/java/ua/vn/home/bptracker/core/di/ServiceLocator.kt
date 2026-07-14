@@ -6,9 +6,8 @@ import ua.vn.home.bptracker.core.auth.TokenStore
 import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.config.SettingsStore
 import ua.vn.home.bptracker.core.network.ApiClient
-import ua.vn.home.bptracker.data.api.AuthApi
-import ua.vn.home.bptracker.data.api.MeasurementApi
-import ua.vn.home.bptracker.data.api.ReminderApi
+import ua.vn.home.bptracker.core.network.TokenAuthenticator
+import ua.vn.home.bptracker.data.api.*
 import ua.vn.home.bptracker.data.local.BpDatabase
 import ua.vn.home.bptracker.data.repository.*
 import ua.vn.home.bptracker.feature.ocr.MockOcrEngine
@@ -23,14 +22,25 @@ object ServiceLocator {
     lateinit var settingsStore: SettingsStore
         private set
 
-    private val retrofit by lazy { ApiClient.retrofit(tokenStore) }
+    private val plainRetrofit by lazy { ApiClient.plainRetrofit() }
+    
+    private val authedRetrofit by lazy {
+        ApiClient.authedRetrofit(tokenStore, tokenAuthenticator)
+    }
+
+    private val tokenAuthenticator by lazy {
+        TokenAuthenticator(tokenStore, authApi)
+    }
 
     private val database by lazy { BpDatabase.build(applicationContext) }
 
-    val authApi: AuthApi by lazy { retrofit.create() }
-    private val measurementApi: MeasurementApi by lazy { retrofit.create() }
-    private val reminderApi: ReminderApi by lazy { retrofit.create() }
-    val ocrApi: ua.vn.home.bptracker.data.api.OcrApi by lazy { retrofit.create() }
+    val authApi: AuthApi by lazy { plainRetrofit.create() }
+    val sessionApi: SessionApi by lazy { authedRetrofit.create() }
+    val userApi: UserApi by lazy { authedRetrofit.create() }
+
+    private val measurementApi: MeasurementApi by lazy { authedRetrofit.create() }
+    private val reminderApi: ReminderApi by lazy { authedRetrofit.create() }
+    val ocrApi: OcrApi by lazy { authedRetrofit.create() }
 
     val measurementRepository: MeasurementRepository by lazy {
         if (MOCK_MODE) MockMeasurementRepository()
