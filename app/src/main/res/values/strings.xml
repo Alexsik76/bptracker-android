@@ -21,7 +21,9 @@
     <string name="auth_login_link_expired">The link is invalid, expired, or already used.</string>
     <string name="auth_logout">Log out</string>
     <string name="auth_add_passkey">Add passkey to this device</string>
+    <string name="auth_add_passkey_prompt">Since you signed in via email, would you like to add a passkey for easier access next time?</string>
     <string name="auth_passkey_registered">Passkey registered successfully!</string>
+    <string name="auth_passkey_failed">Failed to register passkey. Please try again.</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Dashboard</string>

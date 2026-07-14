@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MagicLinkConfirmRequest
@@ -43,6 +44,13 @@ class AuthViewModel : ViewModel() {
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
+    private val _passkeyResult = MutableStateFlow<Int?>(null) // String res ID
+    val passkeyResult: StateFlow<Int?> = _passkeyResult.asStateFlow()
+
+    // Single-use: a magic-link token must never be confirmed twice, even if the
+    // activity is recreated and re-delivers the same intent.
+    private var handledToken: String? = null
+
     init {
         viewModelScope.launch {
             if (MOCK_MODE) {
@@ -60,7 +68,13 @@ class AuthViewModel : ViewModel() {
 
     fun handleIntent(uri: Uri?) {
         val token = uri?.getQueryParameter("token") ?: return
+        if (token == handledToken) return
+        handledToken = token
         confirmMagicLink(token)
+    }
+
+    fun consumePasskeyResult() {
+        _passkeyResult.value = null
     }
 
     fun requestMagicLink(email: String) {
@@ -121,7 +135,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun registerPasskey(activity: Activity, onComplete: (String?) -> Unit) {
+    fun registerPasskey(activity: Activity) {
         viewModelScope.launch {
             try {
                 val options = sessionApi.registerOptions()
@@ -137,13 +151,13 @@ class AuthViewModel : ViewModel() {
                 val registrationElement = Json.parseToJsonElement(credential.registrationResponseJson)
                 
                 sessionApi.registerVerify(registrationElement)
-                onComplete(null) // Success
+                _passkeyResult.value = R.string.auth_passkey_registered
             } catch (_: CreateCredentialCancellationException) {
-                onComplete(null) // User canceled, not an error to show
-            } catch (e: CreateCredentialException) {
-                onComplete("Failed to register: ${e.type} ${e.errorMessage}")
-            } catch (e: Exception) {
-                onComplete("Failed to register: ${e.message}")
+                // User canceled, no feedback needed
+            } catch (_: CreateCredentialException) {
+                _passkeyResult.value = R.string.auth_passkey_failed
+            } catch (_: Exception) {
+                _passkeyResult.value = R.string.auth_passkey_failed
             }
         }
     }

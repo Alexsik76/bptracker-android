@@ -14,7 +14,16 @@
 
     <!-- Auth -->
     <string name="auth_login_passkey">Увійти через Passkey</string>
+    <string name="auth_login_email_hint">Електронна пошта</string>
+    <string name="auth_login_send_link">Надіслати лінк</string>
+    <string name="auth_login_link_sent">Перевірте свою пошту. Якщо ви маєте акаунт, ми надіслали посилання для входу.</string>
+    <string name="auth_login_link_error">Не вдалося надіслати посилання. Будь ласка, спробуйте ще раз.</string>
+    <string name="auth_login_link_expired">Посилання недійсне, прострочене або вже використане.</string>
     <string name="auth_logout">Вийти</string>
+    <string name="auth_add_passkey">Додати Passkey на цей пристрій</string>
+    <string name="auth_add_passkey_prompt">Оскільки ви увійшли через email, бажаєте додати Passkey для легшого входу наступного разу?</string>
+    <string name="auth_passkey_registered">Passkey успішно зареєстровано!</string>
+    <string name="auth_passkey_failed">Не вдалося зареєструвати Passkey. Будь ласка, спробуйте ще раз.</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Дашборд</string>

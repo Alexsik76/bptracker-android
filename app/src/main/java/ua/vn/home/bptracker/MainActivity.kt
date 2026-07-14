@@ -1,6 +1,7 @@
 package ua.vn.home.bptracker
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -45,9 +46,12 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { _ -> }
 
+    private var latestIntent by mutableStateOf<Intent?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        latestIntent = intent
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -81,10 +85,16 @@ class MainActivity : ComponentActivity() {
                 LocalActivity provides this,
                 LocalActivityResultRegistryOwner provides this
             ) {
-                        BPTrackerTheme(darkTheme = isDark) {
-                            val authVm: AuthViewModel = viewModel()
-                            val state by authVm.state.collectAsState()
+                BPTrackerTheme(darkTheme = isDark) {
+                    val authVm: AuthViewModel = viewModel()
+                    val state by authVm.state.collectAsState()
+                    val passkeyResult by authVm.passkeyResult.collectAsState()
+                    val snackbarHostState = remember { SnackbarHostState() }
 
+                    Scaffold(
+                        snackbarHost = { SnackbarHost(snackbarHostState) }
+                    ) { innerPadding ->
+                        Box(Modifier.padding(innerPadding)) {
                             when (val s = state) {
                                 is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
                                     CircularProgressIndicator(Modifier.align(Alignment.Center))
@@ -107,13 +117,12 @@ class MainActivity : ComponentActivity() {
                                         AlertDialog(
                                             onDismissRequest = { authVm.dismissEnrollPrompt() },
                                             title = { Text(stringResource(R.string.auth_add_passkey)) },
-                                            text = { Text("Since you signed in via email, would you like to add a passkey for easier access next time?") },
+                                            text = { Text(stringResource(R.string.auth_add_passkey_prompt)) },
                                             confirmButton = {
                                                 TextButton(onClick = {
                                                     activity?.let {
-                                                        authVm.registerPasskey(it) { error ->
-                                                            authVm.dismissEnrollPrompt()
-                                                        }
+                                                        authVm.registerPasskey(it)
+                                                        authVm.dismissEnrollPrompt()
                                                     }
                                                 }) {
                                                     Text(stringResource(R.string.common_save))
@@ -128,14 +137,30 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
-
-                            LaunchedEffect(Unit) {
-                                authVm.handleIntent(intent?.data)
-                                intent?.data = null
-                            }
                         }
+                    }
+
+                    LaunchedEffect(latestIntent) {
+                        authVm.handleIntent(latestIntent?.data)
+                    }
+
+                    val res = passkeyResult
+                    if (res != null) {
+                        val message = stringResource(res)
+                        LaunchedEffect(res) {
+                            snackbarHostState.showSnackbar(message)
+                            authVm.consumePasskeyResult()
+                        }
+                    }
+                }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        latestIntent = intent
     }
 }
 
@@ -226,30 +251,26 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 }
             )
         }
-                        "settings" -> {
-                            val settingsVm: SettingsViewModel = viewModel()
-                            val settingsState by settingsVm.state.collectAsState()
-                            BackHandler { activeOverlay = null }
-                            val activity = LocalActivity.current
-                            SettingsScreen(
-                                state = settingsState,
-                                onThemeSelect = settingsVm::setTheme,
-                                onLanguageSelect = settingsVm::setLanguage,
-                                onOcrImprovementToggle = settingsVm::setOcrImprovement,
-                                onRemindersToggle = settingsVm::setRemindersEnabled,
-                                onLogout = onLogout,
-                                onAddPasskey = {
-                                    activity?.let {
-                                        authVm.registerPasskey(it) { error ->
-                                            // Optional: show snackbar if error
-                                        }
-                                    }
-                                },
-                                onHelpClick = { activeOverlay = "bp_scale" },
-                                onBack = { activeOverlay = null },
-                                onRefresh = settingsVm::refresh
-                            )
-                        }
+        "settings" -> {
+            val settingsVm: SettingsViewModel = viewModel()
+            val settingsState by settingsVm.state.collectAsState()
+            BackHandler { activeOverlay = null }
+            val activity = LocalActivity.current
+            SettingsScreen(
+                state = settingsState,
+                onThemeSelect = settingsVm::setTheme,
+                onLanguageSelect = settingsVm::setLanguage,
+                onOcrImprovementToggle = settingsVm::setOcrImprovement,
+                onRemindersToggle = settingsVm::setRemindersEnabled,
+                onLogout = onLogout,
+                onAddPasskey = {
+                    activity?.let { authVm.registerPasskey(it) }
+                },
+                onHelpClick = { activeOverlay = "bp_scale" },
+                onBack = { activeOverlay = null },
+                onRefresh = settingsVm::refresh
+            )
+        }
         "bp_scale" -> {
             BackHandler { activeOverlay = "settings" }
             BpScaleHelpScreen(
