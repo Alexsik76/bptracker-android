@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MagicLinkConfirmRequest
@@ -83,7 +82,7 @@ class AuthViewModel : ViewModel() {
                 tokenStore.save(result.accessToken, result.refreshToken)
                 val me = userApi.me()
                 _state.value = AuthState.LoggedIn(me.email, showEnrollPrompt = true)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _state.value = AuthState.LoggedOut(info = "Link expired or already used.")
             }
         }
@@ -112,7 +111,7 @@ class AuthViewModel : ViewModel() {
                 
                 val me = userApi.me()
                 _state.value = AuthState.LoggedIn(me.email)
-            } catch (e: GetCredentialCancellationException) {
+            } catch (_: GetCredentialCancellationException) {
                 _state.value = AuthState.LoggedOut(info = null)
             } catch (e: GetCredentialException) {
                 _state.value = AuthState.LoggedOut(info = "Passkey: ${e.type} | ${e.errorMessage}")
@@ -139,7 +138,7 @@ class AuthViewModel : ViewModel() {
                 
                 sessionApi.registerVerify(registrationElement)
                 onComplete(null) // Success
-            } catch (e: CreateCredentialCancellationException) {
+            } catch (_: CreateCredentialCancellationException) {
                 onComplete(null) // User canceled, not an error to show
             } catch (e: CreateCredentialException) {
                 onComplete("Failed to register: ${e.type} ${e.errorMessage}")
