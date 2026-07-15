@@ -1,7 +1,6 @@
 package ua.vn.home.bptracker.data.dto
 
 import kotlinx.serialization.Serializable
-import ua.vn.home.bptracker.domain.model.*
 
 @Serializable
 data class PrescriptionReadDto(

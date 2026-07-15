@@ -1,25 +1,20 @@
-# Tasks — Prescriptions & Medication Items: Data Layer
+# Tasks — Revise Prescriptions Data Layer
 
-- [x] Create Prescription Enums with @SerialName
-- [x] Create Domain Models
-    - [x] Prescription
-    - [x] MedicationItem
-- [x] Create DTOs
-    - [x] Prescription DTOs (Read, Create, Patch)
-    - [x] Medication Item DTOs (Read, Create, Patch)
-- [x] Create Retrofit API Interfaces
-    - [x] PrescriptionApi
-    - [x] MedicationItemApi
-- [x] Create Room Persistence
-    - [x] PrescriptionEntity & Mapper
-    - [x] MedicationItemEntity & Mapper
-    - [x] PrescriptionDao
-    - [x] MedicationItemDao
-    - [x] Update BpDatabase
-- [x] Create Repository
-    - [x] PrescriptionRepository interface
-    - [x] RealPrescriptionRepository implementation
-- [x] Dependency Injection Wiring
-    - [x] Update ServiceLocator
+- [ ] Remove Domain Models Layer
+    - [x] Delete `Prescription.kt` and `MedicationItem.kt`
+    - [x] Move `PrescriptionEnums.kt` to `data.dto`
+    - [x] Remove `domain/model` directory
+- [x] Update DTOs and Imports
+    - [x] Fix imports in `PrescriptionDtos.kt`
+- [x] Update Room Persistence
+    - [x] Update `PrescriptionEntity.kt` (mapper to DTO)
+    - [x] Update `MedicationItemEntity.kt` (mapper to DTO, unified enum persistence)
+- [x] Refactor Repository
+    - [x] Update `PrescriptionRepository` interface to use DTOs
+    - [x] Implement atomic `refresh()` in `RealPrescriptionRepository` using transactions
+    - [x] Update `MockPrescriptionRepository` with trivial implementations
+- [x] Dependency Injection
+    - [x] Update `ServiceLocator` to pass database to repository
 - [x] Verification
-    - [x] Build project
+    - [x] Build project (`./gradlew app:assembleDebug`)
+    - [x] Commit and push to `dev`

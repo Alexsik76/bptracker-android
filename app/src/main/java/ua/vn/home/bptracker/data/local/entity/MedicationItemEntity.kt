@@ -6,9 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import ua.vn.home.bptracker.data.dto.MedicationItemReadDto
-import ua.vn.home.bptracker.domain.model.*
-import java.time.OffsetDateTime
+import ua.vn.home.bptracker.data.dto.*
 
 private val dbJson = Json {
     ignoreUnknownKeys = true
@@ -33,16 +31,16 @@ data class MedicationItemEntity(
     val condition: String?,
     val whenSlotsJson: String,
     val doseAmount: String,
-    val doseUnit: String?,
+    val doseUnitJson: String?,
     val freqCount: Int,
     val freqPeriod: Int,
-    val freqPeriodUnit: String,
-    val courseType: String,
+    val freqPeriodUnitJson: String,
+    val courseTypeJson: String,
     val courseStart: String?,
     val courseIntakes: Int?
 )
 
-fun MedicationItemEntity.toDomain() = MedicationItem(
+fun MedicationItemEntity.toDto() = MedicationItemReadDto(
     id = id,
     prescriptionId = prescriptionId,
     medicine = medicine,
@@ -53,12 +51,22 @@ fun MedicationItemEntity.toDomain() = MedicationItem(
         emptyList()
     },
     doseAmount = doseAmount,
-    doseUnit = doseUnit?.let { enumValueOf<DoseUnit>(it) },
+    doseUnit = doseUnitJson?.let { 
+        try { dbJson.decodeFromString<DoseUnit>(it) } catch (e: Exception) { null }
+    },
     freqCount = freqCount,
     freqPeriod = freqPeriod,
-    freqPeriodUnit = enumValueOf<FreqPeriodUnit>(freqPeriodUnit),
-    courseType = enumValueOf<CourseType>(courseType),
-    courseStart = courseStart?.let { OffsetDateTime.parse(it) },
+    freqPeriodUnit = try {
+        dbJson.decodeFromString<FreqPeriodUnit>(freqPeriodUnitJson)
+    } catch (e: Exception) {
+        FreqPeriodUnit.Day // Fallback
+    },
+    courseType = try {
+        dbJson.decodeFromString<CourseType>(courseTypeJson)
+    } catch (e: Exception) {
+        CourseType.Ongoing
+    },
+    courseStart = courseStart,
     courseIntakes = courseIntakes
 )
 
@@ -69,11 +77,11 @@ fun MedicationItemReadDto.toEntity() = MedicationItemEntity(
     condition = condition,
     whenSlotsJson = dbJson.encodeToString(whenSlots),
     doseAmount = doseAmount,
-    doseUnit = doseUnit?.name,
+    doseUnitJson = doseUnit?.let { dbJson.encodeToString(it) },
     freqCount = freqCount,
     freqPeriod = freqPeriod,
-    freqPeriodUnit = freqPeriodUnit.name,
-    courseType = courseType.name,
+    freqPeriodUnitJson = dbJson.encodeToString(freqPeriodUnit),
+    courseTypeJson = dbJson.encodeToString(courseType),
     courseStart = courseStart,
     courseIntakes = courseIntakes
 )

@@ -1,4 +1,4 @@
-package ua.vn.home.bptracker.domain.model
+package ua.vn.home.bptracker.data.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

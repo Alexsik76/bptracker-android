@@ -1,73 +1,69 @@
-# Implementation Plan — Prescriptions & Medication Items: Data Layer
+# Implementation Plan — Revise Prescriptions Data Layer
 
-Building the data layer for Prescriptions and Medication Items, including DTOs, domain models, Retrofit APIs, Room entities/DAOs, and offline-first repositories.
+Revise the prescriptions and medication items data layer to follow the "DTO-through" pattern, ensure atomic cache refreshes, and unify enum persistence using wire values.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - I will introduce a `domain.model` package to strictly adhere to the "DTOs do not leak" rule, as existing patterns were slightly ambiguous regarding this.
-> - Mutations are network-first as requested; local Room mirror will be updated only after successful API calls.
+> - All domain models for prescriptions and medication items will be removed. The repository will now return `PrescriptionReadDto` and `MedicationItemReadDto`.
+> - The `refresh()` method in `PrescriptionRepository` will be made atomic by fetching all data from the network before performing any Room deletions or insertions within a transaction.
+> - All enums in `MedicationItemEntity` will be stored using their `@SerialName` values (JSON serialized) to ensure consistency between the local database and backend wire format.
 
 ## Proposed Changes
 
-### [NEW] Domain Models
-Create a new package `ua.vn.home.bptracker.domain.model` to hold domain-specific classes.
+### [DELETE] Domain Models
+Remove the `ua.vn.home.bptracker.domain.model` package.
+- [DELETE] [Prescription.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/domain/model/Prescription.kt)
+- [DELETE] [MedicationItem.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/domain/model/MedicationItem.kt)
 
-#### [NEW] [Prescription.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/domain/model/Prescription.kt)
-#### [NEW] [MedicationItem.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/domain/model/MedicationItem.kt)
-#### [NEW] [PrescriptionEnums.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/domain/model/PrescriptionEnums.kt)
-Contains `WhenSlot`, `DoseUnit`, `FreqPeriodUnit`, and `CourseType` with `@SerialName` annotations.
-
----
-
-### Data Layer — DTOs & API
-
-#### [NEW] [PrescriptionDtos.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/PrescriptionDtos.kt)
-Contains Read, Create, and Partial Update DTOs for both Prescriptions and Medication Items.
-- Includes `prescription_id` in `MedicationItemReadDto`.
-- Does NOT include `created_at` in `MedicationItemReadDto` as per OpenAPI check.
-
-#### [NEW] [PrescriptionApi.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/api/PrescriptionApi.kt)
-Retrofit interface for prescriptions.
-
-#### [NEW] [MedicationItemApi.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/api/MedicationItemApi.kt)
-Retrofit interface for medication items nested under prescriptions.
+### [NEW] [PrescriptionEnums.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/PrescriptionEnums.kt)
+Move enums from `domain.model` to `data.dto`. Package: `ua.vn.home.bptracker.data.dto`.
 
 ---
 
-### Data Layer — Room
+### Room Entities & DAOs
 
-#### [NEW] [PrescriptionEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/PrescriptionEntity.kt)
-#### [NEW] [MedicationItemEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/MedicationItemEntity.kt)
-- `MedicationItemEntity` will have a foreign key to `PrescriptionEntity` with `onDelete = ForeignKey.CASCADE`.
-- `when_slots` will be stored as `medsJson` style (manually serialized list).
+#### [MODIFY] [PrescriptionEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/PrescriptionEntity.kt)
+- Rename `toDomain()` to `toDto()`.
+- Return `PrescriptionReadDto`.
 
-#### [NEW] [PrescriptionDao.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/dao/PrescriptionDao.kt)
-#### [NEW] [MedicationItemDao.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/dao/MedicationItemDao.kt)
-
-#### [MODIFY] [BpDatabase.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/BpDatabase.kt)
-Register new entities and DAOs. Increment version if necessary (though destuctive migration is enabled).
+#### [MODIFY] [MedicationItemEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/MedicationItemEntity.kt)
+- Rename `toDomain()` to `toDto()`.
+- Return `MedicationItemReadDto`.
+- **Enum Persistence Fix**:
+    - Update `toDomain` (now `toDto`) to decode `doseUnit`, `freqPeriodUnit`, and `courseType` using the JSON serializer and `@SerialName` values.
+    - Implement fallback defaults (e.g., `CourseType.Ongoing`).
+    - Update `toEntity()` to serialize all enums using the JSON serializer.
 
 ---
 
-### Data Layer — Repositories & DI
+### Repositories
 
-#### [NEW] [PrescriptionRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/PrescriptionRepository.kt)
-Offline-first implementation:
-- `getPrescriptions()`: Returns `Flow<List<Prescription>>`.
-- `refresh()`: Fetches from network and syncs to Room.
-- Mutations: API first, then Room on success.
-- Deleting a prescription clears items from Room.
+#### [MODIFY] [PrescriptionRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/PrescriptionRepository.kt)
+- Update interface to use DTOs.
+- **RealPrescriptionRepository**:
+    - Inject `BpDatabase` to support transactions.
+    - **Atomic `refresh()`**:
+        1. Fetch all prescriptions.
+        2. Fetch items for all prescriptions into memory.
+        3. Use `db.withTransaction { ... }` to clear and populate Room tables.
+    - Remove misleading comment about cascade uncertainty in `deletePrescription`.
+- **MockPrescriptionRepository**:
+    - Replace `TODO()` with trivial implementations (empty flows or mocked DTO responses).
+
+---
+
+### DI Wiring
 
 #### [MODIFY] [ServiceLocator.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/core/di/ServiceLocator.kt)
-Wiring up the new APIs, DAOs, and repositories.
+- Pass `database` (the `BpDatabase` instance) into `RealPrescriptionRepository`.
 
 ## Verification Plan
 
 ### Automated Tests
-- Build the project using `./gradlew assembleDebug` to ensure compilation and dependency wiring are correct.
+- Run `./gradlew app:assembleDebug` to verify compilation and dependency wiring.
+- Check generated Room code if possible (via build logs/outputs) for correct transaction usage.
 
 ### Manual Verification
-- Verify code structure against `measurements` module for consistency.
-- Inspect generated DAOs and entities for correct Room annotations.
-- Verify DTO mapping logic in repositories.
+- Inspect `MedicationItemEntity` mappers to ensure all enums use the serializer and have guarded decoding.
+- Verify `refresh()` logic for atomicity and error handling (fetches first, then deletes).

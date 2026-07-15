@@ -3,9 +3,6 @@ package ua.vn.home.bptracker.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
-import ua.vn.home.bptracker.domain.model.Prescription
-import java.time.LocalDate
-import java.time.OffsetDateTime
 
 @Entity(tableName = "prescriptions")
 data class PrescriptionEntity(
@@ -16,12 +13,12 @@ data class PrescriptionEntity(
     val createdAt: String
 )
 
-fun PrescriptionEntity.toDomain() = Prescription(
+fun PrescriptionEntity.toDto() = PrescriptionReadDto(
     id = id,
     doctor = doctor,
-    prescribedOn = LocalDate.parse(prescribedOn),
+    prescribedOn = prescribedOn,
     isActive = isActive,
-    createdAt = OffsetDateTime.parse(createdAt)
+    createdAt = createdAt
 )
 
 fun PrescriptionReadDto.toEntity() = PrescriptionEntity(

@@ -60,6 +60,7 @@ object ServiceLocator {
     val prescriptionRepository: PrescriptionRepository by lazy {
         if (MOCK_MODE) MockPrescriptionRepository()
         else RealPrescriptionRepository(
+            database,
             prescriptionApi,
             medicationItemApi,
             database.prescriptionDao(),
