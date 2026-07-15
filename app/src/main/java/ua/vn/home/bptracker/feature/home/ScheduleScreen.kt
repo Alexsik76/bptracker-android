@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
@@ -62,7 +63,8 @@ fun ScheduleScreen(
     state: ScheduleState,
     onConfirm: (String) -> Unit,
     onRefresh: () -> Unit,
-    onEditClick: () -> Unit
+    onEditClick: () -> Unit,
+    onPrescriptionsClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -75,6 +77,9 @@ fun ScheduleScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = onPrescriptionsClick) {
+                        Icon(Icons.Default.Assignment, contentDescription = stringResource(R.string.prescriptions_title))
+                    }
                     IconButton(onClick = onEditClick) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit")
                     }

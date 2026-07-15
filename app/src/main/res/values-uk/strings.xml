@@ -134,4 +134,37 @@
     <string name="bp_scale_stage2_desc">Значно підвищений. Рекомендована медична допомога.</string>
     <string name="bp_scale_your_latest">Ваш останній замір</string>
     <string name="bp_scale_disclaimer">Ця шкала базується на рекомендаціях ESC/ESH і носить виключно інформаційний характер. Вона не замінює професійну медичну пораду або діагноз.</string>
+
+    <!-- Prescriptions -->
+    <string name="prescriptions_title">Рецепти</string>
+    <string name="prescriptions_empty">Ще немає жодного рецепта</string>
+    <string name="prescriptions_empty_hint">Додайте свій перший рецепт від лікаря, щоб почати відстежувати прийом ліків.</string>
+    <string name="prescriptions_add_btn">Додати рецепт</string>
+    <string name="prescriptions_active">Активний</string>
+    <string name="prescriptions_inactive">Неактивний</string>
+    <string name="prescriptions_prescribed_on">Призначено %1$s</string>
+    <string name="prescriptions_doctor_hint">Прізвище лікаря</string>
+    <string name="prescriptions_date_hint">Дата призначення</string>
+    <string name="prescriptions_delete_confirm">Видалити цей рецепт та всі його ліки?</string>
+
+    <!-- Medication Items -->
+    <string name="med_items_title">Ліки</string>
+    <string name="med_items_empty">Ліки ще не додано</string>
+    <string name="med_items_add_btn">Додати ліки</string>
+    <string name="med_items_medicine_hint">Назва ліків</string>
+    <string name="med_items_condition_hint">Умова (напр. після їжі)</string>
+    <string name="med_items_dose">Доза</string>
+    <string name="med_items_dose_amount">Кількість</string>
+    <string name="med_items_dose_unit">Одиниця</string>
+    <string name="med_items_dose_unspecified">не вказано</string>
+    <string name="med_items_when">Коли</string>
+    <string name="med_items_frequency">Частота</string>
+    <string name="med_items_freq_times">раз(ів)</string>
+    <string name="med_items_freq_every">кожні</string>
+    <string name="med_items_course">Курс</string>
+    <string name="med_items_course_ongoing">Постійно</string>
+    <string name="med_items_course_limited">Обмежений курс</string>
+    <string name="med_items_course_start">Дата та час початку</string>
+    <string name="med_items_course_intakes">Всього прийомів</string>
+    <string name="med_items_delete_confirm">Видалити ці ліки?</string>
 </resources>

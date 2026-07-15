@@ -134,4 +134,37 @@
     <string name="bp_scale_stage2_desc">Significantly high. Medical attention recommended.</string>
     <string name="bp_scale_your_latest">Your latest reading</string>
     <string name="bp_scale_disclaimer">This scale is based on ESC/ESH guidelines and is for informational purposes only. It does not replace professional medical advice or diagnosis.</string>
+
+    <!-- Prescriptions -->
+    <string name="prescriptions_title">Prescriptions</string>
+    <string name="prescriptions_empty">No prescriptions yet</string>
+    <string name="prescriptions_empty_hint">Add your first prescription from a doctor to start tracking medications.</string>
+    <string name="prescriptions_add_btn">Add Prescription</string>
+    <string name="prescriptions_active">Active</string>
+    <string name="prescriptions_inactive">Inactive</string>
+    <string name="prescriptions_prescribed_on">Prescribed on %1$s</string>
+    <string name="prescriptions_doctor_hint">Doctor Name</string>
+    <string name="prescriptions_date_hint">Prescription Date</string>
+    <string name="prescriptions_delete_confirm">Delete this prescription and all its items?</string>
+
+    <!-- Medication Items -->
+    <string name="med_items_title">Medications</string>
+    <string name="med_items_empty">No medications added yet</string>
+    <string name="med_items_add_btn">Add Medication</string>
+    <string name="med_items_medicine_hint">Medicine name</string>
+    <string name="med_items_condition_hint">Condition (e.g. after meals)</string>
+    <string name="med_items_dose">Dose</string>
+    <string name="med_items_dose_amount">Amount</string>
+    <string name="med_items_dose_unit">Unit</string>
+    <string name="med_items_dose_unspecified">unspecified</string>
+    <string name="med_items_when">When</string>
+    <string name="med_items_frequency">Frequency</string>
+    <string name="med_items_freq_times">times</string>
+    <string name="med_items_freq_every">every</string>
+    <string name="med_items_course">Course</string>
+    <string name="med_items_course_ongoing">Ongoing</string>
+    <string name="med_items_course_limited">Limited course</string>
+    <string name="med_items_course_start">Start date &amp; time</string>
+    <string name="med_items_course_intakes">Total intakes</string>
+    <string name="med_items_delete_confirm">Delete this medication item?</string>
 </resources>

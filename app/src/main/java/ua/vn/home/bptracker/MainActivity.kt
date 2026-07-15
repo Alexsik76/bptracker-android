@@ -34,6 +34,7 @@ import ua.vn.home.bptracker.feature.home.*
 import ua.vn.home.bptracker.feature.login.AuthState
 import ua.vn.home.bptracker.feature.login.AuthViewModel
 import ua.vn.home.bptracker.feature.login.LoginScreen
+import ua.vn.home.bptracker.feature.prescriptions.*
 import ua.vn.home.bptracker.feature.settings.BpScaleHelpScreen
 import ua.vn.home.bptracker.feature.settings.SettingsScreen
 import ua.vn.home.bptracker.feature.settings.SettingsViewModel
@@ -174,6 +175,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var activeOverlay by remember { mutableStateOf<String?>(null) }
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
+    var selectedPrescriptionId by remember { mutableStateOf<String?>(null) }
+    var selectedItemId by remember { mutableStateOf<String?>(null) }
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     
     when (activeOverlay) {
@@ -321,6 +324,102 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 }
             )
         }
+        "prescriptions" -> {
+            val listVm: PrescriptionsViewModel = viewModel()
+            val listState by listVm.state.collectAsState()
+            
+            BackHandler { activeOverlay = null }
+            
+            LaunchedEffect(Unit) { listVm.refresh() }
+            
+            PrescriptionsScreen(
+                state = listState,
+                onAddClick = {
+                    selectedPrescriptionId = null
+                    activeOverlay = "prescription_form"
+                },
+                onPrescriptionClick = { p ->
+                    selectedPrescriptionId = p.id
+                    activeOverlay = "prescription_detail"
+                },
+                onBack = { activeOverlay = null }
+            )
+        }
+        "prescription_detail" -> {
+            val detailVm: PrescriptionDetailViewModel = viewModel()
+            val detailState by detailVm.state.collectAsState()
+            
+            BackHandler { activeOverlay = "prescriptions" }
+            
+            LaunchedEffect(selectedPrescriptionId) {
+                selectedPrescriptionId?.let { detailVm.setPrescriptionId(it) }
+            }
+            
+            PrescriptionDetailScreen(
+                state = detailState,
+                onEditPrescription = { activeOverlay = "prescription_form" },
+                onDeletePrescription = {
+                    detailVm.deletePrescription()
+                    activeOverlay = "prescriptions"
+                },
+                onAddItem = {
+                    selectedItemId = null
+                    activeOverlay = "med_item_form"
+                },
+                onEditItem = { item ->
+                    selectedItemId = item.id
+                    activeOverlay = "med_item_form"
+                },
+                onDeleteItem = detailVm::deleteItem,
+                onBack = { activeOverlay = "prescriptions" }
+            )
+        }
+        "prescription_form" -> {
+            val formVm: PrescriptionFormViewModel = viewModel()
+            val formState by formVm.state.collectAsState()
+            
+            BackHandler { activeOverlay = if (selectedPrescriptionId == null) "prescriptions" else "prescription_detail" }
+            
+            LaunchedEffect(selectedPrescriptionId) {
+                formVm.init(selectedPrescriptionId)
+            }
+            
+            PrescriptionFormScreen(
+                state = formState,
+                onDoctorChange = formVm::onDoctorChange,
+                onDateChange = formVm::onDateChange,
+                onIsActiveChange = formVm::onIsActiveChange,
+                onSave = formVm::save,
+                onBack = { activeOverlay = if (selectedPrescriptionId == null) "prescriptions" else "prescription_detail" }
+            )
+        }
+        "med_item_form" -> {
+            val itemFormVm: MedicationItemFormViewModel = viewModel()
+            val itemFormState by itemFormVm.state.collectAsState()
+            
+            BackHandler { activeOverlay = "prescription_detail" }
+            
+            LaunchedEffect(selectedPrescriptionId, selectedItemId) {
+                selectedPrescriptionId?.let { itemFormVm.init(it, selectedItemId) }
+            }
+            
+            MedicationItemFormScreen(
+                state = itemFormState,
+                onMedicineChange = itemFormVm::onMedicineChange,
+                onConditionChange = itemFormVm::onConditionChange,
+                onWhenSlotsChange = itemFormVm::onWhenSlotsChange,
+                onDoseAmountChange = itemFormVm::onDoseAmountChange,
+                onDoseUnitChange = itemFormVm::onDoseUnitChange,
+                onFreqCountChange = itemFormVm::onFreqCountChange,
+                onFreqPeriodChange = itemFormVm::onFreqPeriodChange,
+                onFreqPeriodUnitChange = itemFormVm::onFreqPeriodUnitChange,
+                onCourseTypeChange = itemFormVm::onCourseTypeChange,
+                onCourseStartChange = itemFormVm::onCourseStartChange,
+                onCourseIntakesChange = itemFormVm::onCourseIntakesChange,
+                onSave = itemFormVm::save,
+                onBack = { activeOverlay = "prescription_detail" }
+            )
+        }
         null -> {
             BackHandler(enabled = selectedTab != 0) {
                 selectedTab = 0
@@ -367,7 +466,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                                 state = scheduleState,
                                 onConfirm = scheduleVm::confirm,
                                 onRefresh = scheduleVm::refresh,
-                                onEditClick = { activeOverlay = "schedule_edit" }
+                                onEditClick = { activeOverlay = "schedule_edit" },
+                                onPrescriptionsClick = { activeOverlay = "prescriptions" }
                             )
                         }
                     }

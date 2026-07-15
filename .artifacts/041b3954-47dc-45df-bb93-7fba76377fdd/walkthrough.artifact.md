@@ -1,25 +1,25 @@
-# Walkthrough — Revise Prescriptions Data Layer
+# Walkthrough — Prescriptions UI
 
-Revised the prescriptions data layer to align with the project's "DTO-through" pattern, ensured atomic cache refreshes, and unified enum persistence in the database.
+Implemented the user interface for managing prescriptions and medication items, integrated into the existing custom navigation system.
 
 ## Changes
 
-### Domain Layer Removal
-- Deleted the `domain/model` package and its contents (`Prescription.kt`, `MedicationItem.kt`).
-- Moved [PrescriptionEnums.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/PrescriptionEnums.kt) to the `data.dto` package.
+### UI Components (feature/prescriptions)
+- **Prescriptions List**: Shows all prescriptions with doctor names, dates, and active/inactive status badges. Supports manual refresh.
+- **Prescription Detail**: Displays full details of a prescription and a list of associated medication items. Includes actions to edit or delete the prescription.
+- **Prescription Form**: A form for creating or editing prescriptions with a doctor name and a date picker.
+- **Medication Item Form**: A comprehensive form for managing medications. Features include:
+    - Multi-select chips for Morning/Day/Evening slots.
+    - Dose amount and unit selection.
+    - Frequency settings (e.g., 1 time every 1 day).
+    - Progressive disclosure for "Course" settings (start date and number of intakes).
 
-### DTO-through Repository
-- Updated [PrescriptionRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/PrescriptionRepository.kt) to return DTOs directly, consistent with `MeasurementRepository`.
-- Replaced domain mappers with DTO mappers in [PrescriptionEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/PrescriptionEntity.kt) and [MedicationItemEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/MedicationItemEntity.kt).
-- Fixed `MockPrescriptionRepository` to provide trivial implementations instead of `TODO()`.
+### Navigation & Integration
+- Updated `MainAuthenticatedLayout` in [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt) with new string-key overlays: `prescriptions`, `prescription_detail`, `prescription_form`, and `med_item_form`.
+- Added a new entry point in [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt) (IconButton in the TopAppBar) to access the prescriptions list.
 
-### Atomic Cache Refresh
-- Enhanced `RealPrescriptionRepository#refresh()` to fetch all data from the network before modifying the local cache.
-- Used `db.withTransaction` to atomically clear and update Room tables, preventing partial cache states on network failure.
-
-### Unified Enum Persistence
-- Updated [MedicationItemEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/MedicationItemEntity.kt) to persist ALL enums (`WhenSlot`, `DoseUnit`, `FreqPeriodUnit`, `CourseType`) using their `@SerialName` wire values (JSON serialization).
-- Implemented guarded decoding with fallback defaults to ensure stability against unexpected database values.
+### Localization
+- Added string resources for all new UI elements in English ([strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml)) and Ukrainian ([strings.xml (uk)](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml)).
 
 ## Verification Results
 
@@ -27,6 +27,6 @@ Revised the prescriptions data layer to align with the project's "DTO-through" p
 - Executed `./gradlew app:assembleDebug` — **Build Successful**.
 
 ### Manual Verification
-- Verified OpenAPI schema for `MedicationItemRead`: confirmed `prescription_id` is present and `created_at` is absent.
-- Confirmed mappers use JSON serialization for enum persistence in the database.
-- Verified transaction usage in `refresh()`.
+- Verified form validation logic: the "Save" button is disabled until required fields are filled.
+- Verified back button behavior using `BackHandler` in each overlay.
+- Verified Ukrainian translations for all new screens.
