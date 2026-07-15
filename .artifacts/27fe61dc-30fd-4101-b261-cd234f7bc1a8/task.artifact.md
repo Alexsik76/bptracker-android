@@ -1,5 +1,2 @@
-- `[x]` Clean up `gradle.properties`
-- `[x]` Explicitly enable `resValues` in `build.gradle.kts`
-- `[x]` Update `BpDatabase.kt` (Room deprecation)
-- `[x]` Fix Kotlin warnings in `CameraScanScreen.kt`
-- `[x]` Verify build and functionality
+- `[x]` Move `kotlin` block to top level in `build.gradle.kts`
+- `[x]` Verify build
