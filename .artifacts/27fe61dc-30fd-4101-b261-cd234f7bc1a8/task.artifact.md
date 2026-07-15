@@ -1,4 +1,5 @@
-- `[x]` Add imports to `MainActivity.kt`
-- `[x]` Configure outer `Scaffold` to ignore window insets
-- `[x]` Apply `systemBarsPadding` to Loading and Login branches
-- `[x]` Verify build and layout
+- `[x]` Clean up `gradle.properties`
+- `[x]` Explicitly enable `resValues` in `build.gradle.kts`
+- `[x]` Update `BpDatabase.kt` (Room deprecation)
+- `[x]` Fix Kotlin warnings in `CameraScanScreen.kt`
+- `[x]` Verify build and functionality

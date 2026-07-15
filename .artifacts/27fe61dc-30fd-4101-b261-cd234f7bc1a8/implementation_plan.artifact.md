@@ -1,32 +1,50 @@
-# Implementation Plan - Fix doubled top/bottom padding (nested Scaffold insets)
+# Implementation Plan - Fix Gradle and Kotlin Warnings
 
-The goal is to prevent doubled system bar padding in `MainActivity.kt` caused by nested `Scaffold` components. The outer `Scaffold` will be configured to ignore window insets, as the inner `Scaffold` in `MainAuthenticatedLayout` already handles them correctly. Non-authenticated states will be updated to handle their own system bar padding.
+The goal is to resolve the warnings shown in the build output and identified by static analysis. This includes cleaning up `gradle.properties`, updating `build.gradle.kts`, and fixing code-level warnings in `BpDatabase.kt` and `CameraScanScreen.kt`.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> This change focuses solely on `MainActivity.kt` and ensures that the dashboard and other authenticated screens use the full screen height correctly while maintaining proper clearance for system bars.
+> [!NOTE]
+> Most changes are mechanical cleanups of deprecated settings and redundant code. No functional changes are expected.
 
 ## Proposed Changes
 
-### BP Tracker App
+### Build Configuration
 
-#### [MODIFY] [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)
+#### [MODIFY] [gradle.properties](file:///D:/dev/bp_tracker/mobile_app/gradle.properties)
+- Remove deprecated/experimental flags:
+    - `android.defaults.buildfeatures.resvalues`
+    - `android.sdk.defaultTargetSdkToCompileSdkIfUnset`
+    - `android.enableAppCompileTimeRClass`
+    - `android.usesSdkInManifest.disallowed`
+    - `android.r8.optimizedResourceShrinking`
+    - `android.disallowKotlinSourceSets`
+- Add performance improvement flag:
+    - `android.dependency.excludeLibraryComponentsFromConstraints=true`
 
-- Add imports for `androidx.compose.foundation.layout.WindowInsets` and `androidx.compose.foundation.layout.systemBarsPadding`.
-- Update the outer `Scaffold` to use `contentWindowInsets = WindowInsets(0, 0, 0, 0)`.
-- Wrap `AuthState.Loading` content in a `Box` with `Modifier.systemBarsPadding()`.
-- Wrap `LoginScreen` in a `Box` with `Modifier.systemBarsPadding()` and `Modifier.fillMaxSize()`.
+#### [MODIFY] [build.gradle.kts](file:///D:/dev/bp_tracker/mobile_app/app/build.gradle.kts)
+- Explicitly enable `resValues` in `buildFeatures` as it is now disabled by default in AGP 8+.
+
+### Data Layer
+
+#### [MODIFY] [BpDatabase.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/BpDatabase.kt)
+- Update `fallbackToDestructiveMigration()` to use the non-deprecated version with a boolean parameter.
+
+### UI / Camera Feature
+
+#### [MODIFY] [CameraScanScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/camera/CameraScanScreen.kt)
+- Remove the unused and shadowed `ImageProxy.toBitmap()` extension function (CameraX now provides this as a member).
+- Fix various Kotlin lint/style warnings:
+    - Move lambda arguments out of parentheses.
+    - Use property access syntax for `surfaceProvider`.
+    - Add missing trailing commas.
+    - Fix explicit `get` call on ByteBuffer.
+    - Add parameter names for boolean literals in function calls.
 
 ## Verification Plan
 
 ### Automated Tests
-- Build the project to ensure no syntax errors or import issues.
-- `gradlew assembleDebug`
+- Run `./gradlew assembleDebug` to ensure all warnings are gone (or significantly reduced) and the project builds successfully.
 
 ### Manual Verification
-- Deploy to a device/emulator.
-- Verify that the Dashboard (LoggedIn state) no longer has large empty bands at the top and bottom.
-- Verify that the bottom navigation bar is fully visible and correctly positioned above the system navigation bar.
-- Verify that the Login screen and Loading indicator still clear the status bar.
-- Verify that the Scan review screen keyboard behavior remains unchanged (as it's not touched).
+- Launch the app and verify the camera scanning functionality still works as expected.

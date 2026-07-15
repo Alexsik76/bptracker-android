@@ -19,7 +19,7 @@ abstract class BpDatabase : RoomDatabase() {
 
         fun build(context: Context): BpDatabase {
             return Room.databaseBuilder(context, BpDatabase::class.java, DB_NAME)
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
         }
     }
