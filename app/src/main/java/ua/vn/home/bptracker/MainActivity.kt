@@ -213,7 +213,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             composable("home") {
                 val homeVm: HomeViewModel = viewModel()
                 val homeState by homeVm.state.collectAsState()
-                LaunchedEffect(Unit) { homeVm.refresh() }
 
                 HomeScreen(
                     state = homeState,
@@ -364,7 +363,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             composable("schedule_edit") {
                 val editVm: ScheduleEditViewModel = viewModel()
                 val editState by editVm.state.collectAsState()
-                val scheduleVm: ScheduleViewModel = viewModel()
 
                 ScheduleEditScreen(
                     state = editState,
@@ -377,7 +375,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onRetry = editVm::load,
                     onBack = {
                         navController.popBackStack()
-                        scheduleVm.refresh()
                     }
                 )
             }
