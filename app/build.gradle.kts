@@ -1,19 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace = "ua.vn.home.bptracker"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "ua.vn.home.bptracker"
         minSdk = 28
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 2
         versionName = "1.0.1-b"
 
