@@ -54,6 +54,7 @@
 
     <!-- Schedule -->
     <string name="schedule_title">Schedule</string>
+    <string name="schedule_coming_soon">Reminders — coming soon</string>
     <string name="schedule_empty">No medications scheduled for today</string>
     <string name="schedule_empty_hint">You will see your medication plan here once it is synced from the server.</string>
     <string name="schedule_taken">Taken</string>

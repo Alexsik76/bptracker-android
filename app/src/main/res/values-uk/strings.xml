@@ -54,6 +54,7 @@
 
     <!-- Schedule -->
     <string name="schedule_title">Розклад</string>
+    <string name="schedule_coming_soon">Нагадування з’являться згодом</string>
     <string name="schedule_empty">На сьогодні немає запланованих ліків</string>
     <string name="schedule_empty_hint">Ви побачите свій план лікування тут після синхронізації з сервером.</string>
     <string name="schedule_taken">Прийнято</string>

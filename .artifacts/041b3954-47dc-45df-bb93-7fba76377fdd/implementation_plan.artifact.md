@@ -1,66 +1,46 @@
-# План впровадження — Prompt 04: Налаштування нагадувань
+# План впровадження — Prompt: Призупинення роботи нагадувань
 
-Цей етап включає створення клієнтського шару даних для конфігурації нагадувань (`reminder_config`) та заміну існуючого екрана редагування розкладу на нову форму налаштувань.
+Цей етап спрямований на тимчасове нейтралізування незавершеної логіки нагадувань, щоб уникнути помилок на екрані та фонових збоїв, залишаючи при цьому функціонал рецептів та конфігурації годин повністю працездатним.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - Використовується DTO-through патерн: дані з мережі напряму потрапляють у ViewModel без проміжного шару доменних моделей.
-> - На даному етапі Room не використовується для кешування конфігурації; дані запитуються та зберігаються лише через мережу.
-> - HTTP 404 при отриманні конфігурації розглядається як нормальний стан ("не налаштовано"), що призводить до використання значень за замовчуванням.
-> - Старі файли `ScheduleEditScreen.kt` та `ScheduleEditViewModel.kt` будуть видалені.
+> - Всі фонові задачі та аларми нагадувань будуть деактивовані.
+> - Вкладка розкладу відображатиме заглушку "Reminders — coming soon" замість спроби завантаження даних.
+> - Перемикач нагадувань у налаштуваннях буде встановлено у положення "Вимкнено" за замовчуванням.
+> - **Точки входу до налаштувань конфігурації та рецептів залишаються доступними.**
 
 ## Proposed Changes
 
-### Data Layer (DTO, API, Repository)
+### Feature: Schedule (Розклад)
 
-#### [NEW] [ReminderConfigDtos.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/ReminderConfigDtos.kt)
-Створення DTO для конфігурації:
-- `morningTime`, `dayTime`, `eveningTime` (String, формат `HH:MM:SS`)
-- `maxReminders` (Int)
-- `durationMinutes` (Int)
-
-#### [NEW] [ReminderConfigApi.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/api/ReminderConfigApi.kt)
-- `GET reminders/config`
-- `PUT reminders/config`
-
-#### [NEW] [ReminderConfigRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/ReminderConfigRepository.kt)
-- Метод `getConfig()`: повертає DTO або `null` при 404.
-- Метод `saveConfig(config)`: виконує PUT запит.
-
-#### [MODIFY] [ServiceLocator.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/core/di/ServiceLocator.kt)
-Реєстрація `ReminderConfigApi` та `ReminderConfigRepository`.
-
----
-
-### UI Layer (Feature: Reminders)
-
-#### [NEW] [ReminderConfigViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigViewModel.kt)
-- Стан форми (плоский `data class`).
-- Завантаження існуючої конфігурації або встановлення дефолтів.
-- Валідація полів.
-- Логіка збереження.
-
-#### [NEW] [ReminderConfigScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigScreen.kt)
-- Використання Material3 `TimePicker` для трьох слотів часу.
-- Поля вводу для цілих чисел (ліміт нагадувань, тривалість вікна підтвердження).
-- Відображення стану завантаження/помилки.
-
-#### [DELETE] [ScheduleEditScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleEditScreen.kt) & [ScheduleEditViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleEditViewModel.kt)
-Видалення застарілих компонентів.
-
----
-
-### Navigation & Localization
-
-#### [MODIFY] [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)
-Заміна маршруту `schedule_edit` на `reminder_config`.
+#### [MODIFY] [ScheduleViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleViewModel.kt)
+- Видалити логіку виклику `repository.getToday()` та `repository.confirm()`.
+- Встановити початковий стан як `ScheduleState.Empty` (або новий стан-заглушку).
 
 #### [MODIFY] [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt)
-Оновлення дії кнопки редагування для переходу на `reminder_config`.
+- Оновити відображення стану `Empty` або додати спеціальну секцію для виведення повідомлення про те, що нагадування з'являться згодом.
+- Зберегти кнопки переходу до рецептів та налаштувань у `TopAppBar`.
 
 #### [MODIFY] [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml) & [strings-uk.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml)
-Додавання нових рядків для форми налаштувань.
+- Додати рядок `schedule_coming_soon`.
+
+---
+
+### Feature: Reminders Runtime (Фонова робота)
+
+#### [MODIFY] [ReminderScheduler.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderScheduler.kt)
+- Зробити метод `rescheduleAll()` порожнім (no-op), щоб він не робив мережевих запитів та не планував аларми.
+
+#### [MODIFY] [ReminderReceiver.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderReceiver.kt)
+- Зробити `onReceive()` порожнім, щоб він ігнорував будь-які події (включаючи `BOOT_COMPLETED` та аларми).
+
+---
+
+### Feature: Settings (Налаштування)
+
+#### [MODIFY] [SettingsViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/settings/SettingsViewModel.kt)
+- Оновити `refresh()`, щоб перемикач нагадувань завжди мав стан `false` (або `null`), і не викликати репозиторій.
 
 ## Verification Plan
 
@@ -68,9 +48,7 @@
 - Складання проекту: `./gradlew app:assembleDebug`.
 
 ### Manual Verification
-- Відкриття форми налаштувань з вкладки розкладу.
-- Перевірка заповнення дефолтними значеннями при відсутності конфігурації (404).
-- Перевірка роботи `TimePicker` для кожного слота.
-- Валідація: кнопка збереження неактивна, якщо числа <= 0.
-- Успішне збереження та повернення назад.
-- Перевірка локалізації обома мовами.
+- Перехід на вкладку розкладу: має відображатися повідомлення-заглушка без помилок.
+- Перевірка, що кнопки "Рецепти" та "Налаштування" на вкладці розкладу працюють.
+- Перевірка, що в налаштуваннях перемикач нагадувань вимкнений.
+- Перевірка відсутності фонових збоїв (через логування, якщо можливо).

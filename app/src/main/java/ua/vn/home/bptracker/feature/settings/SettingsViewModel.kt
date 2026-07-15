@@ -8,22 +8,20 @@ import ua.vn.home.bptracker.BuildConfig
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.core.di.ServiceLocator
-import ua.vn.home.bptracker.feature.reminders.ReminderScheduler
 
 data class SettingsState(
     val theme: AppTheme = AppTheme.AUTO,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val ocrImprovement: Boolean = true,
     val version: String = BuildConfig.VERSION_NAME,
-    val remindersActive: Boolean? = null, // null if no template
+    val remindersActive: Boolean? = null,
     val templateId: String? = null
 )
 
 class SettingsViewModel : ViewModel() {
     private val settingsStore = ServiceLocator.settingsStore
-    private val reminderRepository = ServiceLocator.reminderRepository
 
-    private val _templateState = MutableStateFlow<Pair<String?, Boolean?>>(null to null)
+    private val _templateState = MutableStateFlow<Pair<String?, Boolean?>>(null to false)
 
     val state: StateFlow<SettingsState> = combine(
         settingsStore.theme,
@@ -46,15 +44,8 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun refresh() {
-        viewModelScope.launch {
-            try {
-                val t = reminderRepository.getActiveTemplate()
-                // Explicitly set template ID first to ensure switch becomes enabled
-                _templateState.value = (t?.id) to (t?.isActive)
-            } catch (e: Exception) {
-                // Keep current state
-            }
-        }
+        // No-op for reminders until Part 2
+        _templateState.value = null to false
     }
 
     fun setTheme(theme: AppTheme) {
@@ -70,27 +61,6 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun setRemindersEnabled(enabled: Boolean) {
-        val currentId = state.value.templateId ?: return
-        viewModelScope.launch {
-            try {
-                // Update state immediately for better UI response
-                _templateState.value = currentId to enabled
-                
-                reminderRepository.updateTemplate(
-                    currentId,
-                    ua.vn.home.bptracker.data.dto.UpdateTemplateRequest(isActive = enabled)
-                )
-
-                val scheduler = ReminderScheduler(ServiceLocator.applicationContext)
-                if (enabled) {
-                    scheduler.rescheduleAll()
-                } else {
-                    scheduler.cancelAllReminders()
-                }
-            } catch (e: Exception) {
-                // Rollback state on error
-                refresh()
-            }
-        }
+        // No-op until Part 2
     }
 }

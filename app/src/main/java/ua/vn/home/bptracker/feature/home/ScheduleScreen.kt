@@ -110,6 +110,10 @@ fun ScheduleScreen(
                     onRetry = onRefresh
                 )
                 is ScheduleState.Content -> ScheduleContent(state.intakes, onConfirm)
+                is ScheduleState.ComingSoon -> EmptyState(
+                    title = stringResource(R.string.schedule_coming_soon),
+                    description = ""
+                )
             }
         }
     }

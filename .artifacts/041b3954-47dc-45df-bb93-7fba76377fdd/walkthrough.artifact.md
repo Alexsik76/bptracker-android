@@ -1,34 +1,26 @@
-# Walkthrough — Prompt 04: Налаштування нагадувань
+# Walkthrough — Призупинення роботи нагадувань
 
-Реалізовано клієнтський шар даних та інтерфейс для налаштування нагадувань (`reminder_config`), що замінив застарілий механізм редагування розкладу.
+Тимчасово деактивовано незавершену логіку нагадувань для стабілізації додатка перед переходом до наступного етапу розробки.
 
 ## Зміни
 
-### Шар даних (Data Layer)
-- **DTO**: Створено [ReminderConfigDtos.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/ReminderConfigDtos.kt) для передачі налаштувань (час ранку/дня/вечора, ліміти).
-- **API**: Додано [ReminderConfigApi.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/api/ReminderConfigApi.kt) з методами GET та PUT.
-- **Repository**: Реалізовано [ReminderConfigRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/ReminderConfigRepository.kt), який обробляє HTTP 404 як стан "не налаштовано" (повертає `null`).
-- **DI**: Нові компоненти зареєстровані в `ServiceLocator`.
+### Інтерфейс розкладу
+- **Placeholder**: Оновлено [ScheduleViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleViewModel.kt) та [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt). Тепер вкладка розкладу відображає повідомлення "Нагадування з'являться згодом" (локалізовано обома мовами) замість спроби завантаження даних із застарілих ендпоінтів.
+- **Точки входу**: Кнопки переходу до налаштувань годин (`reminder_config`) та списку рецептів залишилися активними та функціональними.
 
-### Інтерфейс (UI Layer)
-- **Нова форма**: Впроваджено [ReminderConfigScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigScreen.kt) та [ReminderConfigViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigViewModel.kt).
-- **Вибір часу**: Використовуються Material3 `TimePicker` для зручного встановлення годин та хвилин.
-- **Валідація**: Кнопка збереження активується лише при коректно заповнених полях (позитивні числа для лімітів).
-- **Локалізація**: Додано всі необхідні рядки в [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml) та [strings.xml (uk)](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml).
+### Фонова логіка (Runtime)
+- **Деактивація планувальника**: Метод `rescheduleAll` у [ReminderScheduler.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderScheduler.kt) перетворено на no-op (порожній метод).
+- **Безпечний приймач**: [ReminderReceiver.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderReceiver.kt) тепер ігнорує всі вхідні події (аларми, перезавантаження пристрою), що запобігає фоновим збоям через звернення до відсутніх API.
 
-### Очищення та інтеграція
-- Видалено застарілі файли `ScheduleEditScreen.kt` та `ScheduleEditViewModel.kt`.
-- Маршрут `schedule_edit` у `MainActivity.kt` замінено на `reminder_config`.
-- Оновлено кнопку редагування на екрані розкладу для переходу до нових налаштувань.
+### Налаштування
+- **Стан за замовчуванням**: У [SettingsViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/settings/SettingsViewModel.kt) логіку перемикача нагадувань змінено так, щоб він завжди був вимкнений за замовчуванням і не ініціював жодних мережевих або локальних дій.
 
 ## Результати перевірки
 
 ### Автоматичні тести
-- Проект успішно збирається: `./gradlew app:assembleDebug`.
+- Виконано `./gradlew app:assembleDebug` — **Збірка успішна**.
 
 ### Ручна перевірка
-- Форма відкривається з вкладки розкладу.
-- При першому відкритті (404 з сервера) підставляються дефолтні значення (08:00, 14:00, 20:00).
-- `TimePicker` коректно оновлює значення в полях.
-- Збереження виконує PUT запит та повертає користувача на попередній екран.
-- Перевірено українську локалізацію.
+- Вкладка розкладу відкривається без помилок і відображає заглушку.
+- Навігація до рецептів та конфігурації годин працює коректно.
+- Перемикач у налаштуваннях не викликає побічних ефектів.
