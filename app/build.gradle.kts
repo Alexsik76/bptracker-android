@@ -26,11 +26,8 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".dev"
-            manifestPlaceholders["appName"] = "BP Tracker DEV"
         }
         release {
-            manifestPlaceholders["appName"] = "BP Tracker"
             isMinifyEnabled = false
         }
     }
