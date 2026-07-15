@@ -14,8 +14,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,20 +94,23 @@ class MainActivity : ComponentActivity() {
                     val snackbarHostState = remember { SnackbarHostState() }
 
                     Scaffold(
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
                         snackbarHost = { SnackbarHost(snackbarHostState) }
                     ) { innerPadding ->
                         Box(Modifier.padding(innerPadding)) {
                             when (val s = state) {
-                                is AuthState.Loading -> Box(Modifier.fillMaxSize()) {
+                                is AuthState.Loading -> Box(Modifier.fillMaxSize().systemBarsPadding()) {
                                     CircularProgressIndicator(Modifier.align(Alignment.Center))
                                 }
-                                is AuthState.LoggedOut -> LoginScreen(
-                                    info = s.info,
-                                    signingIn = s.signingIn,
-                                    linkSent = s.linkSent,
-                                    onSignIn = { activity -> authVm.signIn(activity) },
-                                    onRequestMagicLink = { email -> authVm.requestMagicLink(email) }
-                                )
+                                is AuthState.LoggedOut -> Box(Modifier.fillMaxSize().systemBarsPadding()) {
+                                    LoginScreen(
+                                        info = s.info,
+                                        signingIn = s.signingIn,
+                                        linkSent = s.linkSent,
+                                        onSignIn = { activity -> authVm.signIn(activity) },
+                                        onRequestMagicLink = { email -> authVm.requestMagicLink(email) }
+                                    )
+                                }
                                 is AuthState.LoggedIn -> {
                                     MainAuthenticatedLayout(
                                         authVm = authVm,

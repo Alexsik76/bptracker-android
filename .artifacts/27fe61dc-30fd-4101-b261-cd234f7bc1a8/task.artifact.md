@@ -1,0 +1,4 @@
+- `[x]` Add imports to `MainActivity.kt`
+- `[x]` Configure outer `Scaffold` to ignore window insets
+- `[x]` Apply `systemBarsPadding` to Loading and Login branches
+- `[x]` Verify build and layout
