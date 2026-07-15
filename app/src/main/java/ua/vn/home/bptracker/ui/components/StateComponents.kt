@@ -24,9 +24,9 @@ fun LoadingState(modifier: Modifier = Modifier) {
 @Composable
 fun EmptyState(
     title: String,
+    modifier: Modifier = Modifier,
     description: String? = null,
-    icon: ImageVector = Icons.Default.Inbox,
-    modifier: Modifier = Modifier
+    icon: ImageVector = Icons.Default.Inbox
 ) {
     Column(
         modifier = modifier

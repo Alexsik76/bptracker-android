@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.core.di
 
+import android.annotation.SuppressLint
 import android.content.Context
 import retrofit2.create
 import ua.vn.home.bptracker.core.auth.TokenStore
@@ -14,11 +15,13 @@ import ua.vn.home.bptracker.feature.ocr.MockOcrEngine
 import ua.vn.home.bptracker.feature.ocr.OcrEngine
 import ua.vn.home.bptracker.feature.ocr.OnnxOcrEngine
 
+@SuppressLint("StaticFieldLeak")
 object ServiceLocator {
 
     lateinit var tokenStore: TokenStore
         private set
 
+    @SuppressLint("StaticFieldLeak")
     lateinit var settingsStore: SettingsStore
         private set
 

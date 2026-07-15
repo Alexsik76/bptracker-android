@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.scale
 import ua.vn.home.bptracker.R
 
 @Composable
@@ -273,13 +274,11 @@ private fun processBitmap(bitmap: Bitmap, rotation: Int): Bitmap {
     
     if (scale >= 1f) return rotated
 
-    val scaled = Bitmap.createScaledBitmap(
-        rotated,
+    return rotated.scale(
         (rotated.width * scale).toInt(),
         (rotated.height * scale).toInt(),
         true
     )
-    return scaled
 }
 
 /**

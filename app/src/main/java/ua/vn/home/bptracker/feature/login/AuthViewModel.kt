@@ -7,6 +7,7 @@ import androidx.credentials.exceptions.CreateCredentialCancellationException
 import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -127,6 +128,8 @@ class AuthViewModel : ViewModel() {
                 _state.value = AuthState.LoggedIn(me.email)
             } catch (_: GetCredentialCancellationException) {
                 _state.value = AuthState.LoggedOut(info = null)
+            } catch (_: NoCredentialException) {
+                _state.value = AuthState.LoggedOut(info = "No passkeys found for this account.")
             } catch (e: GetCredentialException) {
                 _state.value = AuthState.LoggedOut(info = "Passkey: ${e.type} | ${e.errorMessage}")
             } catch (e: Exception) {

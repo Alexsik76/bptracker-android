@@ -92,6 +92,8 @@
     <string name="local_ocr_zoom">Збільшити</string>
     <string name="local_ocr_retake">Перезняти</string>
     <string name="local_ocr_server_recognize">Розпізнати через сервер</string>
+    <string name="scan_review_ocr_failed">Не вдалося розпізнати показники. Будь ласка, введіть їх вручну.</string>
+    <string name="scan_review_save_failed">Не вдалося зберегти замір. Будь ласка, спробуйте ще раз.</string>
 
     <!-- Measurement Detail -->
     <string name="measurement_detail_title">Замір</string>

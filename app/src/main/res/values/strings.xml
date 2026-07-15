@@ -17,7 +17,7 @@
     <string name="auth_login_email_hint">Email address</string>
     <string name="auth_login_send_link">Send magic link</string>
     <string name="auth_login_link_sent">Check your inbox. If you have an account, we\'ve sent a login link.</string>
-    <string name="auth_login_link_error">Failed to send link. Please try again.</string>
+    <string name="auth_login_link_error">Failed to send the link. Please try again.</string>
     <string name="auth_login_link_expired">The link is invalid, expired, or already used.</string>
     <string name="auth_logout">Log out</string>
     <string name="auth_add_passkey">Add passkey to this device</string>
@@ -76,13 +76,13 @@
     <string name="period_evening">Evening</string>
 
     <!-- Measurement Entry -->
-    <string name="entry_title">New Reading</string>
+    <string name="entry_title">New measurement</string>
     <string name="entry_sys">Systolic</string>
     <string name="entry_sys_sub">upper</string>
     <string name="entry_dia">Diastolic</string>
     <string name="entry_dia_sub">lower</string>
     <string name="entry_pulse">Pulse</string>
-    <string name="entry_save">Save Reading</string>
+    <string name="entry_save">Save measurement</string>
     <string name="entry_range_sys">Range: 40–300</string>
     <string name="entry_range_dia">Range: 20–200</string>
     <string name="entry_range_pulse">Range: 30–250</string>
@@ -92,6 +92,8 @@
     <string name="local_ocr_zoom">Zoom</string>
     <string name="local_ocr_retake">Retake</string>
     <string name="local_ocr_server_recognize">Recognize via server</string>
+    <string name="scan_review_ocr_failed">Could not recognize the values. Please enter them manually.</string>
+    <string name="scan_review_save_failed">Failed to save the measurement. Please try again.</string>
 
     <!-- Measurement Detail -->
     <string name="measurement_detail_title">Reading</string>
@@ -118,9 +120,9 @@
     <string name="settings_reminders">Medication reminders</string>
     <string name="settings_reminders_no_template">Please set up a schedule in the web app first.</string>
     <string name="settings_group_help">Help</string>
-    <string name="settings_bp_scale">BP Scale (ESC) →</string>
-    <string name="settings_group_account">Account</string>
+    <string name="settings_bp_scale">ESC BP Scale →</string>
     <string name="settings_export_csv">Export CSV to email</string>
+    <string name="settings_group_account">Account</string>
     <string name="settings_logout">Log out</string>
 
     <!-- BP Scale Help -->

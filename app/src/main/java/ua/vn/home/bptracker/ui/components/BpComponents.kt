@@ -281,9 +281,9 @@ fun ZoneBadge(zone: BpZone, modifier: Modifier = Modifier) {
 fun KpiTile(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
     sub: String? = null,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface,
-    modifier: Modifier = Modifier
+    valueColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     BpCard(modifier = modifier) {
         Column(

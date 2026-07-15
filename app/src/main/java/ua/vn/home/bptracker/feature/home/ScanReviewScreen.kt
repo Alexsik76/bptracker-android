@@ -194,6 +194,22 @@ fun ScanReviewScreen(
             }
 
             if (readyState != null) {
+                // Error Message
+                readyState.error?.let { errorRes ->
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = stringResource(errorRes),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
                 // Entry Fields
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     ValueField(
