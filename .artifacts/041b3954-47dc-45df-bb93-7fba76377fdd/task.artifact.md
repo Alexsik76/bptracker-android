@@ -1,18 +1,18 @@
-# Tasks — Migrate Navigation to Navigation-Compose
+# Tasks — Prompt 04: Reminder Config
 
-- [x] Add Dependency
-    - [x] Update `libs.versions.toml`
-    - [x] Update `app/build.gradle.kts`
-- [x] Refactor `MainAuthenticatedLayout` in `MainActivity.kt`
-    - [x] Initialize `NavController`
-    - [x] Create `NavHost` and define routes
-    - [x] Move state-hoisted payloads (Bitmap, selectedMeasurement) into host scope
-    - [x] Implement BottomBar visibility logic
-    - [x] Wire VM initializers in `LaunchedEffect` for each destination
-- [x] Update Screen Callbacks
-    - [x] `ScheduleScreen.kt` (prescriptions entry point)
-    - [x] Update other screens to use `navController` actions instead of `activeOverlay` setters
-- [x] Verification
-    - [x] Build project (`./gradlew app:assembleDebug`)
-    - [x] Manual re-walk of all flows
-    - [x] Commit and push to `dev`
+- [ ] Data Layer
+    - [x] Create `ReminderConfigDto`
+    - [x] Create `ReminderConfigApi`
+    - [x] Create `ReminderConfigRepository` (Real & Mock)
+    - [x] Register in `ServiceLocator`
+- [x] UI Layer
+    - [x] Add String Resources (EN & UK)
+    - [x] Implement `ReminderConfigViewModel`
+    - [x] Implement `ReminderConfigScreen` (TimePickers, validation)
+- [x] Integration & Cleanup
+    - [x] Update Navigation in `MainActivity.kt`
+    - [x] Update `ScheduleScreen.kt` entry point
+    - [x] Delete `ScheduleEditScreen.kt` and `ScheduleEditViewModel.kt`
+- [ ] Verification
+    - [ ] Build project (`./gradlew app:assembleDebug`)
+    - [ ] Commit and push to `dev`

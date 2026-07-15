@@ -1,32 +1,34 @@
-# Walkthrough — Migrate Navigation to Navigation-Compose
+# Walkthrough — Prompt 04: Налаштування нагадувань
 
-Successfully migrated the application's hand-rolled navigation system to `androidx.navigation:navigation-compose`, ensuring a more robust and standard navigation architecture while preserving all existing behaviors.
+Реалізовано клієнтський шар даних та інтерфейс для налаштування нагадувань (`reminder_config`), що замінив застарілий механізм редагування розкладу.
 
-## Changes
+## Зміни
 
-### 1. Dependency Management
-- Added `androidx.navigation:navigation-compose:2.8.5` to [libs.versions.toml](file:///D:/dev/bp_tracker/mobile_app/gradle/libs.versions.toml).
-- Updated [app/build.gradle.kts](file:///D:/dev/bp_tracker/mobile_app/app/build.gradle.kts) to include the new dependency.
+### Шар даних (Data Layer)
+- **DTO**: Створено [ReminderConfigDtos.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/ReminderConfigDtos.kt) для передачі налаштувань (час ранку/дня/вечора, ліміти).
+- **API**: Додано [ReminderConfigApi.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/api/ReminderConfigApi.kt) з методами GET та PUT.
+- **Repository**: Реалізовано [ReminderConfigRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/ReminderConfigRepository.kt), який обробляє HTTP 404 як стан "не налаштовано" (повертає `null`).
+- **DI**: Нові компоненти зареєстровані в `ServiceLocator`.
 
-### 2. Core Navigation Refactoring
-- **NavHost Implementation**: Replaced the `activeOverlay` machine in `MainAuthenticatedLayout` ([MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)) with a formal `NavHost`.
-- **Route Definitions**: Defined routes for all screens: `home`, `schedule`, `camera`, `ocr_review`, `manual_entry`, `measurement_detail`, `settings`, `bp_scale`, `history`, `schedule_edit`, `prescriptions`, and detailed routes for prescription management with arguments.
-- **Payload Handling**: Maintained host-scoped state for non-serializable data (Bitmaps and `MeasurementDto`) to ensure seamless data flow without violating navigation constraints.
-- **ViewModel Integration**: Preserved existing ViewModel initialization patterns by calling VM `setX` methods within `LaunchedEffect` blocks inside the `composable` definitions.
+### Інтерфейс (UI Layer)
+- **Нова форма**: Впроваджено [ReminderConfigScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigScreen.kt) та [ReminderConfigViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigViewModel.kt).
+- **Вибір часу**: Використовуються Material3 `TimePicker` для зручного встановлення годин та хвилин.
+- **Валідація**: Кнопка збереження активується лише при коректно заповнених полях (позитивні числа для лімітів).
+- **Локалізація**: Додано всі необхідні рядки в [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml) та [strings.xml (uk)](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml).
 
-### 3. UI and UX Preservation
-- **BottomBar Visibility**: The `BpBottomNavBar` is now intelligently shown only on primary tabs (`home` and `schedule`).
-- **Tab Switching**: Implemented standard BottomBar navigation patterns (single-top, save/restore state) for a smooth experience.
-- **Back Stack Integrity**: Verified that system back behavior and explicit "back" actions correctly pop entries and return the user to the expected parent screen.
+### Очищення та інтеграція
+- Видалено застарілі файли `ScheduleEditScreen.kt` та `ScheduleEditViewModel.kt`.
+- Маршрут `schedule_edit` у `MainActivity.kt` замінено на `reminder_config`.
+- Оновлено кнопку редагування на екрані розкладу для переходу до нових налаштувань.
 
-## Verification Results
+## Результати перевірки
 
-### Automated Tests
-- Executed `./gradlew app:assembleDebug` — **Build Successful**.
-- Performed Gradle sync to ensure dependency resolution.
+### Автоматичні тести
+- Проект успішно збирається: `./gradlew app:assembleDebug`.
 
-### Manual Verification
-- **Authentication**: Confirmed login and passkey enrollment flows still function correctly.
-- **Navigation Flow**: Verified complex flows like `Camera -> OCR Review -> Save -> Home` and `Prescriptions -> Detail -> Item Form -> Detail`.
-- **Deep Links**: Ensured magic-link handling remains intact outside the NavHost.
-- **State Preservation**: Confirmed that switching tabs or navigating through overlays does not lose essential screen state.
+### Ручна перевірка
+- Форма відкривається з вкладки розкладу.
+- При першому відкритті (404 з сервера) підставляються дефолтні значення (08:00, 14:00, 20:00).
+- `TimePicker` коректно оновлює значення в полях.
+- Збереження виконує PUT запит та повертає користувача на попередній екран.
+- Перевірено українську локалізацію.

@@ -81,7 +81,7 @@ fun ScheduleScreen(
                         Icon(Icons.Default.Assignment, contentDescription = stringResource(R.string.prescriptions_title))
                     }
                     IconButton(onClick = onEditClick) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit")
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.rem_config_title))
                     }
                     IconButton(onClick = onRefresh) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")

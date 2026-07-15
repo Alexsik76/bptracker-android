@@ -70,6 +70,15 @@
     <string name="schedule_edit_max_reminders">Reminder limit</string>
     <string name="schedule_edit_per_period">per period</string>
 
+    <!-- Reminder Config -->
+    <string name="rem_config_title">Reminder Settings</string>
+    <string name="rem_config_morning">Morning reminders start</string>
+    <string name="rem_config_day">Day reminders start</string>
+    <string name="rem_config_evening">Evening reminders start</string>
+    <string name="rem_config_max">Maximum reminders per slot</string>
+    <string name="rem_config_duration">Confirmation window (minutes)</string>
+    <string name="rem_config_save_success">Settings saved</string>
+
     <!-- Periods -->
     <string name="period_morning">Morning</string>
     <string name="period_day">Day</string>

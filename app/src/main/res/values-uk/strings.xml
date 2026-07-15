@@ -70,6 +70,15 @@
     <string name="schedule_edit_max_reminders">Ліміт нагадувань</string>
     <string name="schedule_edit_per_period">на період</string>
 
+    <!-- Reminder Config -->
+    <string name="rem_config_title">Налаштування нагадувань</string>
+    <string name="rem_config_morning">Початок ранкових нагадувань</string>
+    <string name="rem_config_day">Початок денних нагадувань</string>
+    <string name="rem_config_evening">Початок вечірніх нагадувань</string>
+    <string name="rem_config_max">Макс. нагадувань на слот</string>
+    <string name="rem_config_duration">Вікно підтвердження (хвилин)</string>
+    <string name="rem_config_save_success">Налаштування збережено</string>
+
     <!-- Periods -->
     <string name="period_morning">Ранок</string>
     <string name="period_day">День</string>

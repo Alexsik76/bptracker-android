@@ -1,59 +1,76 @@
-# Implementation Plan — Migrate Navigation to Navigation-Compose
+# План впровадження — Prompt 04: Налаштування нагадувань
 
-This plan migrates the hand-rolled `activeOverlay` navigation in `MainAuthenticatedLayout` to a formal `NavHost` structure while preserving all existing behaviors and ViewModel lifecycles.
+Цей етап включає створення клієнтського шару даних для конфігурації нагадувань (`reminder_config`) та заміну існуючого екрана редагування розкладу на нову форму налаштувань.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - `androidx.navigation:navigation-compose` will be added as a dependency.
-> - Authentication gate and magic-link intent handling remain in `MainActivity` as-is.
-> - `MainAuthenticatedLayout` will now host the `NavHost` and manage bottom bar visibility based on the current route.
-> - Non-serializable data (Bitmaps, `MeasurementDto`) will continue to be shared via host-scoped state to avoid complex navigation workarounds.
+> - Використовується DTO-through патерн: дані з мережі напряму потрапляють у ViewModel без проміжного шару доменних моделей.
+> - На даному етапі Room не використовується для кешування конфігурації; дані запитуються та зберігаються лише через мережу.
+> - HTTP 404 при отриманні конфігурації розглядається як нормальний стан ("не налаштовано"), що призводить до використання значень за замовчуванням.
+> - Старі файли `ScheduleEditScreen.kt` та `ScheduleEditViewModel.kt` будуть видалені.
 
 ## Proposed Changes
 
-### [MODIFY] Build Configuration
+### Data Layer (DTO, API, Repository)
 
-#### [libs.versions.toml](file:///D:/dev/bp_tracker/mobile_app/gradle/libs.versions.toml)
-- Add `navigation = "2.8.5"` to `[versions]`.
-- Add `androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigation" }` to `[libraries]`.
+#### [NEW] [ReminderConfigDtos.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/dto/ReminderConfigDtos.kt)
+Створення DTO для конфігурації:
+- `morningTime`, `dayTime`, `eveningTime` (String, формат `HH:MM:SS`)
+- `maxReminders` (Int)
+- `durationMinutes` (Int)
 
-#### [app/build.gradle.kts](file:///D:/dev/bp_tracker/mobile_app/app/build.gradle.kts)
-- Add `implementation(libs.androidx.navigation.compose)` to `dependencies`.
+#### [NEW] [ReminderConfigApi.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/api/ReminderConfigApi.kt)
+- `GET reminders/config`
+- `PUT reminders/config`
 
----
+#### [NEW] [ReminderConfigRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/ReminderConfigRepository.kt)
+- Метод `getConfig()`: повертає DTO або `null` при 404.
+- Метод `saveConfig(config)`: виконує PUT запит.
 
-### [MODIFY] Navigation Port
-
-#### [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)
-- Replace `activeOverlay` state with `rememberNavController()`.
-- Implement `NavHost` inside `MainAuthenticatedLayout` with routes:
-    - `home`, `schedule`, `camera`, `ocr_review`, `manual_entry`, `measurement_detail`, `settings`, `bp_scale`, `history`, `schedule_edit`, `prescriptions`, `prescription_detail/{prescriptionId}`, `prescription_form?prescriptionId={prescriptionId}`, `med_item_form/{prescriptionId}?itemId={itemId}`.
-- Logic for `selectedMeasurement`, `capturedBitmap`, etc., stays as host-scoped `remember { mutableStateOf(...) }`.
-- `BpBottomNavBar` visibility gated by `navController.currentBackStackEntryAsState()`.
-- Call VM `setX` / `init` methods within `LaunchedEffect` in each `composable` block.
-
-#### [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt)
-- Ensure the `prescriptions` entry point uses `navController.navigate("prescriptions")`.
+#### [MODIFY] [ServiceLocator.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/core/di/ServiceLocator.kt)
+Реєстрація `ReminderConfigApi` та `ReminderConfigRepository`.
 
 ---
 
-### [MODIFY] Screen Composables
-Update callback signatures and internal `BackHandler` usage (where applicable) to use `navController` actions.
+### UI Layer (Feature: Reminders)
 
-- **History**: `onMeasurementClick` -> `navController.navigate("measurement_detail")`.
-- **Camera**: `onCapture` -> `navController.navigate("ocr_review")`.
-- **Prescriptions**: Pass `prescriptionId` and `itemId` via route arguments.
+#### [NEW] [ReminderConfigViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigViewModel.kt)
+- Стан форми (плоский `data class`).
+- Завантаження існуючої конфігурації або встановлення дефолтів.
+- Валідація полів.
+- Логіка збереження.
+
+#### [NEW] [ReminderConfigScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigScreen.kt)
+- Використання Material3 `TimePicker` для трьох слотів часу.
+- Поля вводу для цілих чисел (ліміт нагадувань, тривалість вікна підтвердження).
+- Відображення стану завантаження/помилки.
+
+#### [DELETE] [ScheduleEditScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleEditScreen.kt) & [ScheduleEditViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleEditViewModel.kt)
+Видалення застарілих компонентів.
+
+---
+
+### Navigation & Localization
+
+#### [MODIFY] [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)
+Заміна маршруту `schedule_edit` на `reminder_config`.
+
+#### [MODIFY] [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt)
+Оновлення дії кнопки редагування для переходу на `reminder_config`.
+
+#### [MODIFY] [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml) & [strings-uk.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml)
+Додавання нових рядків для форми налаштувань.
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `./gradlew app:assembleDebug` to verify compilation and dependency wiring.
+- Складання проекту: `./gradlew app:assembleDebug`.
 
-### Manual Verification (Re-walk)
-- **Auth**: Login flow, magic links, passkey enrollment.
-- **Main Tabs**: Home vs. Schedule, state preservation.
-- **Measurements**: Manual entry, Camera/OCR flow, Detail/Delete, History.
-- **Settings**: Theme/Language, BP Scale help.
-- **Prescriptions**: List, Detail, Item Form (create/edit), Prescription Form (create/edit), cascade deletes.
-- **Back Stack**: Verify system back behavior matches the old state machine.
+### Manual Verification
+- Відкриття форми налаштувань з вкладки розкладу.
+- Перевірка заповнення дефолтними значеннями при відсутності конфігурації (404).
+- Перевірка роботи `TimePicker` для кожного слота.
+- Валідація: кнопка збереження неактивна, якщо числа <= 0.
+- Успішне збереження та повернення назад.
+- Перевірка локалізації обома мовами.

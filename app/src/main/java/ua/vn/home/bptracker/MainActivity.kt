@@ -38,6 +38,8 @@ import ua.vn.home.bptracker.feature.login.AuthState
 import ua.vn.home.bptracker.feature.login.AuthViewModel
 import ua.vn.home.bptracker.feature.login.LoginScreen
 import ua.vn.home.bptracker.feature.prescriptions.*
+import ua.vn.home.bptracker.feature.reminders.ReminderConfigScreen
+import ua.vn.home.bptracker.feature.reminders.ReminderConfigViewModel
 import ua.vn.home.bptracker.feature.settings.BpScaleHelpScreen
 import ua.vn.home.bptracker.feature.settings.SettingsScreen
 import ua.vn.home.bptracker.feature.settings.SettingsViewModel
@@ -239,7 +241,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     state = scheduleState,
                     onConfirm = scheduleVm::confirm,
                     onRefresh = scheduleVm::refresh,
-                    onEditClick = { navController.navigate("schedule_edit") },
+                    onEditClick = { navController.navigate("reminder_config") },
                     onPrescriptionsClick = { navController.navigate("prescriptions") }
                 )
             }
@@ -360,22 +362,17 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 )
             }
 
-            composable("schedule_edit") {
-                val editVm: ScheduleEditViewModel = viewModel()
-                val editState by editVm.state.collectAsState()
+            composable("reminder_config") {
+                val configVm: ReminderConfigViewModel = viewModel()
+                val configState by configVm.state.collectAsState()
 
-                ScheduleEditScreen(
-                    state = editState,
-                    onTimeChange = editVm::onTimeChange,
-                    onDurationChange = editVm::onDurationChange,
-                    onMaxRemindersChange = editVm::onMaxRemindersChange,
-                    onSave = {
-                        editVm.save()
-                    },
-                    onRetry = editVm::load,
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                ReminderConfigScreen(
+                    state = configState,
+                    onTimeChange = configVm::onTimeChange,
+                    onMaxRemindersChange = configVm::onMaxRemindersChange,
+                    onDurationChange = configVm::onDurationMinutesChange,
+                    onSave = configVm::save,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
