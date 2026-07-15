@@ -13,7 +13,6 @@ data class PrescriptionDetailState(
     val prescription: PrescriptionReadDto? = null,
     val items: List<MedicationItemReadDto> = emptyList(),
     val isLoading: Boolean = false,
-    val isDeleted: Boolean = false,
     val error: String? = null
 )
 
@@ -46,8 +45,6 @@ class PrescriptionDetailViewModel : ViewModel() {
             try {
                 repository.deletePrescription(id)
                 _prescriptionId.value = null
-                // We don't have a direct "deleted" state that closes the screen, 
-                // but the UI can observe when prescription becomes null or use a flag.
             } catch (e: Exception) {
                 // Handle error
             }

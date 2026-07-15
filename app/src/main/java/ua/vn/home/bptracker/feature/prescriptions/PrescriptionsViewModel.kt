@@ -16,24 +16,28 @@ data class PrescriptionsState(
 class PrescriptionsViewModel : ViewModel() {
     private val repository = ServiceLocator.prescriptionRepository
     private val _refreshing = MutableStateFlow(false)
+    private val _error = MutableStateFlow<String?>(null)
 
     val state: StateFlow<PrescriptionsState> = combine(
         repository.getPrescriptions(),
-        _refreshing
-    ) { list, refreshing ->
+        _refreshing,
+        _error
+    ) { list, refreshing, error ->
         PrescriptionsState(
             list = list,
-            isLoading = refreshing
+            isLoading = refreshing,
+            error = error
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PrescriptionsState())
 
     fun refresh() {
         viewModelScope.launch {
             _refreshing.value = true
+            _error.value = null
             try {
                 repository.refresh()
             } catch (e: Exception) {
-                // Error handling can be added to state if needed
+                _error.value = e.message ?: "Failed to refresh prescriptions"
             } finally {
                 _refreshing.value = false
             }

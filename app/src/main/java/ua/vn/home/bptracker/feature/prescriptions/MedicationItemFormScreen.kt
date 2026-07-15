@@ -18,6 +18,11 @@ import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.data.dto.*
 import ua.vn.home.bptracker.ui.theme.DarkPrimary
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +44,69 @@ fun MedicationItemFormScreen(
 ) {
     LaunchedEffect(state.isSaved) {
         if (state.isSaved) onBack()
+    }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    if (showDatePicker) {
+        val initialDate = try {
+            OffsetDateTime.parse(state.courseStart).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            System.currentTimeMillis()
+        }
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDate)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                        val currentDateTime = try {
+                            OffsetDateTime.parse(state.courseStart).toLocalDateTime()
+                        } catch (e: Exception) {
+                            LocalDateTime.now()
+                        }
+                        val newDateTime = date.atTime(currentDateTime.toLocalTime())
+                        onCourseStartChange(newDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime().toString())
+                    }
+                    showDatePicker = false
+                    showTimePicker = true
+                }) {
+                    Text(stringResource(R.string.common_save))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        val currentDateTime = try {
+            OffsetDateTime.parse(state.courseStart).toLocalDateTime()
+        } catch (e: Exception) {
+            LocalDateTime.now()
+        }
+        val timePickerState = rememberTimePickerState(
+            initialHour = currentDateTime.hour,
+            initialMinute = currentDateTime.minute
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val date = currentDateTime.toLocalDate()
+                    val newDateTime = date.atTime(timePickerState.hour, timePickerState.minute)
+                    onCourseStartChange(newDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime().toString())
+                    showTimePicker = false
+                }) {
+                    Text(stringResource(R.string.common_save))
+                }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
     }
 
     Scaffold(
@@ -87,7 +155,7 @@ fun MedicationItemFormScreen(
                     FilterChip(
                         selected = state.whenSlots.contains(slot),
                         onClick = { onWhenSlotsChange(slot, !state.whenSlots.contains(slot)) },
-                        label = { Text(slot.name) }
+                        label = { Text(stringResource(slot.labelRes())) }
                     )
                 }
             }
@@ -103,7 +171,7 @@ fun MedicationItemFormScreen(
                 var unitExpanded by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
-                        value = state.doseUnit?.name ?: stringResource(R.string.med_items_dose_unspecified),
+                        value = state.doseUnit?.let { stringResource(it.labelRes()) } ?: stringResource(R.string.med_items_dose_unspecified),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.med_items_dose_unit)) },
@@ -119,7 +187,10 @@ fun MedicationItemFormScreen(
                             onClick = { onDoseUnitChange(null); unitExpanded = false }
                         )
                         DoseUnit.entries.forEach { unit ->
-                            DropdownMenuItem(text = { Text(unit.name) }, onClick = { onDoseUnitChange(unit); unitExpanded = false })
+                            DropdownMenuItem(
+                                text = { Text(stringResource(unit.labelRes())) }, 
+                                onClick = { onDoseUnitChange(unit); unitExpanded = false }
+                            )
                         }
                     }
                 }
@@ -142,11 +213,14 @@ fun MedicationItemFormScreen(
                 var periodExpanded by remember { mutableStateOf(false) }
                 Box {
                     TextButton(onClick = { periodExpanded = true }) {
-                        Text(state.freqPeriodUnit.name)
+                        Text(stringResource(state.freqPeriodUnit.labelRes()))
                     }
                     DropdownMenu(expanded = periodExpanded, onDismissRequest = { periodExpanded = false }) {
                         FreqPeriodUnit.entries.forEach { unit ->
-                            DropdownMenuItem(text = { Text(unit.name) }, onClick = { onFreqPeriodUnitChange(unit); periodExpanded = false })
+                            DropdownMenuItem(
+                                text = { Text(stringResource(unit.labelRes())) }, 
+                                onClick = { onFreqPeriodUnitChange(unit); periodExpanded = false }
+                            )
                         }
                     }
                 }
@@ -157,21 +231,32 @@ fun MedicationItemFormScreen(
                 FilterChip(
                     selected = state.courseType == CourseType.Ongoing,
                     onClick = { onCourseTypeChange(CourseType.Ongoing) },
-                    label = { Text(stringResource(R.string.med_items_course_ongoing)) }
+                    label = { Text(stringResource(CourseType.Ongoing.labelRes())) }
                 )
                 FilterChip(
                     selected = state.courseType == CourseType.Course,
                     onClick = { onCourseTypeChange(CourseType.Course) },
-                    label = { Text(stringResource(R.string.med_items_course_limited)) }
+                    label = { Text(stringResource(CourseType.Course.labelRes())) }
                 )
             }
 
             if (state.courseType == CourseType.Course) {
                 OutlinedTextField(
-                    value = state.courseStart ?: "",
-                    onValueChange = onCourseStartChange,
+                    value = state.courseStart?.let { 
+                        try {
+                            val dt = OffsetDateTime.parse(it)
+                            dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        } catch (e: Exception) { it }
+                    } ?: "",
+                    onValueChange = {},
                     label = { Text(stringResource(R.string.med_items_course_start)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    readOnly = true,
+                    trailingIcon = {
+                        TextButton(onClick = { showDatePicker = true }) {
+                            Text(stringResource(R.string.schedule_confirm_btn))
+                        }
+                    }
                 )
                 OutlinedTextField(
                     value = state.courseIntakes?.toString() ?: "",

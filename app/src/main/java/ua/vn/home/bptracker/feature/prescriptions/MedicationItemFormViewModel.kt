@@ -29,7 +29,15 @@ data class MedicationItemFormState(
     val isSaved: Boolean = false,
     val error: String? = null
 ) {
-    val isValid = medicine.isNotBlank() && whenSlots.isNotEmpty() && doseAmount.isNotBlank()
+    val isValid: Boolean
+        get() {
+            val baseValid = medicine.isNotBlank() && whenSlots.isNotEmpty() && doseAmount.isNotBlank()
+            return if (courseType == CourseType.Course) {
+                baseValid && !courseStart.isNullOrBlank() && (courseIntakes ?: 0) > 0
+            } else {
+                baseValid
+            }
+        }
 }
 
 class MedicationItemFormViewModel : ViewModel() {
@@ -69,10 +77,23 @@ class MedicationItemFormViewModel : ViewModel() {
     fun onConditionChange(value: String) { _state.value = _state.value.copy(condition = value, error = null) }
     fun onWhenSlotsChange(slot: WhenSlot, checked: Boolean) {
         val current = _state.value.whenSlots.toMutableList()
-        if (checked) current.add(slot) else current.remove(slot)
+        if (checked) {
+            if (!current.contains(slot)) current.add(slot)
+        } else {
+            current.remove(slot)
+        }
         _state.value = _state.value.copy(whenSlots = current, error = null)
     }
-    fun onDoseAmountChange(value: String) { _state.value = _state.value.copy(doseAmount = value.filter { it.isDigit() || it == '.' }, error = null) }
+    fun onDoseAmountChange(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        val finalValue = if (filtered.count { it == '.' } > 1) {
+            val firstDotIndex = filtered.indexOf('.')
+            filtered.substring(0, firstDotIndex + 1) + filtered.substring(firstDotIndex + 1).replace(".", "")
+        } else {
+            filtered
+        }
+        _state.value = _state.value.copy(doseAmount = finalValue, error = null)
+    }
     fun onDoseUnitChange(value: DoseUnit?) { _state.value = _state.value.copy(doseUnit = value, error = null) }
     fun onFreqCountChange(value: Int) { _state.value = _state.value.copy(freqCount = value, error = null) }
     fun onFreqPeriodChange(value: Int) { _state.value = _state.value.copy(freqPeriod = value, error = null) }
@@ -81,6 +102,7 @@ class MedicationItemFormViewModel : ViewModel() {
         _state.value = _state.value.copy(
             courseType = value,
             courseStart = if (value == CourseType.Course) OffsetDateTime.now().toString() else null,
+            courseIntakes = if (value == CourseType.Course) _state.value.courseIntakes ?: 1 else null,
             error = null
         )
     }

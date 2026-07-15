@@ -167,4 +167,18 @@
     <string name="med_items_course_start">Start date &amp; time</string>
     <string name="med_items_course_intakes">Total intakes</string>
     <string name="med_items_delete_confirm">Delete this medication item?</string>
+
+    <!-- Medication Enums -->
+    <string name="med_enum_slot_morning">Morning</string>
+    <string name="med_enum_slot_day">Day</string>
+    <string name="med_enum_slot_evening">Evening</string>
+    <string name="med_enum_unit_tablet">tablet</string>
+    <string name="med_enum_unit_mg">mg</string>
+    <string name="med_enum_unit_ml">ml</string>
+    <string name="med_enum_unit_drop">drop</string>
+    <string name="med_enum_unit_mcg">mcg</string>
+    <string name="med_enum_unit_iu">IU</string>
+    <string name="med_enum_freq_h">hour</string>
+    <string name="med_enum_freq_d">day</string>
+    <string name="med_enum_freq_wk">week</string>
 </resources>

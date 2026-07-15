@@ -167,4 +167,18 @@
     <string name="med_items_course_start">Дата та час початку</string>
     <string name="med_items_course_intakes">Всього прийомів</string>
     <string name="med_items_delete_confirm">Видалити ці ліки?</string>
+
+    <!-- Medication Enums -->
+    <string name="med_enum_slot_morning">Ранок</string>
+    <string name="med_enum_slot_day">День</string>
+    <string name="med_enum_slot_evening">Вечір</string>
+    <string name="med_enum_unit_tablet">табл.</string>
+    <string name="med_enum_unit_mg">мг</string>
+    <string name="med_enum_unit_ml">мл</string>
+    <string name="med_enum_unit_drop">крап.</string>
+    <string name="med_enum_unit_mcg">мкг</string>
+    <string name="med_enum_unit_iu">МО</string>
+    <string name="med_enum_freq_h">год.</string>
+    <string name="med_enum_freq_d">дн.</string>
+    <string name="med_enum_freq_wk">тиж.</string>
 </resources>

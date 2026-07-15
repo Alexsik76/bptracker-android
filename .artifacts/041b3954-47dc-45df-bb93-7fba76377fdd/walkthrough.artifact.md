@@ -1,25 +1,24 @@
-# Walkthrough — Prescriptions UI
+# Walkthrough — Prescriptions UI Fixes
 
-Implemented the user interface for managing prescriptions and medication items, integrated into the existing custom navigation system.
+This update polishes the prescriptions feature by improving data entry reliability, ensuring full localization, and cleaning up the ViewModel state.
 
 ## Changes
 
-### UI Components (feature/prescriptions)
-- **Prescriptions List**: Shows all prescriptions with doctor names, dates, and active/inactive status badges. Supports manual refresh.
-- **Prescription Detail**: Displays full details of a prescription and a list of associated medication items. Includes actions to edit or delete the prescription.
-- **Prescription Form**: A form for creating or editing prescriptions with a doctor name and a date picker.
-- **Medication Item Form**: A comprehensive form for managing medications. Features include:
-    - Multi-select chips for Morning/Day/Evening slots.
-    - Dose amount and unit selection.
-    - Frequency settings (e.g., 1 time every 1 day).
-    - Progressive disclosure for "Course" settings (start date and number of intakes).
+### 1. Improved Medication Course Entry
+- **Date & Time Pickers**: Replaced the free-text `courseStart` field with a combined `DatePicker` and `TimePicker` flow in [MedicationItemFormScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/MedicationItemFormScreen.kt). This ensures valid ISO `OffsetDateTime` strings are always produced.
+- **Course Validation**: Updated [MedicationItemFormViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/MedicationItemFormViewModel.kt) to require `courseIntakes > 0` and a non-blank `courseStart` when the course type is set to "Limited course".
 
-### Navigation & Integration
-- Updated `MainAuthenticatedLayout` in [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt) with new string-key overlays: `prescriptions`, `prescription_detail`, `prescription_form`, and `med_item_form`.
-- Added a new entry point in [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt) (IconButton in the TopAppBar) to access the prescriptions list.
+### 2. Localized Enum Labels
+- **String Resources**: Added localized labels for all medication-related enums (`DoseUnit`, `FreqPeriodUnit`, `WhenSlot`, `CourseType`) in both English and Ukrainian.
+- **UI Mapping**: Introduced [PrescriptionUiMappers.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionUiMappers.kt) to map enum values to string resource IDs. All dropdowns, chips, and list items now display these localized labels.
 
-### Localization
-- Added string resources for all new UI elements in English ([strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml)) and Ukrainian ([strings.xml (uk)](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml)).
+### 3. Input & Error Handling
+- **Dose Amount Sanitization**: The `doseAmount` field now correctly restricts input to digits and at most one decimal point.
+- **Refresh Errors**: [PrescriptionsViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionsViewModel.kt) now captures refresh exceptions and surfaces them via an error banner on the list screen.
+
+### 4. Cleanup
+- Removed the unused `isDeleted` field from `PrescriptionDetailState`.
+- Corrected various Compose context issues related to string resource usage in list mappers.
 
 ## Verification Results
 
@@ -27,6 +26,7 @@ Implemented the user interface for managing prescriptions and medication items, 
 - Executed `./gradlew app:assembleDebug` — **Build Successful**.
 
 ### Manual Verification
-- Verified form validation logic: the "Save" button is disabled until required fields are filled.
-- Verified back button behavior using `BackHandler` in each overlay.
-- Verified Ukrainian translations for all new screens.
+- **Input Filter**: Verified `doseAmount` ignores extra dots (e.g., typing `1.2.3` results in `1.23`).
+- **Pickers**: Verified the `courseStart` picker flow correctly updates the field with a formatted timestamp.
+- **Localization**: Confirmed all enum labels change when the system language is switched between English and Ukrainian.
+- **Error States**: Simulated a network failure and confirmed the error message appears at the top of the prescriptions list.

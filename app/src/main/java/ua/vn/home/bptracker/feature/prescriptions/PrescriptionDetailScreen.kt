@@ -201,12 +201,22 @@ fun MedicationItemRow(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
+            val doseUnitLabel = item.doseUnit?.let { stringResource(it.labelRes()) } ?: ""
+            val slotsLabels = item.whenSlots.map { stringResource(it.labelRes()) }
+            val slotsLabel = slotsLabels.joinToString()
+            
             Text(
-                text = "${item.doseAmount} ${item.doseUnit?.name ?: ""} · ${item.whenSlots.joinToString { it.name }}",
+                text = "${item.doseAmount} $doseUnitLabel · $slotsLabel",
                 style = MaterialTheme.typography.bodySmall
             )
+            val freqUnitLabel = stringResource(item.freqPeriodUnit.labelRes())
+            val courseLabel = if (item.courseType == CourseType.Ongoing) 
+                stringResource(R.string.med_items_course_ongoing) 
+            else 
+                stringResource(R.string.med_items_course_limited)
+            
             Text(
-                text = "${item.freqCount}x per ${item.freqPeriod} ${item.freqPeriodUnit.name} · ${if (item.courseType == CourseType.Ongoing) stringResource(R.string.med_items_course_ongoing) else stringResource(R.string.med_items_course_limited)}",
+                text = "${item.freqCount}x per ${item.freqPeriod} $freqUnitLabel · $courseLabel",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -67,28 +67,46 @@ fun PrescriptionsScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            if (state.isLoading && state.list.isEmpty()) {
-                LoadingState()
-            } else if (state.list.isEmpty()) {
-                EmptyState(
-                    title = stringResource(R.string.prescriptions_empty),
-                    description = stringResource(R.string.prescriptions_empty_hint)
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(state.list) { prescription ->
-                        PrescriptionRow(
-                            prescription = prescription,
-                            onClick = { onPrescriptionClick(prescription) }
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (state.error != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = state.error,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(8.dp)
                         )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                    }
+                }
+
+                if (state.isLoading && state.list.isEmpty()) {
+                    Box(modifier = Modifier.weight(1f)) { LoadingState() }
+                } else if (state.list.isEmpty()) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        EmptyState(
+                            title = stringResource(R.string.prescriptions_empty),
+                            description = stringResource(R.string.prescriptions_empty_hint)
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(bottom = 80.dp)
+                    ) {
+                        items(state.list) { prescription ->
+                            PrescriptionRow(
+                                prescription = prescription,
+                                onClick = { onPrescriptionClick(prescription) }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                thickness = 0.5.dp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                            )
+                        }
                     }
                 }
             }
