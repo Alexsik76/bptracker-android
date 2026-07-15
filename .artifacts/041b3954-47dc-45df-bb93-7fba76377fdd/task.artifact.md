@@ -1,17 +1,18 @@
-# Tasks — Prescriptions UI Fixes
+# Tasks — Migrate Navigation to Navigation-Compose
 
-- [x] UI Enum Mappers & String Resources
-    - [x] Update `strings.xml` (EN & UK) with missing enum labels
-    - [x] Create `PrescriptionUiMappers.kt`
-- [x] Prescriptions List (Refresh Errors)
-    - [x] Update `PrescriptionsViewModel.kt`
-    - [x] Update `PrescriptionsScreen.kt`
-- [x] Prescription Detail (Cleanup)
-    - [x] Update `PrescriptionDetailViewModel.kt` (remove `isDeleted`)
-    - [x] Update `PrescriptionDetailScreen.kt` (use localized enums)
-- [x] Medication Item Form (Validation & Pickers)
-    - [x] Update `MedicationItemFormViewModel.kt` (validation, dose filter)
-    - [x] Update `MedicationItemFormScreen.kt` (DatePicker + TimePicker for `courseStart`, localized labels)
+- [x] Add Dependency
+    - [x] Update `libs.versions.toml`
+    - [x] Update `app/build.gradle.kts`
+- [x] Refactor `MainAuthenticatedLayout` in `MainActivity.kt`
+    - [x] Initialize `NavController`
+    - [x] Create `NavHost` and define routes
+    - [x] Move state-hoisted payloads (Bitmap, selectedMeasurement) into host scope
+    - [x] Implement BottomBar visibility logic
+    - [x] Wire VM initializers in `LaunchedEffect` for each destination
+- [x] Update Screen Callbacks
+    - [x] `ScheduleScreen.kt` (prescriptions entry point)
+    - [x] Update other screens to use `navController` actions instead of `activeOverlay` setters
 - [x] Verification
     - [x] Build project (`./gradlew app:assembleDebug`)
+    - [x] Manual re-walk of all flows
     - [x] Commit and push to `dev`

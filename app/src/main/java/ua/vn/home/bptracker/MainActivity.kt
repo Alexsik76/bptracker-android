@@ -27,6 +27,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.LocalActivityResultRegistryOwner
+import androidx.navigation.NavType
+import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
@@ -172,306 +175,325 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
-    var selectedTab by remember { mutableIntStateOf(0) }
-    var activeOverlay by remember { mutableStateOf<String?>(null) }
+    val navController = rememberNavController()
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
-    var selectedPrescriptionId by remember { mutableStateOf<String?>(null) }
-    var selectedItemId by remember { mutableStateOf<String?>(null) }
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    
-    when (activeOverlay) {
-        "camera" -> {
-            BackHandler { activeOverlay = null }
-            CameraScanScreen(
-                onCapture = { bitmap ->
-                    capturedBitmap = bitmap
-                    activeOverlay = "ocr_review"
-                },
-                onEnterManually = { activeOverlay = "manual_entry" },
-                onCancel = { activeOverlay = null }
-            )
-        }
-        "ocr_review" -> {
-            val reviewVm: ScanReviewViewModel = viewModel()
-            val reviewState by reviewVm.state.collectAsState()
-            
-            BackHandler {
-                reviewVm.reset()
-                activeOverlay = "camera"
-            }
 
-            capturedBitmap?.let { bitmap ->
-                LaunchedEffect(bitmap) {
-                    reviewVm.initWithImage(bitmap)
-                }
-            }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-            ScanReviewScreen(
-                state = reviewState,
-                onSysChange = reviewVm::onSysChange,
-                onDiaChange = reviewVm::onDiaChange,
-                onPulseChange = reviewVm::onPulseChange,
-                onSave = reviewVm::save,
-                onRetake = { 
-                    reviewVm.reset()
-                    activeOverlay = "camera" 
-                },
-                onRemoteOcr = reviewVm::recognizeRemote,
-                onBack = { 
-                    reviewVm.reset()
-                    activeOverlay = null
-                    capturedBitmap = null
-                }
-            )
-        }
-        "manual_entry" -> {
-            val entryVm: ManualEntryViewModel = viewModel()
-            val entryState by entryVm.state.collectAsState()
-            BackHandler { activeOverlay = null }
-            ManualEntryScreen(
-                state = entryState,
-                onSysChange = entryVm::onSysChange,
-                onDiaChange = entryVm::onDiaChange,
-                onPulseChange = entryVm::onPulseChange,
-                onSave = entryVm::save,
-                onBack = { activeOverlay = null }
-            )
-        }
-        "measurement_detail" -> {
-            val detailVm: MeasurementDetailViewModel = viewModel()
-            val detailState by detailVm.state.collectAsState()
-            
-            BackHandler {
-                activeOverlay = null
-                selectedMeasurement = null
-            }
+    val showBottomBar = currentRoute in listOf("home", "schedule")
 
-            LaunchedEffect(selectedMeasurement) {
-                selectedMeasurement?.let { detailVm.setMeasurement(it) }
-            }
-
-            MeasurementDetailScreen(
-                state = detailState,
-                onDelete = detailVm::delete,
-                onBack = { 
-                    activeOverlay = null
-                    selectedMeasurement = null
-                }
-            )
-        }
-        "settings" -> {
-            val settingsVm: SettingsViewModel = viewModel()
-            val settingsState by settingsVm.state.collectAsState()
-            BackHandler { activeOverlay = null }
-            val activity = LocalActivity.current
-            SettingsScreen(
-                state = settingsState,
-                onThemeSelect = settingsVm::setTheme,
-                onLanguageSelect = settingsVm::setLanguage,
-                onOcrImprovementToggle = settingsVm::setOcrImprovement,
-                onRemindersToggle = settingsVm::setRemindersEnabled,
-                onLogout = onLogout,
-                onAddPasskey = {
-                    activity?.let { authVm.registerPasskey(it) }
-                },
-                onHelpClick = { activeOverlay = "bp_scale" },
-                onBack = { activeOverlay = null },
-                onRefresh = settingsVm::refresh
-            )
-        }
-        "bp_scale" -> {
-            BackHandler { activeOverlay = "settings" }
-            BpScaleHelpScreen(
-                latestMeasurement = selectedMeasurement, // Simplified for now
-                onBack = { activeOverlay = "settings" }
-            )
-        }
-        "history" -> {
-            val homeVm: HomeViewModel = viewModel()
-            val homeState by homeVm.state.collectAsState()
-            
-            BackHandler { activeOverlay = null }
-
-            MeasurementHistoryScreen(
-                state = homeState,
-                onRefresh = homeVm::refresh,
-                onMeasurementClick = { m ->
-                    selectedMeasurement = m
-                    activeOverlay = "measurement_detail"
-                },
-                onBack = { activeOverlay = null }
-            )
-        }
-        "schedule_edit" -> {
-            val editVm: ScheduleEditViewModel = viewModel()
-            val editState by editVm.state.collectAsState()
-            val scheduleVm: ScheduleViewModel = viewModel()
-
-            BackHandler { activeOverlay = null }
-
-            ScheduleEditScreen(
-                state = editState,
-                onTimeChange = editVm::onTimeChange,
-                onDurationChange = editVm::onDurationChange,
-                onMaxRemindersChange = editVm::onMaxRemindersChange,
-                onSave = {
-                    editVm.save()
-                },
-                onRetry = editVm::load,
-                onBack = { 
-                    activeOverlay = null
-                    scheduleVm.refresh()
-                }
-            )
-        }
-        "prescriptions" -> {
-            val listVm: PrescriptionsViewModel = viewModel()
-            val listState by listVm.state.collectAsState()
-            
-            BackHandler { activeOverlay = null }
-            
-            LaunchedEffect(Unit) { listVm.refresh() }
-            
-            PrescriptionsScreen(
-                state = listState,
-                onAddClick = {
-                    selectedPrescriptionId = null
-                    activeOverlay = "prescription_form"
-                },
-                onPrescriptionClick = { p ->
-                    selectedPrescriptionId = p.id
-                    activeOverlay = "prescription_detail"
-                },
-                onBack = { activeOverlay = null }
-            )
-        }
-        "prescription_detail" -> {
-            val detailVm: PrescriptionDetailViewModel = viewModel()
-            val detailState by detailVm.state.collectAsState()
-            
-            BackHandler { activeOverlay = "prescriptions" }
-            
-            LaunchedEffect(selectedPrescriptionId) {
-                selectedPrescriptionId?.let { detailVm.setPrescriptionId(it) }
-            }
-            
-            PrescriptionDetailScreen(
-                state = detailState,
-                onEditPrescription = { activeOverlay = "prescription_form" },
-                onDeletePrescription = {
-                    detailVm.deletePrescription()
-                    activeOverlay = "prescriptions"
-                },
-                onAddItem = {
-                    selectedItemId = null
-                    activeOverlay = "med_item_form"
-                },
-                onEditItem = { item ->
-                    selectedItemId = item.id
-                    activeOverlay = "med_item_form"
-                },
-                onDeleteItem = detailVm::deleteItem,
-                onBack = { activeOverlay = "prescriptions" }
-            )
-        }
-        "prescription_form" -> {
-            val formVm: PrescriptionFormViewModel = viewModel()
-            val formState by formVm.state.collectAsState()
-            
-            BackHandler { activeOverlay = if (selectedPrescriptionId == null) "prescriptions" else "prescription_detail" }
-            
-            LaunchedEffect(selectedPrescriptionId) {
-                formVm.init(selectedPrescriptionId)
-            }
-            
-            PrescriptionFormScreen(
-                state = formState,
-                onDoctorChange = formVm::onDoctorChange,
-                onDateChange = formVm::onDateChange,
-                onIsActiveChange = formVm::onIsActiveChange,
-                onSave = formVm::save,
-                onBack = { activeOverlay = if (selectedPrescriptionId == null) "prescriptions" else "prescription_detail" }
-            )
-        }
-        "med_item_form" -> {
-            val itemFormVm: MedicationItemFormViewModel = viewModel()
-            val itemFormState by itemFormVm.state.collectAsState()
-            
-            BackHandler { activeOverlay = "prescription_detail" }
-            
-            LaunchedEffect(selectedPrescriptionId, selectedItemId) {
-                selectedPrescriptionId?.let { itemFormVm.init(it, selectedItemId) }
-            }
-            
-            MedicationItemFormScreen(
-                state = itemFormState,
-                onMedicineChange = itemFormVm::onMedicineChange,
-                onConditionChange = itemFormVm::onConditionChange,
-                onWhenSlotsChange = itemFormVm::onWhenSlotsChange,
-                onDoseAmountChange = itemFormVm::onDoseAmountChange,
-                onDoseUnitChange = itemFormVm::onDoseUnitChange,
-                onFreqCountChange = itemFormVm::onFreqCountChange,
-                onFreqPeriodChange = itemFormVm::onFreqPeriodChange,
-                onFreqPeriodUnitChange = itemFormVm::onFreqPeriodUnitChange,
-                onCourseTypeChange = itemFormVm::onCourseTypeChange,
-                onCourseStartChange = itemFormVm::onCourseStartChange,
-                onCourseIntakesChange = itemFormVm::onCourseIntakesChange,
-                onSave = itemFormVm::save,
-                onBack = { activeOverlay = "prescription_detail" }
-            )
-        }
-        null -> {
-            BackHandler(enabled = selectedTab != 0) {
-                selectedTab = 0
-            }
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                containerColor = MaterialTheme.colorScheme.background,
-                bottomBar = {
-                    BpBottomNavBar(
-                        selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it },
-                        onScanClick = { activeOverlay = "camera" }
-                    )
-                }
-            ) { innerPadding ->
-                Box(modifier = Modifier.padding(innerPadding)) {
-                    when (selectedTab) {
-                        0 -> {
-                            val homeVm: HomeViewModel = viewModel()
-                            val homeState by homeVm.state.collectAsState()
-                            LaunchedEffect(Unit) { homeVm.refresh() }
-
-                            HomeScreen(
-                                state = homeState,
-                                onRefresh = homeVm::refresh,
-                                onLogout = onLogout,
-                                onSettingsClick = { 
-                                    if (homeState is HomeState.Content) {
-                                        selectedMeasurement = (homeState as HomeState.Content).latest
-                                    }
-                                    activeOverlay = "settings" 
-                                },
-                                onHistoryClick = { activeOverlay = "history" },
-                                onMeasurementClick = { m ->
-                                    selectedMeasurement = m
-                                    activeOverlay = "measurement_detail"
-                                }
-                            )
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            if (showBottomBar) {
+                val selectedTab = if (currentRoute == "schedule") 1 else 0
+                BpBottomNavBar(
+                    selectedTab = selectedTab,
+                    onTabSelected = { tab ->
+                        val route = if (tab == 1) "schedule" else "home"
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        1 -> {
-                            val scheduleVm: ScheduleViewModel = viewModel()
-                            val scheduleState by scheduleVm.state.collectAsState()
-                            ScheduleScreen(
-                                state = scheduleState,
-                                onConfirm = scheduleVm::confirm,
-                                onRefresh = scheduleVm::refresh,
-                                onEditClick = { activeOverlay = "schedule_edit" },
-                                onPrescriptionsClick = { activeOverlay = "prescriptions" }
-                            )
+                    },
+                    onScanClick = { navController.navigate("camera") }
+                )
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable("home") {
+                val homeVm: HomeViewModel = viewModel()
+                val homeState by homeVm.state.collectAsState()
+                LaunchedEffect(Unit) { homeVm.refresh() }
+
+                HomeScreen(
+                    state = homeState,
+                    onRefresh = homeVm::refresh,
+                    onLogout = onLogout,
+                    onSettingsClick = {
+                        if (homeState is HomeState.Content) {
+                            selectedMeasurement = (homeState as HomeState.Content).latest
                         }
+                        navController.navigate("settings")
+                    },
+                    onHistoryClick = { navController.navigate("history") },
+                    onMeasurementClick = { m ->
+                        selectedMeasurement = m
+                        navController.navigate("measurement_detail")
+                    }
+                )
+            }
+
+            composable("schedule") {
+                val scheduleVm: ScheduleViewModel = viewModel()
+                val scheduleState by scheduleVm.state.collectAsState()
+                ScheduleScreen(
+                    state = scheduleState,
+                    onConfirm = scheduleVm::confirm,
+                    onRefresh = scheduleVm::refresh,
+                    onEditClick = { navController.navigate("schedule_edit") },
+                    onPrescriptionsClick = { navController.navigate("prescriptions") }
+                )
+            }
+
+            composable("camera") {
+                CameraScanScreen(
+                    onCapture = { bitmap ->
+                        capturedBitmap = bitmap
+                        navController.navigate("ocr_review")
+                    },
+                    onEnterManually = { navController.navigate("manual_entry") },
+                    onCancel = { navController.popBackStack() }
+                )
+            }
+
+            composable("ocr_review") {
+                val reviewVm: ScanReviewViewModel = viewModel()
+                val reviewState by reviewVm.state.collectAsState()
+
+                capturedBitmap?.let { bitmap ->
+                    LaunchedEffect(bitmap) {
+                        reviewVm.initWithImage(bitmap)
                     }
                 }
+
+                ScanReviewScreen(
+                    state = reviewState,
+                    onSysChange = reviewVm::onSysChange,
+                    onDiaChange = reviewVm::onDiaChange,
+                    onPulseChange = reviewVm::onPulseChange,
+                    onSave = reviewVm::save,
+                    onRetake = {
+                        reviewVm.reset()
+                        navController.popBackStack()
+                    },
+                    onRemoteOcr = reviewVm::recognizeRemote,
+                    onBack = {
+                        reviewVm.reset()
+                        navController.popBackStack("home", inclusive = false)
+                        capturedBitmap = null
+                    }
+                )
+            }
+
+            composable("manual_entry") {
+                val entryVm: ManualEntryViewModel = viewModel()
+                val entryState by entryVm.state.collectAsState()
+                ManualEntryScreen(
+                    state = entryState,
+                    onSysChange = entryVm::onSysChange,
+                    onDiaChange = entryVm::onDiaChange,
+                    onPulseChange = entryVm::onPulseChange,
+                    onSave = entryVm::save,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("measurement_detail") {
+                val detailVm: MeasurementDetailViewModel = viewModel()
+                val detailState by detailVm.state.collectAsState()
+
+                LaunchedEffect(selectedMeasurement) {
+                    selectedMeasurement?.let { detailVm.setMeasurement(it) }
+                }
+
+                MeasurementDetailScreen(
+                    state = detailState,
+                    onDelete = {
+                        detailVm.delete()
+                        navController.popBackStack()
+                    },
+                    onBack = {
+                        navController.popBackStack()
+                        selectedMeasurement = null
+                    }
+                )
+            }
+
+            composable("settings") {
+                val settingsVm: SettingsViewModel = viewModel()
+                val settingsState by settingsVm.state.collectAsState()
+                val activity = LocalActivity.current
+                SettingsScreen(
+                    state = settingsState,
+                    onThemeSelect = settingsVm::setTheme,
+                    onLanguageSelect = settingsVm::setLanguage,
+                    onOcrImprovementToggle = settingsVm::setOcrImprovement,
+                    onRemindersToggle = settingsVm::setRemindersEnabled,
+                    onLogout = onLogout,
+                    onAddPasskey = {
+                        activity?.let { authVm.registerPasskey(it) }
+                    },
+                    onHelpClick = { navController.navigate("bp_scale") },
+                    onBack = { navController.popBackStack() },
+                    onRefresh = settingsVm::refresh
+                )
+            }
+
+            composable("bp_scale") {
+                BpScaleHelpScreen(
+                    latestMeasurement = selectedMeasurement,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("history") {
+                val homeVm: HomeViewModel = viewModel()
+                val homeState by homeVm.state.collectAsState()
+
+                MeasurementHistoryScreen(
+                    state = homeState,
+                    onRefresh = homeVm::refresh,
+                    onMeasurementClick = { m ->
+                        selectedMeasurement = m
+                        navController.navigate("measurement_detail")
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("schedule_edit") {
+                val editVm: ScheduleEditViewModel = viewModel()
+                val editState by editVm.state.collectAsState()
+                val scheduleVm: ScheduleViewModel = viewModel()
+
+                ScheduleEditScreen(
+                    state = editState,
+                    onTimeChange = editVm::onTimeChange,
+                    onDurationChange = editVm::onDurationChange,
+                    onMaxRemindersChange = editVm::onMaxRemindersChange,
+                    onSave = {
+                        editVm.save()
+                    },
+                    onRetry = editVm::load,
+                    onBack = {
+                        navController.popBackStack()
+                        scheduleVm.refresh()
+                    }
+                )
+            }
+
+            composable("prescriptions") {
+                val listVm: PrescriptionsViewModel = viewModel()
+                val listState by listVm.state.collectAsState()
+
+                LaunchedEffect(Unit) { listVm.refresh() }
+
+                PrescriptionsScreen(
+                    state = listState,
+                    onAddClick = {
+                        navController.navigate("prescription_form")
+                    },
+                    onPrescriptionClick = { p ->
+                        navController.navigate("prescription_detail/${p.id}")
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = "prescription_detail/{prescriptionId}",
+                arguments = listOf(navArgument("prescriptionId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val prescriptionId = backStackEntry.arguments?.getString("prescriptionId")
+                val detailVm: PrescriptionDetailViewModel = viewModel()
+                val detailState by detailVm.state.collectAsState()
+
+                LaunchedEffect(prescriptionId) {
+                    prescriptionId?.let { detailVm.setPrescriptionId(it) }
+                }
+
+                PrescriptionDetailScreen(
+                    state = detailState,
+                    onEditPrescription = {
+                        navController.navigate("prescription_form?prescriptionId=$prescriptionId")
+                    },
+                    onDeletePrescription = {
+                        detailVm.deletePrescription()
+                        navController.popBackStack()
+                    },
+                    onAddItem = {
+                        navController.navigate("med_item_form/$prescriptionId")
+                    },
+                    onEditItem = { item ->
+                        navController.navigate("med_item_form/$prescriptionId?itemId=${item.id}")
+                    },
+                    onDeleteItem = detailVm::deleteItem,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = "prescription_form?prescriptionId={prescriptionId}",
+                arguments = listOf(navArgument("prescriptionId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                })
+            ) { backStackEntry ->
+                val prescriptionId = backStackEntry.arguments?.getString("prescriptionId")
+                val formVm: PrescriptionFormViewModel = viewModel()
+                val formState by formVm.state.collectAsState()
+
+                LaunchedEffect(prescriptionId) {
+                    formVm.init(prescriptionId)
+                }
+
+                PrescriptionFormScreen(
+                    state = formState,
+                    onDoctorChange = formVm::onDoctorChange,
+                    onDateChange = formVm::onDateChange,
+                    onIsActiveChange = formVm::onIsActiveChange,
+                    onSave = formVm::save,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = "med_item_form/{prescriptionId}?itemId={itemId}",
+                arguments = listOf(
+                    navArgument("prescriptionId") { type = NavType.StringType },
+                    navArgument("itemId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val prescriptionId = backStackEntry.arguments?.getString("prescriptionId") ?: ""
+                val itemId = backStackEntry.arguments?.getString("itemId")
+                val itemFormVm: MedicationItemFormViewModel = viewModel()
+                val itemFormState by itemFormVm.state.collectAsState()
+
+                LaunchedEffect(prescriptionId, itemId) {
+                    itemFormVm.init(prescriptionId, itemId)
+                }
+
+                MedicationItemFormScreen(
+                    state = itemFormState,
+                    onMedicineChange = itemFormVm::onMedicineChange,
+                    onConditionChange = itemFormVm::onConditionChange,
+                    onWhenSlotsChange = itemFormVm::onWhenSlotsChange,
+                    onDoseAmountChange = itemFormVm::onDoseAmountChange,
+                    onDoseUnitChange = itemFormVm::onDoseUnitChange,
+                    onFreqCountChange = itemFormVm::onFreqCountChange,
+                    onFreqPeriodChange = itemFormVm::onFreqPeriodChange,
+                    onFreqPeriodUnitChange = itemFormVm::onFreqPeriodUnitChange,
+                    onCourseTypeChange = itemFormVm::onCourseTypeChange,
+                    onCourseStartChange = itemFormVm::onCourseStartChange,
+                    onCourseIntakesChange = itemFormVm::onCourseIntakesChange,
+                    onSave = itemFormVm::save,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
