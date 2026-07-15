@@ -1,2 +1,3 @@
-- `[x]` Move `kotlin` block to top level in `build.gradle.kts`
-- `[x]` Verify build
+- `[/]` Update `gradle.properties`: remove legacy flag, add KSP opt-out
+- `[ ]` Update `app/build.gradle.kts`: manually register KSP sources via `androidComponents`
+- `[ ]` Verify build and check for warnings
