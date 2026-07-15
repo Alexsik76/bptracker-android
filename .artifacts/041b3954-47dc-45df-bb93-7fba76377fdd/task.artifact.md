@@ -1,0 +1,25 @@
+# Tasks — Prescriptions & Medication Items: Data Layer
+
+- [x] Create Prescription Enums with @SerialName
+- [x] Create Domain Models
+    - [x] Prescription
+    - [x] MedicationItem
+- [x] Create DTOs
+    - [x] Prescription DTOs (Read, Create, Patch)
+    - [x] Medication Item DTOs (Read, Create, Patch)
+- [x] Create Retrofit API Interfaces
+    - [x] PrescriptionApi
+    - [x] MedicationItemApi
+- [x] Create Room Persistence
+    - [x] PrescriptionEntity & Mapper
+    - [x] MedicationItemEntity & Mapper
+    - [x] PrescriptionDao
+    - [x] MedicationItemDao
+    - [x] Update BpDatabase
+- [x] Create Repository
+    - [x] PrescriptionRepository interface
+    - [x] RealPrescriptionRepository implementation
+- [x] Dependency Injection Wiring
+    - [x] Update ServiceLocator
+- [x] Verification
+    - [x] Build project
