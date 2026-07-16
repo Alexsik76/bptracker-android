@@ -442,6 +442,19 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     formVm.init(prescriptionId)
                 }
 
+                LaunchedEffect(formState.isSaved) {
+                    if (formState.isSaved) {
+                        val newId = formState.savedId
+                        if (newId != null) {
+                            navController.navigate("prescription_detail/$newId") {
+                                popUpTo("prescription_form?prescriptionId={prescriptionId}") { inclusive = true }
+                            }
+                        } else {
+                            navController.popBackStack()
+                        }
+                    }
+                }
+
                 PrescriptionFormScreen(
                     state = formState,
                     onDoctorChange = formVm::onDoctorChange,

@@ -17,6 +17,7 @@ data class PrescriptionFormState(
     val isActive: Boolean = true,
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
+    val savedId: String? = null,
     val error: String? = null
 ) {
     val isValid = doctor.isNotBlank() && prescribedOn.isNotBlank()
@@ -48,15 +49,15 @@ class PrescriptionFormViewModel : ViewModel() {
     }
 
     fun onDoctorChange(value: String) {
-        _state.value = _state.value.copy(doctor = value, error = null)
+        _state.value = _state.value.copy(doctor = value, error = null, isSaved = false)
     }
 
     fun onDateChange(value: String) {
-        _state.value = _state.value.copy(prescribedOn = value, error = null)
+        _state.value = _state.value.copy(prescribedOn = value, error = null, isSaved = false)
     }
 
     fun onIsActiveChange(value: Boolean) {
-        _state.value = _state.value.copy(isActive = value, error = null)
+        _state.value = _state.value.copy(isActive = value, error = null, isSaved = false)
     }
 
     fun save() {
@@ -66,12 +67,14 @@ class PrescriptionFormViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isSaving = true, error = null)
             try {
-                if (s.id == null) {
-                    repository.createPrescription(s.doctor, s.prescribedOn)
+                val savedId = if (s.id == null) {
+                    val created = repository.createPrescription(s.doctor, s.prescribedOn)
+                    created.id
                 } else {
                     repository.updatePrescription(s.id, s.doctor, s.prescribedOn, s.isActive)
+                    null
                 }
-                _state.value = _state.value.copy(isSaving = false, isSaved = true)
+                _state.value = _state.value.copy(isSaving = false, isSaved = true, savedId = savedId)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isSaving = false, error = e.message ?: "Save failed")
             }

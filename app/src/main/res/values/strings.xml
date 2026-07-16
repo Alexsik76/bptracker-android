@@ -155,6 +155,7 @@
     <string name="prescriptions_prescribed_on">Prescribed on %1$s</string>
     <string name="prescriptions_doctor_hint">Doctor Name</string>
     <string name="prescriptions_date_hint">Prescription Date</string>
+    <string name="prescriptions_pick_date_desc">Pick date</string>
     <string name="prescriptions_delete_confirm">Delete this prescription and all its items?</string>
 
     <!-- Medication Items -->

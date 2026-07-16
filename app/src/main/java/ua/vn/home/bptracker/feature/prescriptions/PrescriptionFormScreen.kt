@@ -1,10 +1,12 @@
 package ua.vn.home.bptracker.feature.prescriptions
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,10 +32,6 @@ fun PrescriptionFormScreen(
     onSave: () -> Unit,
     onBack: () -> Unit
 ) {
-    LaunchedEffect(state.isSaved) {
-        if (state.isSaved) onBack()
-    }
-
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
@@ -104,11 +102,16 @@ fun PrescriptionFormScreen(
                 value = state.prescribedOn,
                 onValueChange = {},
                 label = { Text(stringResource(R.string.prescriptions_date_hint)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showDatePicker = true },
                 readOnly = true,
                 trailingIcon = {
-                    TextButton(onClick = { showDatePicker = true }) {
-                        Text(stringResource(R.string.schedule_confirm_btn)) // Repurposing "confirm" as "pick" for brevity or just use text
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(
+                            Icons.Default.DateRange,
+                            contentDescription = stringResource(R.string.prescriptions_pick_date_desc)
+                        )
                     }
                 }
             )

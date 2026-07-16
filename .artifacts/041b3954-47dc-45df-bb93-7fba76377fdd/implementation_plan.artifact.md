@@ -1,54 +1,55 @@
-# План впровадження — Prompt: Призупинення роботи нагадувань
+# Prescription Form UX Fixes
 
-Цей етап спрямований на тимчасове нейтралізування незавершеної логіки нагадувань, щоб уникнути помилок на екрані та фонових збоїв, залишаючи при цьому функціонал рецептів та конфігурації годин повністю працездатним.
-
-## User Review Required
-
-> [!IMPORTANT]
-> - Всі фонові задачі та аларми нагадувань будуть деактивовані.
-> - Вкладка розкладу відображатиме заглушку "Reminders — coming soon" замість спроби завантаження даних.
-> - Перемикач нагадувань у налаштуваннях буде встановлено у положення "Вимкнено" за замовчуванням.
-> - **Точки входу до налаштувань конфігурації та рецептів залишаються доступними.**
+This plan addresses two UX issues in the prescription form:
+1.  Misleading date field trailing icon and limited click area.
+2.  Navigation to the list instead of the detail screen after creating a prescription.
 
 ## Proposed Changes
 
-### Feature: Schedule (Розклад)
+### Resources
 
-#### [MODIFY] [ScheduleViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleViewModel.kt)
-- Видалити логіку виклику `repository.getToday()` та `repository.confirm()`.
-- Встановити початковий стан як `ScheduleState.Empty` (або новий стан-заглушку).
+#### [MODIFY] [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml)
+- Add `prescriptions_pick_date_desc` string for the calendar icon content description.
 
-#### [MODIFY] [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt)
-- Оновити відображення стану `Empty` або додати спеціальну секцію для виведення повідомлення про те, що нагадування з'являться згодом.
-- Зберегти кнопки переходу до рецептів та налаштувань у `TopAppBar`.
+#### [MODIFY] [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml)
+- Add `prescriptions_pick_date_desc` string in Ukrainian.
 
-#### [MODIFY] [strings.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values/strings.xml) & [strings-uk.xml](file:///D:/dev/bp_tracker/mobile_app/app/src/main/res/values-uk/strings.xml)
-- Додати рядок `schedule_coming_soon`.
+### Feature: Prescriptions
 
----
+#### [MODIFY] [PrescriptionFormViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionFormViewModel.kt)
+- Update `PrescriptionFormState` to include `savedId: String? = null`.
+- Modify `save()` method:
+    - On creation, capture the ID from the returned `PrescriptionReadDto` and set it in `savedId`.
+    - On edit, ensure `savedId` remains `null`.
 
-### Feature: Reminders Runtime (Фонова робота)
+#### [MODIFY] [PrescriptionFormScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionFormScreen.kt)
+- Remove the `LaunchedEffect` that automatically calls `onBack()` when `isSaved` is true. Navigation will now be handled by the host.
+- Update the `OutlinedTextField` for `prescribedOn`:
+    - Add an `interactionSource` and a `Modifier.clickable` (or similar) to make the entire field open the date picker.
+    - Replace the `TextButton` in `trailingIcon` with an `IconButton` using `Icons.Default.DateRange`.
+    - Use the new `prescriptions_pick_date_desc` for the icon's content description.
 
-#### [MODIFY] [ReminderScheduler.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderScheduler.kt)
-- Зробити метод `rescheduleAll()` порожнім (no-op), щоб він не робив мережевих запитів та не планував аларми.
+### Main Activity
 
-#### [MODIFY] [ReminderReceiver.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderReceiver.kt)
-- Зробити `onReceive()` порожнім, щоб він ігнорував будь-які події (включаючи `BOOT_COMPLETED` та аларми).
-
----
-
-### Feature: Settings (Налаштування)
-
-#### [MODIFY] [SettingsViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/settings/SettingsViewModel.kt)
-- Оновити `refresh()`, щоб перемикач нагадувань завжди мав стан `false` (або `null`), і не викликати репозиторій.
+#### [MODIFY] [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)
+- Update the `composable` for `prescription_form`:
+    - Add a `LaunchedEffect(formState.isSaved)` block.
+    - If `isSaved` is true:
+        - If `savedId` is present (create flow), navigate to `prescription_detail/{savedId}` and pop the form from the backstack.
+        - If `savedId` is null (edit flow), call `navController.popBackStack()`.
 
 ## Verification Plan
 
 ### Automated Tests
-- Складання проекту: `./gradlew app:assembleDebug`.
+- Run `./gradlew app:assembleDebug` to ensure the project builds successfully.
 
 ### Manual Verification
-- Перехід на вкладку розкладу: має відображатися повідомлення-заглушка без помилок.
-- Перевірка, що кнопки "Рецепти" та "Налаштування" на вкладці розкладу працюють.
-- Перевірка, що в налаштуваннях перемикач нагадувань вимкнений.
-- Перевірка відсутності фонових збоїв (через логування, якщо можливо).
+- **Date Field:**
+    - Open the prescription form.
+    - Verify the trailing icon is now a calendar icon.
+    - Tap on the field itself — the date picker should open.
+    - Tap on the calendar icon — the date picker should open.
+- **Navigation:**
+    - Create a new prescription. Verify it navigates to the detail screen of the new prescription.
+    - Press "Back" from the detail screen. Verify it returns to the prescriptions list.
+    - Edit an existing prescription and save. Verify it returns to the detail screen (where it came from).
