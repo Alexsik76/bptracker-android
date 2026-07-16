@@ -49,7 +49,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             val croppedBitmap = cropDisplay(bitmap, bestDisplay.box)
 
             // Stage 2: Detect Digits
-            val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.25f)
+            val digitBoxes = runDetection(digitSession, croppedBitmap, 320, 10, 0.25f)
             if (digitBoxes.isEmpty()) return@withContext OcrOutcome.Failure("digits-not-found")
 
             val nmsBoxes = OcrPostprocess.nms(digitBoxes, 0.4f)
@@ -113,7 +113,6 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             session.run(mapOf(inputName to t)).use { results ->
                 @Suppress("UNCHECKED_CAST")
                 val output = results[0].value as Array<Array<FloatArray>> // [1, 4+numClasses, numAnchors]
-
                 // Flatten output for postprocessor
                 val flatOutput = flattenYoloOutput(output[0])
                 val numAnchors = flatOutput.size / (4 + numClasses)

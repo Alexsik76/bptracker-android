@@ -1,7 +1,2 @@
-- [x] Delete `ScheduleEditViewModelTest.kt`
-- [x] Create `ReminderConfigViewModelTest.kt`
-- [x] Update `ReminderSchedulerTest.kt`
-- [x] Create `PrescriptionFormViewModelTest.kt`
-- [x] Verify unit tests with `./gradlew :app:testDebugUnitTest`
-- [x] Verify build with `./gradlew :app:assembleDebug`
-- [x] Commit and push to `dev`
+- [ ] Update `docs/design-brief-native.md` to reflect current project state
+- [ ] Commit and push changes

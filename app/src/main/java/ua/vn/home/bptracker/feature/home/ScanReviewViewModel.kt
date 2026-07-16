@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.home
 
+import android.util.Log
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -62,14 +63,17 @@ class ScanReviewViewModel : ViewModel() {
                     pulse = outcome.pul.toString(),
                     recognized = true
                 )
-                is OcrOutcome.Failure -> ScanReviewState.Ready(
-                    image = image,
-                    sys = "",
-                    dia = "",
-                    pulse = "",
-                    recognized = false,
-                    error = R.string.scan_review_ocr_failed
-                )
+                is OcrOutcome.Failure -> {
+                    Log.w("Ocr", "recognize failed: ${outcome.reason}")
+                    ScanReviewState.Ready(
+                        image = image,
+                        sys = "",
+                        dia = "",
+                        pulse = "",
+                        recognized = false,
+                        error = R.string.scan_review_ocr_failed
+                    )
+                }
             }
         }
     }

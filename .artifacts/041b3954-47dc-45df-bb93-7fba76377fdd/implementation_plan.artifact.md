@@ -1,28 +1,19 @@
-# Fix Broken Tests
+# Update Design Brief
 
-The project currently fails to compile unit tests because `ScheduleEditState` and `ScheduleEditViewModel` were removed in a previous refactoring (replaced by `ReminderConfigViewModel`), but the corresponding test files were left behind.
+The `docs/design-brief-native.md` file needs to be updated to reflect the current state of the application. Several features marked as "Later" or "Web only" have already been implemented, and some "MVP" features are still pending.
 
 ## Proposed Changes
 
-### Tests cleanup
+### Documentation
 
-#### [DELETE] [ScheduleEditViewModelTest.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/test/java/ua/vn/home/bptracker/feature/home/ScheduleEditViewModelTest.kt)
-- This test refers to a deleted class and is no longer relevant.
-
-#### [NEW] [ReminderConfigViewModelTest.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/test/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigViewModelTest.kt)
-- Create a new test to verify `ReminderConfigState` validation and time parsing logic, replacing the functionality that was in `ScheduleEditViewModelTest`.
-
-#### [MODIFY] [ReminderSchedulerTest.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/test/java/ua/vn/home/bptracker/feature/reminders/ReminderSchedulerTest.kt)
-- Remove the dependency on `ScheduleEditState`.
-- Update the time validation test to use `java.time.LocalTime` or a simple regex, as used in the production `ReminderScheduler`.
-
-### Prescription Form Tests
-
-#### [NEW] [PrescriptionFormViewModelTest.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/test/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionFormViewModelTest.kt)
-- Add a test for `PrescriptionFormViewModel` to verify the fix where `savedId` is captured after creation. This ensures the new navigation logic in `MainActivity` works as intended.
+#### [MODIFY] [design-brief-native.md](file:///D:/dev/bp_tracker/mobile_app/docs/design-brief-native.md)
+- Update **Section B (Dashboard)**: Mark reminders intake as 🟡 (Coming soon) as it's still no-op in the code.
+- Update **Section C (Measurement)**: Mark "Full history" and "CSV Export" as 🟢 (Implemented).
+- Update **Section E (Prescriptions)**: Mark "Add/Edit prescriptions and items" as 🟢 (Implemented) since we now have full CRUD for these in the mobile app.
+- Update **Section H (Auth)**: Mark "Passkey registration" as 🟢 (Implemented) as the enrollment prompt and logic are present.
+- General cleanup of status markers to match reality.
 
 ## Verification Plan
 
-### Automated Tests
-- Run `./gradlew :app:testDebugUnitTest` and ensure all tests pass.
-- Run `./gradlew :app:assembleDebug` to ensure no production code was affected.
+### Manual Verification
+- Review the updated markdown file to ensure it accurately describes the implemented features and those still in progress.
