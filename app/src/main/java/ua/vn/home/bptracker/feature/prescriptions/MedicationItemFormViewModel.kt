@@ -47,7 +47,10 @@ class MedicationItemFormViewModel : ViewModel() {
 
     fun init(prescriptionId: String, itemId: String?) {
         if (itemId == null) {
-            _state.value = MedicationItemFormState(prescriptionId = prescriptionId)
+            _state.value = MedicationItemFormState(
+                prescriptionId = prescriptionId,
+                doseUnit = DoseUnit.Mg
+            )
             return
         }
         viewModelScope.launch {

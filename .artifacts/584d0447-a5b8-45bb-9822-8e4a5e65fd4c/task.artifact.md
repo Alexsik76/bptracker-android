@@ -1,0 +1,8 @@
+- [x] Default `doseUnit` to `DoseUnit.Mg` in `MedicationItemFormViewModel`
+- [x] Add `imePadding()` to `MedicationItemFormScreen`
+- [x] Add `verticalScroll` and `imePadding()` to `PrescriptionFormScreen`
+- [x] Add `imePadding()` to `ReminderConfigScreen`
+- [x] Add `verticalScroll` and `imePadding()` to `ManualEntryScreen`
+- [x] Verify/Fix `ScanReviewScreen` IME/scroll behavior
+- [x] Add `verticalScroll` and `imePadding()` to `LoginScreen`
+- [x] Verify build with `./gradlew app:assembleDebug`

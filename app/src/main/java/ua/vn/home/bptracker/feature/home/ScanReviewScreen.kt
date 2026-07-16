@@ -49,7 +49,6 @@ fun ScanReviewScreen(
     }
 
     Scaffold(
-        modifier = Modifier.imePadding(),
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
@@ -86,6 +85,7 @@ fun ScanReviewScreen(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
                         .navigationBarsPadding()
+                        .imePadding()
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -142,6 +142,7 @@ fun ScanReviewScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
