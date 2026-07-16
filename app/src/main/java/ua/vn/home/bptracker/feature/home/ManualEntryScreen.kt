@@ -37,6 +37,7 @@ fun ManualEntryScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(

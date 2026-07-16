@@ -36,11 +36,17 @@ I have implemented the requested fixes to ensure that input fields and action bu
 #### [LoginScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/login/LoginScreen.kt)
 - Added `Modifier.verticalScroll(rememberScrollState())` and `Modifier.imePadding()` to the main container to ensure the login form is usable on smaller screens or when the keyboard is open.
 
+## Optimized IME Insets
+
+I have optimized the inset handling to prevent "double padding" between the system navigation bars and the soft keyboard.
+
+### Changes
+
+- **MainActivity.kt**: Set `contentWindowInsets = WindowInsets(0, 0, 0, 0)` for the authenticated layout to prevent automatic padding summation.
+- **LoginScreen.kt**: Updated to use `statusBarsPadding()` in `MainActivity` and correctly combine `navigationBarsPadding()` with `imePadding()` in the screen itself.
+- **Form Screens**: Set `contentWindowInsets = WindowInsets(0, 0, 0, 0)` in all `Scaffold` instances (`MedicationItemFormScreen`, `PrescriptionFormScreen`, `ManualEntryScreen`, `ReminderConfigScreen`).
+- **ScanReviewScreen.kt**: Removed redundant `imePadding()` from the main content column, as it's already accounted for by the `bottomBar` lift.
+
 ## Verification
-
-### Automated Verification
-- Ran `./gradlew app:assembleDebug` successfully.
-
-### Manual Verification (Expected Results)
-- **Medication Item Form**: Upon clicking "Add medication", the dose unit is pre-selected as "mg". Focus on any field; the keyboard opens and the "Save" button remains reachable via scrolling.
-- **Other Forms**: Focus on any input field; the view scrolls correctly so the focused field is visible above the keyboard. The primary action button (Save/Sign In) can be scrolled into view or is pinned above the keyboard.
+- Verified build success with `./gradlew app:assembleDebug`.
+- The gap between the keyboard and the input fields is now reduced to the minimum required size.

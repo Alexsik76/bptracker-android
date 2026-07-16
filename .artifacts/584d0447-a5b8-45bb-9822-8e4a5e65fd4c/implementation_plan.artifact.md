@@ -1,57 +1,34 @@
-# Implementation Plan — Fix keyboard (IME) covering input fields
+# Implementation Plan — Optimize IME Insets and Padding
 
-This plan addresses the issue where the soft keyboard covers input fields and action buttons in various forms. It also includes a default value for the dose unit in the medication-item form.
+The user reported that the keyboard padding is too large. This is caused by overlapping inset handling between `Scaffold` and manual `imePadding()` modifiers.
 
 ## Proposed Changes
 
-### [Component] Core configuration
+### [Component] Core Layout
 
 #### [MODIFY] [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt)
-- Confirm `enableEdgeToEdge()` is used (already present).
-- The current implementation uses `Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0))` and `Modifier.systemBarsPadding()` in some places. I will ensure consistency in how insets are handled.
+- Set `contentWindowInsets = WindowInsets(0, 0, 0, 0)` for the `Scaffold` in `MainAuthenticatedLayout`. This prevents the `Scaffold` from automatically adding padding for system bars, allowing us to control it precisely in individual screens.
 
-### [Component] Prescriptions Feature
+### [Component] Screens Audit
 
-#### [MODIFY] [MedicationItemFormViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/MedicationItemFormViewModel.kt)
-- Default `doseUnit` to `DoseUnit.Mg` in `init` when creating a new item (`itemId == null`).
+For each screen where `imePadding()` was added, I will ensure it's not fighting with `Scaffold` padding.
 
 #### [MODIFY] [MedicationItemFormScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/MedicationItemFormScreen.kt)
-- Add `Modifier.imePadding()` to the main container.
-- It already has `Modifier.verticalScroll(rememberScrollState())`.
-
-#### [MODIFY] [PrescriptionFormScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionFormScreen.kt)
-- Add `Modifier.verticalScroll(rememberScrollState())` and `Modifier.imePadding()` to the main container.
-- Replace `Spacer(Modifier.weight(1f))` with a fixed spacer or remove it to allow scrolling.
-
-### [Component] Reminders Feature
-
-#### [MODIFY] [ReminderConfigScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigScreen.kt)
-- Add `Modifier.imePadding()` to the main container.
-- It already has `Modifier.verticalScroll(rememberScrollState())`.
-
-### [Component] Home Feature (Manual Entry & Scan Review)
-
-#### [MODIFY] [ManualEntryScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ManualEntryScreen.kt)
-- Add `Modifier.verticalScroll(rememberScrollState())` and `Modifier.imePadding()` to the main container.
-- Replace `Spacer(Modifier.weight(1f))` with a fixed spacer.
+- Set `contentWindowInsets = WindowInsets(0, 0, 0, 0)` in its `Scaffold`.
+- Ensure `Modifier.imePadding()` is applied correctly to the main `Column`.
 
 #### [MODIFY] [ScanReviewScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScanReviewScreen.kt)
-- Ensure `Modifier.imePadding()` is correctly applied (it's currently on `Scaffold`, which might be correct if it lifts the whole UI including the bottom bar).
-- Confirm the `verticalScroll` works as expected with the bottom bar.
+- Remove `imePadding()` from the main `Column` because it's already handled by the `bottomBar` lift.
+- Set `contentWindowInsets = WindowInsets(0, 0, 0, 0)` in its `Scaffold`.
 
-### [Component] Auth Feature
-
-#### [MODIFY] [LoginScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/login/LoginScreen.kt)
-- Add `Modifier.verticalScroll(rememberScrollState())` and `Modifier.imePadding()` to the main container.
+#### [MODIFY] [PrescriptionFormScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/prescriptions/PrescriptionFormScreen.kt)
+#### [MODIFY] [ManualEntryScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ManualEntryScreen.kt)
+#### [MODIFY] [ReminderConfigScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/ReminderConfigScreen.kt)
+- Set `contentWindowInsets = WindowInsets(0, 0, 0, 0)` in their `Scaffold` components.
 
 ## Verification Plan
 
-### Automated Tests
-- Run `./gradlew app:assembleDebug` to ensure the project still builds.
-
 ### Manual Verification
-- Deploy the app to a device/emulator.
-- Open each modified screen and focus on a text field (especially those at the bottom).
-- Verify that the keyboard does not cover the focused field or the "Save" button.
-- Verify that the user can scroll to see all fields and the "Save" button while the keyboard is open.
-- For `MedicationItemFormScreen`, verify that "mg" is selected by default for new items.
+- Verify the gap between the keyboard and the "Course" section in `MedicationItemFormScreen` is reduced.
+- Verify `ScanReviewScreen` bottom bar doesn't have double padding.
+- Ensure top bar doesn't overlap with status bar (may need to add `statusBarsPadding()` to top bars if `Scaffold` insets are cleared).

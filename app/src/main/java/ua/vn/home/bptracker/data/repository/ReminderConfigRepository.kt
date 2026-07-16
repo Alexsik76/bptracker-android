@@ -3,25 +3,40 @@ package ua.vn.home.bptracker.data.repository
 import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.ReminderConfigApi
 import ua.vn.home.bptracker.data.dto.ReminderConfigDto
+import ua.vn.home.bptracker.data.local.dao.ReminderConfigDao
+import ua.vn.home.bptracker.data.local.entity.toDto
+import ua.vn.home.bptracker.data.local.entity.toEntity
 
 interface ReminderConfigRepository {
     suspend fun getConfig(): ReminderConfigDto?
     suspend fun saveConfig(config: ReminderConfigDto): ReminderConfigDto
+    suspend fun getCachedConfig(): ReminderConfigDto?
 }
 
 class RealReminderConfigRepository(
-    private val api: ReminderConfigApi
+    private val api: ReminderConfigApi,
+    private val dao: ReminderConfigDao
 ) : ReminderConfigRepository {
     override suspend fun getConfig(): ReminderConfigDto? {
         return try {
-            api.getConfig()
+            val remote = api.getConfig()
+            remote?.let {
+                dao.upsert(it.toEntity())
+            }
+            remote
         } catch (e: HttpException) {
             if (e.code() == 404) null else throw e
         }
     }
 
     override suspend fun saveConfig(config: ReminderConfigDto): ReminderConfigDto {
-        return api.saveConfig(config)
+        val saved = api.saveConfig(config)
+        dao.upsert(saved.toEntity())
+        return saved
+    }
+
+    override suspend fun getCachedConfig(): ReminderConfigDto? {
+        return dao.getConfig()?.toDto()
     }
 }
 
@@ -40,4 +55,6 @@ class MockReminderConfigRepository : ReminderConfigRepository {
         mockConfig = config
         return mockConfig
     }
+
+    override suspend fun getCachedConfig(): ReminderConfigDto? = mockConfig
 }

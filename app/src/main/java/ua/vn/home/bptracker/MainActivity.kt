@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -108,7 +109,7 @@ class MainActivity : ComponentActivity() {
                                 is AuthState.Loading -> Box(Modifier.fillMaxSize().systemBarsPadding()) {
                                     CircularProgressIndicator(Modifier.align(Alignment.Center))
                                 }
-                                is AuthState.LoggedOut -> Box(Modifier.fillMaxSize().systemBarsPadding()) {
+                                is AuthState.LoggedOut -> Box(Modifier.fillMaxSize().statusBarsPadding()) {
                                     LoginScreen(
                                         info = s.info,
                                         signingIn = s.signingIn,
@@ -189,6 +190,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
                 val selectedTab = if (currentRoute == "schedule") 1 else 0
