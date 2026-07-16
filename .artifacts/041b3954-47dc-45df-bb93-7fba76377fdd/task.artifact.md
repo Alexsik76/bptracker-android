@@ -1,6 +1,7 @@
-- [ ] Update string resources (add `prescriptions_pick_date_desc`)
-- [ ] Update `PrescriptionFormViewModel.kt` to capture `savedId`
-- [ ] Update `PrescriptionFormScreen.kt` for Date field UX and remove self-close
-- [ ] Update `MainActivity.kt` to handle post-save navigation
-- [ ] Verify build with `./gradlew app:assembleDebug`
-- [ ] Commit and push to `dev`
+- [x] Delete `ScheduleEditViewModelTest.kt`
+- [x] Create `ReminderConfigViewModelTest.kt`
+- [x] Update `ReminderSchedulerTest.kt`
+- [x] Create `PrescriptionFormViewModelTest.kt`
+- [x] Verify unit tests with `./gradlew :app:testDebugUnitTest`
+- [x] Verify build with `./gradlew :app:assembleDebug`
+- [x] Commit and push to `dev`
