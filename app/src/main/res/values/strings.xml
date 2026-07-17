@@ -141,6 +141,10 @@
     <string name="settings_group_account">Account</string>
     <string name="settings_logout">Log out</string>
 
+    <string name="notification_reminder_title">Time for your medications: %1$s</string>
+    <string name="notification_action_taken">Taken</string>
+    <string name="settings_reminders_rationale">We need notification permission to send you medication reminders at scheduled times.</string>
+
     <!-- BP Scale Help -->
     <string name="settings_bp_scale_title">ESC BP Scale</string>
     <string name="bp_scale_intro">Blood pressure is classified by the higher value (worst-of rule). If your systolic and diastolic fall into different categories, the higher one is used.</string>

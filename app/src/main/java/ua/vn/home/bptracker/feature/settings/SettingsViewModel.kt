@@ -27,14 +27,15 @@ class SettingsViewModel : ViewModel() {
         settingsStore.theme,
         settingsStore.language,
         settingsStore.ocrImprovement,
+        settingsStore.remindersEnabled,
         _templateState
-    ) { theme, lang, ocr, template ->
+    ) { theme, lang, ocr, reminders, template ->
         SettingsState(
             theme = theme,
             language = lang,
             ocrImprovement = ocr,
             version = BuildConfig.VERSION_NAME,
-            remindersActive = template.second,
+            remindersActive = reminders,
             templateId = template.first
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsState())
@@ -44,8 +45,10 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun refresh() {
-        // No-op for reminders until Part 2
-        _templateState.value = null to false
+        viewModelScope.launch {
+            val config = ServiceLocator.reminderConfigRepository.getCachedConfig()
+            _templateState.value = (if (config != null) "active" else null) to state.value.remindersActive
+        }
     }
 
     fun setTheme(theme: AppTheme) {
@@ -61,6 +64,14 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun setRemindersEnabled(enabled: Boolean) {
-        // No-op until Part 2
+        viewModelScope.launch {
+            settingsStore.setRemindersEnabled(enabled)
+            if (enabled) {
+                ServiceLocator.notificationHelper.createNotificationChannel()
+                ServiceLocator.reminderScheduler.rescheduleAll()
+            } else {
+                ServiceLocator.reminderScheduler.cancelAllReminders()
+            }
+        }
     }
 }

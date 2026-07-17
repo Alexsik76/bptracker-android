@@ -141,6 +141,10 @@
     <string name="settings_export_csv">Експорт CSV на email</string>
     <string name="settings_logout">Вийти з акаунта</string>
 
+    <string name="notification_reminder_title">Час для прийому ліків: %1$s</string>
+    <string name="notification_action_taken">Прийняв</string>
+    <string name="settings_reminders_rationale">Нам потрібен дозвіл на сповіщення, щоб надсилати вам нагадування про прийом ліків у запланований час.</string>
+
     <!-- BP Scale Help -->
     <string name="settings_bp_scale_title">Шкала тиску ESC</string>
     <string name="bp_scale_intro">Тиск класифікується за вищим показником (правило worst-of). Якщо ваші систолічний та діастолічний показники потрапляють у різні категорії, використовується вища.</string>

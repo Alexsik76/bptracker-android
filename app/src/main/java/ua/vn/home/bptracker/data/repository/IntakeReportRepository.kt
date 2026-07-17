@@ -10,7 +10,7 @@ import ua.vn.home.bptracker.data.dto.WhenSlot
 import ua.vn.home.bptracker.data.local.dao.IntakeReportDao
 import ua.vn.home.bptracker.data.local.entity.IntakeReportEntity
 import ua.vn.home.bptracker.data.local.entity.SyncState
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 data class LocalIntake(
@@ -23,6 +23,7 @@ data class LocalIntake(
 interface IntakeReportRepository {
     fun observeForDate(date: String): Flow<List<LocalIntake>>
     suspend fun refresh()
+    suspend fun syncPending()
     suspend fun confirm(period: WhenSlot, date: String, takenAt: String?)
     suspend fun delete(period: WhenSlot, date: String)
 }
@@ -73,8 +74,47 @@ class RealIntakeReportRepository(
         }
     }
 
+    override suspend fun syncPending() {
+        val pending = dao.getPending()
+        pending.forEach { entity ->
+            try {
+                when (entity.syncState) {
+                    SyncState.PENDING_UPSERT -> {
+                        val result = api.createIntakeReport(
+                            IntakeReportCreateDto(
+                                period = WhenSlot.valueOf(entity.period),
+                                date = entity.date,
+                                takenAt = entity.takenAt
+                            )
+                        )
+                        dao.upsert(
+                            entity.copy(
+                                syncState = SyncState.SYNCED,
+                                serverId = result.id,
+                                recordedAt = result.recordedAt,
+                                snapshotJson = json.encodeToString(result.snapshot)
+                            )
+                        )
+                    }
+                    SyncState.PENDING_DELETE -> {
+                        if (entity.serverId != null) {
+                            val response = api.deleteIntakeReport(entity.serverId)
+                            if (response.isSuccessful) {
+                                dao.delete(entity.date, entity.period)
+                            }
+                        } else {
+                            dao.delete(entity.date, entity.period)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Keep pending
+            }
+        }
+    }
+
     override suspend fun confirm(period: WhenSlot, date: String, takenAt: String?) {
-        val moment = takenAt ?: LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val moment = takenAt ?: OffsetDateTime.now().toString()
         
         // Authoritative local write
         val local = IntakeReportEntity(
@@ -141,10 +181,12 @@ class MockIntakeReportRepository : IntakeReportRepository {
         data[key] = LocalIntake(
             period = period,
             date = date,
-            takenAt = takenAt ?: LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            takenAt = takenAt ?: OffsetDateTime.now().toString(),
             pendingDelete = false
         )
     }
+
+    override suspend fun syncPending() {}
 
     override suspend fun delete(period: WhenSlot, date: String) {
         val key = "${date}_${period.name}"

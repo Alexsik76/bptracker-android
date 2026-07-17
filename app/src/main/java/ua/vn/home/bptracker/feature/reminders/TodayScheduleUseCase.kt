@@ -28,6 +28,19 @@ class TodayScheduleUseCase(
         buildTodaySchedule(date, config, activeItems, intakes)
     }
 
+    suspend fun getTodayOnce(date: String): TodaySchedule {
+        val prescriptions = prescriptionRepository.getPrescriptions().first()
+        val active = prescriptions.filter { it.isActive }
+        val activeItems = if (active.isEmpty()) {
+            emptyList()
+        } else {
+            active.flatMap { prescriptionRepository.getItems(it.id).first() }
+        }
+        val intakes = intakeReportRepository.observeForDate(date).first()
+        val config = reminderConfigRepository.getCachedConfig()
+        return buildTodaySchedule(date, config, activeItems, intakes)
+    }
+
     internal fun buildTodaySchedule(
         date: String,
         config: ReminderConfigDto?,

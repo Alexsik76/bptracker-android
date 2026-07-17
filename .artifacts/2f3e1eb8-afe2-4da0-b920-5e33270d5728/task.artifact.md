@@ -1,0 +1,12 @@
+- [x] Fix `takenAt` format in `IntakeReportRepository`
+- [x] Update `ScheduleScreen` time parsing
+- [x] Add `getTodayOnce` to `TodayScheduleUseCase`
+- [x] Implement `rescheduleAll` in `ReminderScheduler`
+- [x] Wire `ReminderReceiver` for alarms and boot
+- [x] Wire `ReminderActionReceiver` for "Taken" action
+- [x] Implement `syncPending` in `IntakeReportRepository`
+- [x] Update `ScheduleViewModel` to trigger sync
+- [x] Update `SettingsStore` for reminders preference
+- [x] Re-enable reminders toggle in `SettingsScreen` and `SettingsViewModel`
+- [x] Add localized strings
+- [x] Verify build and unit tests

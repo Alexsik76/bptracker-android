@@ -1,5 +1,10 @@
 package ua.vn.home.bptracker.feature.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,8 +18,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
@@ -36,6 +43,15 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onRefresh: () -> Unit
 ) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onRemindersToggle(true)
+        }
+    }
+
     LaunchedEffect(Unit) {
         onRefresh()
     }
@@ -140,8 +156,22 @@ fun SettingsScreen(
                     }
                     Switch(
                         checked = state.remindersActive == true,
-                        onCheckedChange = onRemindersToggle,
-                        enabled = state.remindersActive != null
+                        onCheckedChange = { enabled ->
+                            if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                val status = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                                if (status != PackageManager.PERMISSION_GRANTED) {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    onRemindersToggle(true)
+                                }
+                            } else {
+                                onRemindersToggle(enabled)
+                            }
+                        },
+                        enabled = state.templateId != null
                     )
                 }
             }

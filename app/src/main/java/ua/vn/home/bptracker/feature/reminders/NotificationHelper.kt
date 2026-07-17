@@ -48,14 +48,17 @@ class NotificationHelper(private val context: Context) {
         )
 
         val medList = meds.joinToString(", ")
+        val title = context.getString(R.string.notification_reminder_title, period)
+        val actionText = context.getString(R.string.notification_action_taken)
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: Use medication icon
-            .setContentTitle("Time to take your meds: $period")
+            .setContentTitle(title)
             .setContentText(medList)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .addAction(R.drawable.ic_launcher_foreground, "Taken", takenPendingIntent)
+            .addAction(R.drawable.ic_launcher_foreground, actionText, takenPendingIntent)
             .build()
 
         notificationManager.notify(NOTIFICATION_ID_BASE + period.hashCode(), notification)

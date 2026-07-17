@@ -17,6 +17,7 @@ class SettingsStore(private val context: Context) {
     private val themeKey = stringPreferencesKey("app_theme")
     private val langKey = stringPreferencesKey("app_lang")
     private val ocrImproveKey = booleanPreferencesKey("ocr_improvement")
+    private val remindersKey = booleanPreferencesKey("reminders_enabled")
 
     val theme: Flow<AppTheme> = context.settingsDataStore.data.map { prefs ->
         try {
@@ -38,6 +39,10 @@ class SettingsStore(private val context: Context) {
         prefs[ocrImproveKey] ?: true
     }
 
+    val remindersEnabled: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[remindersKey] ?: false
+    }
+
     suspend fun setTheme(theme: AppTheme) {
         context.settingsDataStore.edit { it[themeKey] = theme.name }
     }
@@ -48,5 +53,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setOcrImprovement(enabled: Boolean) {
         context.settingsDataStore.edit { it[ocrImproveKey] = enabled }
+    }
+
+    suspend fun setRemindersEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[remindersKey] = enabled }
     }
 }

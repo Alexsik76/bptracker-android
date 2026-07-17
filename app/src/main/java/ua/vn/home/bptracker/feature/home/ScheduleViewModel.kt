@@ -46,6 +46,7 @@ class ScheduleViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 intakeRepo.refresh()
+                intakeRepo.syncPending()
                 prescriptionRepo.refresh()
             } catch (e: Exception) {
                 if (_state.value !is ScheduleState.Content) {

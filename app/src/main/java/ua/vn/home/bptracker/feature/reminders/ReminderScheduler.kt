@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import ua.vn.home.bptracker.core.di.ServiceLocator
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -16,7 +17,11 @@ class ReminderScheduler(private val context: Context) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     suspend fun rescheduleAll() {
-        // No-op until Part 2
+        val config = ServiceLocator.reminderConfigRepository.getCachedConfig() ?: return
+        cancelAllReminders()
+        scheduleAlarm("Morning", config.morningTime)
+        scheduleAlarm("Day", config.dayTime)
+        scheduleAlarm("Evening", config.eveningTime)
     }
 
     fun cancelAllReminders() {

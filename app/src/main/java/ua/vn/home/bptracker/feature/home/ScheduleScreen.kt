@@ -14,6 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.DoseUnit
 import ua.vn.home.bptracker.data.dto.WhenSlot
 import ua.vn.home.bptracker.feature.reminders.TodayMed
@@ -28,17 +29,10 @@ import java.time.format.DateTimeFormatter
 fun getLocalizedTime(timeStr: String?): String {
     if (timeStr == null) return ""
     return try {
-        // Handle OffsetDateTime (ISO-8601)
-        val dt = OffsetDateTime.parse(timeStr)
+        val dt = TimeUtils.parseToLocal(timeStr)
         dt.format(DateTimeFormatter.ofPattern("HH:mm"))
     } catch (e: Exception) {
-        // Fallback for simple "HH:mm" or "HH:mm:ss" strings
-        if (timeStr.contains(":")) {
-            val parts = timeStr.split(":")
-            val h = if (parts[0].length == 1) "0${parts[0]}" else parts[0]
-            val m = if (parts[1].length == 1) "0${parts[1]}" else parts[1]
-            "$h:$m".take(5)
-        } else timeStr.takeLast(5)
+        timeStr.takeLast(5)
     }
 }
 
