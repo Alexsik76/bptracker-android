@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,7 +53,7 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     
     private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission(),
     ) { _ -> }
 
     private var latestIntent by mutableStateOf<Intent?>(null)
@@ -117,7 +116,7 @@ class MainActivity : ComponentActivity() {
                                         signingIn = s.signingIn,
                                         linkSent = s.linkSent,
                                         onSignIn = { activity -> authVm.signIn(activity) },
-                                        onRequestMagicLink = { email -> authVm.requestMagicLink(email) }
+                                        onRequestMagicLink = { email -> authVm.requestMagicLink(email) },
                                     )
                                 }
                                 is AuthState.LoggedIn -> {
@@ -133,12 +132,14 @@ class MainActivity : ComponentActivity() {
                                             title = { Text(stringResource(R.string.auth_add_passkey)) },
                                             text = { Text(stringResource(R.string.auth_add_passkey_prompt)) },
                                             confirmButton = {
-                                                TextButton(onClick = {
-                                                    activity?.let {
-                                                        authVm.registerPasskey(it)
-                                                        authVm.dismissEnrollPrompt()
-                                                    }
-                                                }) {
+                                                TextButton(
+                                                    onClick = {
+                                                        activity?.let {
+                                                            authVm.registerPasskey(it)
+                                                            authVm.dismissEnrollPrompt()
+                                                        }
+                                                    },
+                                                ) {
                                                     Text(stringResource(R.string.common_save))
                                                 }
                                             },
@@ -146,7 +147,7 @@ class MainActivity : ComponentActivity() {
                                                 TextButton(onClick = { authVm.dismissEnrollPrompt() }) {
                                                     Text(stringResource(R.string.common_cancel))
                                                 }
-                                            }
+                                            },
                                         )
                                     }
                                 }
@@ -227,7 +228,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 HomeScreen(
                     state = homeState,
                     onRefresh = homeVm::refresh,
-                    onLogout = onLogout,
                     onSettingsClick = {
                         if (homeState is HomeState.Content) {
                             selectedMeasurement = (homeState as HomeState.Content).latest
@@ -238,7 +238,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onMeasurementClick = { m ->
                         selectedMeasurement = m
                         navController.navigate("measurement_detail")
-                    }
+                    },
                 )
             }
 

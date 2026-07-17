@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,7 +18,6 @@ import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.DoseUnit
 import ua.vn.home.bptracker.data.dto.WhenSlot
-import ua.vn.home.bptracker.feature.reminders.TodayMed
 import ua.vn.home.bptracker.feature.reminders.TodaySchedule
 import ua.vn.home.bptracker.feature.reminders.TodaySlot
 import ua.vn.home.bptracker.ui.components.*
@@ -31,7 +31,7 @@ fun getLocalizedTime(timeStr: String?): String {
     return try {
         val dt = TimeUtils.parseToLocal(timeStr)
         dt.format(DateTimeFormatter.ofPattern("HH:mm"))
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         timeStr.takeLast(5)
     }
 }
@@ -67,7 +67,7 @@ fun ScheduleScreen(
     onDelete: (WhenSlot) -> Unit,
     onRefresh: () -> Unit,
     onEditClick: () -> Unit,
-    onPrescriptionsClick: () -> Unit
+    onPrescriptionsClick: () -> Unit,
 ) {
     var selectedSlotForIntake by remember { mutableStateOf<TodaySlot?>(null) }
 
@@ -82,7 +82,10 @@ fun ScheduleScreen(
                 },
                 actions = {
                     IconButton(onClick = onPrescriptionsClick) {
-                        Icon(Icons.Default.Assignment, contentDescription = stringResource(R.string.prescriptions_title))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Assignment,
+                            contentDescription = stringResource(R.string.prescriptions_title),
+                        )
                     }
                     IconButton(onClick = onEditClick) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.rem_config_title))
@@ -114,12 +117,12 @@ fun ScheduleScreen(
                     if (state.schedule.slots.isEmpty()) {
                         EmptyState(
                             title = stringResource(R.string.schedule_empty),
-                            description = stringResource(R.string.schedule_empty_hint)
+                            description = stringResource(R.string.schedule_empty_hint),
                         )
                     } else {
                         ScheduleContent(
                             schedule = state.schedule,
-                            onSlotClick = { selectedSlotForIntake = it }
+                            onSlotClick = { selectedSlotForIntake = it },
                         )
                     }
                 }
@@ -252,15 +255,15 @@ fun SlotCard(slot: TodaySlot, onClick: () -> Unit) {
                             Text(
                                 text = "${med.medicine} ($dose)",
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
                             )
                         }
-                        if (med.condition != null) {
+                        med.condition?.let {
                             Text(
-                                text = med.condition,
+                                text = it,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 16.dp)
+                                modifier = Modifier.padding(start = 16.dp),
                             )
                         }
                     }
@@ -277,14 +280,14 @@ fun IntakeBottomSheet(
     onConfirm: (WhenSlot) -> Unit,
     onEditTime: (WhenSlot, String) -> Unit,
     onDelete: (WhenSlot) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState()
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(value = false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState
+        sheetState = sheetState,
     ) {
         Column(
             modifier = Modifier
@@ -356,13 +359,15 @@ fun IntakeBottomSheet(
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    val edited = now.withHour(timePickerState.hour)
-                        .withMinute(timePickerState.minute)
-                        .withSecond(0).withNano(0)
-                    onEditTime(slot.slot, edited.toString())
-                    showTimePicker = false
-                }) {
+                TextButton(
+                    onClick = {
+                        val edited = now.withHour(timePickerState.hour)
+                            .withMinute(timePickerState.minute)
+                            .withSecond(0).withNano(0)
+                        onEditTime(slot.slot, edited.toString())
+                        showTimePicker = false
+                    },
+                ) {
                     Text(stringResource(R.string.common_save))
                 }
             },
@@ -373,7 +378,7 @@ fun IntakeBottomSheet(
             },
             text = {
                 TimePicker(state = timePickerState)
-            }
+            },
         )
     }
 }

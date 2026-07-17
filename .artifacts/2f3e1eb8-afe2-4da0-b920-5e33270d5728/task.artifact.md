@@ -1,8 +1,8 @@
-- [x] Delete `data/api/ReminderApi.kt`
-- [x] Delete `data/dto/ReminderDtos.kt`
-- [x] Delete `data/repository/ReminderRepository.kt`
-- [x] Delete `data/local/entity/MedIntakeEntity.kt`
-- [x] Delete `data/local/dao/MedIntakeDao.kt`
-- [x] Unwire `ServiceLocator.kt` (remove `reminderApi`, `reminderRepository`, and unused imports)
-- [x] Unwire `BpDatabase.kt` (remove `MedIntakeEntity`, `medIntakeDao`, and bump version to 5)
+- [x] Fix reminder notification text and warnings in `ReminderReceiver.kt`
+- [x] Replace deprecated icon and address warnings in `ScheduleScreen.kt`
+- [x] Address warnings in `SettingsScreen.kt`
+- [x] Address warnings in `MainActivity.kt`
+- [x] Address warnings in `TodayScheduleUseCase.kt`
+- [x] Address warnings in `HomeScreen.kt`
+- [x] Address warnings in `MedicationItemFormScreen.kt`
 - [x] Verify build and unit tests

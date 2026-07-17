@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -43,10 +42,9 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     state: HomeState,
     onRefresh: () -> Unit,
-    onLogout: () -> Unit,
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onMeasurementClick: (MeasurementDto) -> Unit
+    onMeasurementClick: (MeasurementDto) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -101,7 +99,11 @@ fun DashboardContent(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            HeroCard(content.latest, content.zone, onClick = { onMeasurementClick(content.latest) })
+            HeroCard(
+                latest = content.latest,
+                zone = content.zone,
+                onClick = { onMeasurementClick(content.latest) },
+            )
         }
         
         item {
@@ -173,16 +175,16 @@ fun RecentReadingsSection(
                                 text = "No readings in the last 24h",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(20.dp).align(Alignment.CenterHorizontally)
+                                modifier = Modifier.padding(20.dp).align(Alignment.CenterHorizontally),
                             )
                         } else {
                             filtered.forEachIndexed { index, m ->
                                 MeasurementRow(m, endPadding = if (index == 0) 36.dp else 0.dp)
-                                if (index < filtered.size - 1) {
+                                if (index < (filtered.size - 1)) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(horizontal = 20.dp),
                                         thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
                                     )
                                 }
                             }

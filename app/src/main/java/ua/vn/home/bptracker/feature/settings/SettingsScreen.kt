@@ -41,7 +41,7 @@ fun SettingsScreen(
     onAddPasskey: () -> Unit,
     onHelpClick: () -> Unit,
     onBack: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -142,7 +142,7 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.bodyLarge)
@@ -150,17 +150,17 @@ fun SettingsScreen(
                             Text(
                                 stringResource(R.string.settings_reminders_no_template),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                     Switch(
                         checked = state.remindersActive == true,
                         onCheckedChange = { enabled ->
-                            if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            if (enabled && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)) {
                                 val status = ContextCompat.checkSelfPermission(
                                     context,
-                                    Manifest.permission.POST_NOTIFICATIONS
+                                    Manifest.permission.POST_NOTIFICATIONS,
                                 )
                                 if (status != PackageManager.PERMISSION_GRANTED) {
                                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -171,7 +171,7 @@ fun SettingsScreen(
                                 onRemindersToggle(enabled)
                             }
                         },
-                        enabled = state.templateId != null
+                        enabled = state.templateId != null,
                     )
                 }
             }

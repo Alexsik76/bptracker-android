@@ -8,14 +8,14 @@ import ua.vn.home.bptracker.data.repository.*
 class TodayScheduleUseCase(
     private val prescriptionRepository: PrescriptionRepository,
     private val reminderConfigRepository: ReminderConfigRepository,
-    private val intakeReportRepository: IntakeReportRepository
+    private val intakeReportRepository: IntakeReportRepository,
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeToday(date: String): Flow<TodaySchedule> = combine(
         prescriptionRepository.getPrescriptions().flatMapLatest { prescriptions ->
             val active = prescriptions.filter { it.isActive }
             if (active.isEmpty()) {
-                flowOf(emptyList<MedicationItemReadDto>())
+                flowOf(emptyList())
             } else {
                 combine(active.map { prescriptionRepository.getItems(it.id) }) { arrays ->
                     arrays.flatMap { it }
@@ -61,7 +61,7 @@ class TodayScheduleUseCase(
             val itemsForSlot = activeItems.filter { item ->
                 val includedByCourse = when (item.courseType) {
                     CourseType.Ongoing -> true
-                    CourseType.Course -> item.courseStart == null || item.courseStart.take(10) <= date
+                    CourseType.Course -> (item.courseStart == null) || (item.courseStart.take(10) <= date)
                 }
                 includedByCourse && item.whenSlots.contains(slot)
             }
@@ -79,11 +79,11 @@ class TodayScheduleUseCase(
                         medicine = item.medicine,
                         doseAmount = item.doseAmount,
                         doseUnit = item.doseUnit,
-                        condition = item.condition
+                        condition = item.condition,
                     )
                 },
                 taken = taken,
-                takenAt = if (taken) intake!!.takenAt else null
+                takenAt = if (taken) intake.takenAt else null,
             )
         }
 

@@ -1,31 +1,33 @@
-# Walkthrough - Remove Dead Reminders Cluster
+# Walkthrough - Cosmetic Fixes and Warning Cleanup
 
-I have removed the legacy C# reminders code which was no longer used by the active features. This cleanup ensures the codebase remains maintainable and free of dead weight.
+I have completed a pass of behavior-preserving cosmetic fixes and code cleanups. This included addressing notification text formatting, updating deprecated icons, and clearing numerous lint and compiler warnings.
 
 ## Changes Made
 
-### Deletion of Legacy Files
-The following files and their associated logic have been deleted:
-- `data/api/ReminderApi.kt`
-- `data/dto/ReminderDtos.kt`
-- `data/repository/ReminderRepository.kt`
-- `data/local/entity/MedIntakeEntity.kt`
-- `data/local/dao/MedIntakeDao.kt`
+### Cosmetic Improvements
+- **Notification Text Formatting**: Updated `ReminderReceiver.kt` to build medication dose strings more robustly. This fixes the trailing space issue inside parentheses (e.g., `"Drug (10 mg)"` instead of `"Drug (10 mg )"`).
+- **Auto-Mirrored Icons**: Replaced the deprecated `Icons.Default.Assignment` with its modern, auto-mirrored equivalent `Icons.AutoMirrored.Filled.Assignment` in `ScheduleScreen.kt`.
 
-### Unwiring from the Application
-- **ServiceLocator**: Removed `reminderApi` and `reminderRepository` properties along with their initialization logic and unused imports.
-- **BpDatabase**:
-    - Removed `MedIntakeEntity::class` from the `entities` list.
-    - Removed the `medIntakeDao()` abstract method.
-    - Bumped the database version from `4` to `5`.
+### Code Quality and Warning Cleanup
+- **Unused Code**: Removed several unused imports and parameters (e.g., `onLogout` in `HomeScreen.kt`).
+- **Lambda and Syntax Cleanup**: Moved trailing lambda arguments out of parentheses and added missing trailing commas to improve code style and formatting.
+- **Clarifying Parentheses**: Added parentheses to complex boolean expressions for better readability and to satisfy lint rules.
+- **Smart Casting and Null Safety**: Replaced some manual non-null assertions (`!!`) with smart-casting and removed unnecessary safe calls.
+- **Boolean Literals**: Added parameter names to boolean literals in `mutableStateOf` (e.g., `mutableStateOf(value = false)`) for better clarity.
 
 ## Verification Results
 
 ### Automated Tests
-- Build successful: `./gradlew :app:assembleDebug` passed.
-- Unit tests successful: `./gradlew :app:testDebugUnitTest` passed with 20 tests.
+- **Build**: Successfully assembled the debug APK with `./gradlew :app:assembleDebug`.
+- **Unit Tests**: All 20 tests passed with `./gradlew :app:testDebugUnitTest`.
 
-### Observations
-> [!NOTE]
-> - The database version bump will trigger a destructive migration (cache clear) on the next launch, which is intended given that all essential data (measurements, prescriptions) is either synced or has its own robust storage.
-> - No references to the deleted symbols remain in the project.
+### Warnings Addressed
+| File | Warning(s) Fixed |
+| :--- | :--- |
+| `ScheduleScreen.kt` | Unused import, unused parameter, deprecated icon, trailing commas, lambda formatting. |
+| `HomeScreen.kt` | Unused import, unused parameter (`onLogout`), trailing commas, lambda formatting, clarifying parentheses. |
+| `MainActivity.kt` | Unused import, trailing commas, lambda formatting. |
+| `ReminderReceiver.kt` | Clarifying parentheses, improved string building. |
+| `TodayScheduleUseCase.kt` | Non-null assertion, inferred type arguments, clarifying parentheses. |
+| `MedicationItemFormScreen.kt` | Unused parameter, trailing commas, boolean literal names, foldable if-then. |
+| `SettingsScreen.kt` | Unused import, trailing commas, clarifying parentheses. |

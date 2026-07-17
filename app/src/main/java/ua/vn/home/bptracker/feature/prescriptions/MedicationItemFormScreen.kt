@@ -40,19 +40,19 @@ fun MedicationItemFormScreen(
     onCourseStartChange: (String) -> Unit,
     onCourseIntakesChange: (Int?) -> Unit,
     onSave: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     LaunchedEffect(state.isSaved) {
         if (state.isSaved) onBack()
     }
 
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(value = false) }
+    var showTimePicker by remember { mutableStateOf(value = false) }
 
     if (showDatePicker) {
         val initialDate = try {
             OffsetDateTime.parse(state.courseStart).toInstant().toEpochMilli()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             System.currentTimeMillis()
         }
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDate)
@@ -64,7 +64,7 @@ fun MedicationItemFormScreen(
                         val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
                         val currentDateTime = try {
                             OffsetDateTime.parse(state.courseStart).toLocalDateTime()
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             LocalDateTime.now()
                         }
                         val newDateTime = date.atTime(currentDateTime.toLocalTime())
@@ -84,28 +84,30 @@ fun MedicationItemFormScreen(
     if (showTimePicker) {
         val currentDateTime = try {
             OffsetDateTime.parse(state.courseStart).toLocalDateTime()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             LocalDateTime.now()
         }
         val timePickerState = rememberTimePickerState(
             initialHour = currentDateTime.hour,
-            initialMinute = currentDateTime.minute
+            initialMinute = currentDateTime.minute,
         )
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
-                TextButton(onClick = {
-                    val date = currentDateTime.toLocalDate()
-                    val newDateTime = date.atTime(timePickerState.hour, timePickerState.minute)
-                    onCourseStartChange(newDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime().toString())
-                    showTimePicker = false
-                }) {
+                TextButton(
+                    onClick = {
+                        val date = currentDateTime.toLocalDate()
+                        val newDateTime = date.atTime(timePickerState.hour, timePickerState.minute)
+                        onCourseStartChange(newDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime().toString())
+                        showTimePicker = false
+                    },
+                ) {
                     Text(stringResource(R.string.common_save))
                 }
             },
             text = {
                 TimePicker(state = timePickerState)
-            }
+            },
         )
     }
 
@@ -248,7 +250,7 @@ fun MedicationItemFormScreen(
                         try {
                             val dt = OffsetDateTime.parse(it)
                             dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                        } catch (e: Exception) { it }
+                        } catch (_: Exception) { it }
                     } ?: "",
                     onValueChange = {},
                     label = { Text(stringResource(R.string.med_items_course_start)) },
@@ -268,8 +270,12 @@ fun MedicationItemFormScreen(
                 )
             }
 
-            if (state.error != null) {
-                Text(state.error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            state.error?.let {
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
 
             Spacer(Modifier.height(32.dp))

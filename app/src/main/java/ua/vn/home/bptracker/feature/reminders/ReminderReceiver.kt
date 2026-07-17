@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.data.dto.DoseUnit
 import java.time.LocalDate
 
 class ReminderReceiver : BroadcastReceiver() {
@@ -32,7 +34,19 @@ class ReminderReceiver : BroadcastReceiver() {
                 val slot = schedule.slots.find { it.slot.name == period }
                 
                 if (slot != null && !slot.taken && slot.meds.isNotEmpty()) {
-                    val medNames = slot.meds.map { "${it.medicine} (${it.doseAmount} ${it.doseUnit ?: ""})".trim() }
+                    val medNames = slot.meds.map { med ->
+                        val unitStr = when (med.doseUnit) {
+                            DoseUnit.Tablet -> context.getString(R.string.med_enum_unit_tablet)
+                            DoseUnit.Mg -> context.getString(R.string.med_enum_unit_mg)
+                            DoseUnit.Ml -> context.getString(R.string.med_enum_unit_ml)
+                            DoseUnit.Drop -> context.getString(R.string.med_enum_unit_drop)
+                            DoseUnit.Mcg -> context.getString(R.string.med_enum_unit_mcg)
+                            DoseUnit.Iu -> context.getString(R.string.med_enum_unit_iu)
+                            null -> ""
+                        }
+                        val dose = listOf(med.doseAmount, unitStr).filter { it.isNotEmpty() }.joinToString(" ")
+                        "${med.medicine} ($dose)"
+                    }
                     ServiceLocator.notificationHelper.createNotificationChannel()
                     ServiceLocator.notificationHelper.showReminderNotification(period, medNames)
                 }
