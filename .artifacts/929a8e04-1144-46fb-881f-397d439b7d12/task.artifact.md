@@ -1,0 +1,7 @@
+- [x] Create domain models in `TodaySchedule.kt`
+- [x] Implement `TodayScheduleUseCase.kt` with projection logic
+- [x] Register `TodayScheduleUseCase` in `ServiceLocator.kt`
+- [x] Create unit tests in `TodayScheduleUseCaseTest.kt`
+- [x] Run unit tests and verify they pass
+- [x] Perform a full build check
+- [x] Create walkthrough artifact

@@ -14,6 +14,7 @@ import ua.vn.home.bptracker.data.repository.*
 import ua.vn.home.bptracker.feature.ocr.MockOcrEngine
 import ua.vn.home.bptracker.feature.ocr.OcrEngine
 import ua.vn.home.bptracker.feature.ocr.OnnxOcrEngine
+import ua.vn.home.bptracker.feature.reminders.TodayScheduleUseCase
 
 @SuppressLint("StaticFieldLeak")
 object ServiceLocator {
@@ -78,6 +79,10 @@ object ServiceLocator {
     val intakeReportRepository: IntakeReportRepository by lazy {
         if (MOCK_MODE) MockIntakeReportRepository()
         else RealIntakeReportRepository(intakeReportApi, database.intakeReportDao())
+    }
+
+    val todayScheduleUseCase: TodayScheduleUseCase by lazy {
+        TodayScheduleUseCase(prescriptionRepository, reminderConfigRepository, intakeReportRepository)
     }
 
     val ocrEngine: OcrEngine by lazy {
