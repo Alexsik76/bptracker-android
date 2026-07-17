@@ -62,6 +62,12 @@
     <string name="schedule_pending">Pending</string>
     <string name="schedule_confirm_btn">Taken</string>
     <string name="schedule_taken_at">Taken at %1$s</string>
+    <string name="schedule_intake_title">Intake</string>
+    <string name="schedule_action_confirm">Confirm</string>
+    <string name="schedule_action_edit">Edit time</string>
+    <string name="schedule_action_delete">Delete intake</string>
+    <string name="schedule_not_configured">Reminders not configured</string>
+    <string name="schedule_set_hours">Set hours</string>
     <string name="schedule_edit_title">Edit Schedule</string>
     <string name="schedule_edit_empty">No active medication template found. Please set up your plan in the web application.</string>
     <string name="schedule_edit_periods">Daily Periods</string>

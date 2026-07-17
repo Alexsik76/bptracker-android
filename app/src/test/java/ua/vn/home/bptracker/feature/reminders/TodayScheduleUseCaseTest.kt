@@ -92,33 +92,42 @@ class TodayScheduleUseCaseTest {
     fun `course items are filtered by start date`() {
         val date = "2026-07-17"
         val futureItem = createItem(
-            id = "1", 
-            medicine = "Future", 
+            id = "1",
+            medicine = "Future",
             slots = listOf(WhenSlot.Morning),
             courseType = CourseType.Course,
-            courseStart = "2026-07-18"
+            courseStart = "2026-07-18T08:00:00+03:00"
         )
         val pastItem = createItem(
-            id = "2", 
-            medicine = "Past", 
+            id = "2",
+            medicine = "Past",
             slots = listOf(WhenSlot.Morning),
             courseType = CourseType.Course,
-            courseStart = "2026-07-16"
+            courseStart = "2026-07-16T20:00:00+03:00"
+        )
+        val todayItem = createItem(
+            id = "3",
+            medicine = "Today",
+            slots = listOf(WhenSlot.Morning),
+            courseType = CourseType.Course,
+            courseStart = "2026-07-17T08:00:00+03:00"
         )
         val ongoingItem = createItem(
-            id = "3", 
-            medicine = "Ongoing", 
+            id = "4",
+            medicine = "Ongoing",
             slots = listOf(WhenSlot.Morning),
             courseType = CourseType.Ongoing
         )
 
-        val result = useCase.buildTodaySchedule(date, config, listOf(futureItem, pastItem, ongoingItem), emptyList())
+        val result = useCase.buildTodaySchedule(date, config, listOf(futureItem, pastItem, todayItem, ongoingItem), emptyList())
 
         assertEquals(1, result.slots.size)
-        assertEquals(2, result.slots[0].meds.size)
-        assertTrue(result.slots[0].meds.any { it.medicine == "Past" })
-        assertTrue(result.slots[0].meds.any { it.medicine == "Ongoing" })
-        assertFalse(result.slots[0].meds.any { it.medicine == "Future" })
+        val meds = result.slots[0].meds
+        assertEquals(3, meds.size)
+        assertTrue(meds.any { it.medicine == "Past" })
+        assertTrue(meds.any { it.medicine == "Today" })
+        assertTrue(meds.any { it.medicine == "Ongoing" })
+        assertFalse(meds.any { it.medicine == "Future" })
     }
 
     @Test

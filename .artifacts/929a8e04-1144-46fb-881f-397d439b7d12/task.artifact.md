@@ -1,7 +1,9 @@
-- [x] Create domain models in `TodaySchedule.kt`
-- [x] Implement `TodayScheduleUseCase.kt` with projection logic
-- [x] Register `TodayScheduleUseCase` in `ServiceLocator.kt`
-- [x] Create unit tests in `TodayScheduleUseCaseTest.kt`
-- [x] Run unit tests and verify they pass
-- [x] Perform a full build check
+- [x] Fix course-start gate in `TodayScheduleUseCase.kt`
+- [x] Update unit tests in `TodayScheduleUseCaseTest.kt` with full ISO strings
+- [x] Add new strings in `values/strings.xml` and `values-uk/strings.xml`
+- [x] Rewrite `ScheduleViewModel.kt` with `TodayScheduleUseCase` integration
+- [x] Rewrite `ScheduleScreen.kt` with slot cards and `IntakeBottomSheet`
+- [x] Update `MainActivity.kt` with `ON_RESUME` refresh and new action surface
+- [x] Verify unit tests pass: `./gradlew :app:testDebugUnitTest`
+- [x] Verify build succeeds: `./gradlew app:assembleDebug`
 - [x] Create walkthrough artifact

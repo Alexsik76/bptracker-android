@@ -62,6 +62,12 @@
     <string name="schedule_pending">Очікує</string>
     <string name="schedule_confirm_btn">Прийняв</string>
     <string name="schedule_taken_at">Прийнято о %1$s</string>
+    <string name="schedule_intake_title">Прийом ліків</string>
+    <string name="schedule_action_confirm">Підтвердити</string>
+    <string name="schedule_action_edit">Редагувати час</string>
+    <string name="schedule_action_delete">Видалити запис</string>
+    <string name="schedule_not_configured">Нагадування не налаштовані</string>
+    <string name="schedule_set_hours">Встановити час</string>
     <string name="schedule_edit_title">Редагування розкладу</string>
     <string name="schedule_edit_empty">Не знайдено активного шаблону ліків. Будь ласка, налаштуйте свій план у веб-додатку.</string>
     <string name="schedule_edit_periods">Періоди прийому</string>

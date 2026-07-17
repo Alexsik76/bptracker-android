@@ -1,26 +1,24 @@
-# Walkthrough - Today Schedule Projection
+# Walkthrough - "Today" schedule UI + intake card
 
-Implemented the client-side "today" schedule projection logic, which computes the medication schedule for a specific date based on configuration, prescriptions, and local intake records.
+The Schedule tab has been rewritten to display a real-time, offline-readable medication plan for "today", driven by the `TodayScheduleUseCase`. Users can now confirm intakes, edit the recorded time, and delete records directly from the app.
 
 ## Changes Made
 
-### Reminders Feature
-- **Domain Models**: Added `TodaySchedule`, `TodaySlot`, and `TodayMed` in [TodaySchedule.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/TodaySchedule.kt).
-- **Use Case**: Implemented `TodayScheduleUseCase` in [TodayScheduleUseCase.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/reminders/TodayScheduleUseCase.kt).
-    - `observeToday(date)`: A reactive Flow combining prescriptions, items, and intake reports.
-    - `buildTodaySchedule(...)`: A pure, testable function for the projection logic.
+### Reminders Logic Fix
+- **Course Gate Fix**: In `TodayScheduleUseCase.kt`, corrected the comparison logic to ensure medications starting *today* are included.
+- **Updated Tests**: In `TodayScheduleUseCaseTest.kt`, updated the course filtering tests to use full ISO datetime strings and verified the "starts today" case.
 
-### Dependency Injection
-- Registered `TodayScheduleUseCase` in [ServiceLocator.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/core/di/ServiceLocator.kt).
+### UI & UX Enhancements
+- **Schedule Screen**: Completely redesigned [ScheduleScreen.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleScreen.kt) to show medication slots (Morning, Day, Evening) with localized names, configuration-based times, and medication details (name, dose, condition).
+- **Intake Card**: Added an interactive [IntakeBottomSheet] to handle actions:
+  - **Confirm**: Mark a slot as taken at the current time.
+  - **Edit Time**: Change the recorded time using a Material3 `TimePicker`.
+  - **Delete**: Remove the intake record.
+- **Refresh Mechanism**: Added `ON_RESUME` refresh in [MainActivity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/MainActivity.kt), ensuring the schedule stays up-to-date when returning from settings or background.
+- **Localization**: Added comprehensive strings and translations in `values/strings.xml` and `values-uk/strings.xml`.
 
-### Tests
-- Created comprehensive unit tests in [TodayScheduleUseCaseTest.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/test/java/ua/vn/home/bptracker/feature/reminders/TodayScheduleUseCaseTest.kt) covering:
-    - Configuration state handling.
-    - Slot placement and merging of medications.
-    - Slot ordering and omission of empty slots.
-    - Intake status (taken vs. pending delete).
-    - Course-based filtering (ongoing vs. specific start date).
-    - Dose field mapping.
+### Data Management
+- **ViewModel Rewrite**: Updated [ScheduleViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/ScheduleViewModel.kt) to observe the reactive projection and expose actions for repository-level updates.
 
 ## Verification Results
 
@@ -29,7 +27,7 @@ Ran all unit tests via Gradle:
 ```bash
 ./gradlew :app:testDebugUnitTest
 ```
-**Result**: 20 tests passed (including the 7 new tests for `TodayScheduleUseCase`).
+**Result**: 20 tests passed, including the updated `TodayScheduleUseCaseTest`.
 
 ### Build Check
 Verified that the project compiles successfully:
@@ -37,3 +35,9 @@ Verified that the project compiles successfully:
 ./gradlew app:assembleDebug
 ```
 **Result**: Build finished successfully.
+
+### Manual Verification
+1.  **Schedule Rendering**: Verified that active prescriptions appear in the correct slots with accurate times from configuration.
+2.  **Confirm Intake**: Tapping "Confirm" marks the slot as taken and displays the time.
+3.  **Edit/Delete**: Verified that editing time via `TimePicker` updates the local state correctly, and deleting restores the slot to "Pending".
+4.  **Empty/Unconfigured States**: Verified that the screen correctly handles cases with no scheduled medications or missing configuration.

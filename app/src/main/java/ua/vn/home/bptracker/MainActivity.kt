@@ -245,9 +245,16 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             composable("schedule") {
                 val scheduleVm: ScheduleViewModel = viewModel()
                 val scheduleState by scheduleVm.state.collectAsState()
+
+                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                    scheduleVm.refresh()
+                }
+
                 ScheduleScreen(
                     state = scheduleState,
-                    onConfirm = scheduleVm::confirm,
+                    onConfirm = scheduleVm::confirmSlot,
+                    onEditTime = scheduleVm::editTime,
+                    onDelete = scheduleVm::deleteIntake,
                     onRefresh = scheduleVm::refresh,
                     onEditClick = { navController.navigate("reminder_config") },
                     onPrescriptionsClick = { navController.navigate("prescriptions") }

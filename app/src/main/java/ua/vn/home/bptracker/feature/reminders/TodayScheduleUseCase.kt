@@ -48,7 +48,7 @@ class TodayScheduleUseCase(
             val itemsForSlot = activeItems.filter { item ->
                 val includedByCourse = when (item.courseType) {
                     CourseType.Ongoing -> true
-                    CourseType.Course -> item.courseStart == null || item.courseStart <= date
+                    CourseType.Course -> item.courseStart == null || item.courseStart.take(10) <= date
                 }
                 includedByCourse && item.whenSlots.contains(slot)
             }
