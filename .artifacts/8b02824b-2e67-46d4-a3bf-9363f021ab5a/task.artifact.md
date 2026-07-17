@@ -1,0 +1,2 @@
+- `[x]` Update `MainActivity.kt` to refresh Home on resume
+- `[x]` Verify build with `./gradlew app:assembleDebug`

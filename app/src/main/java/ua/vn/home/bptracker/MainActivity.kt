@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.navigation.NavType
@@ -217,6 +219,10 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             composable("home") {
                 val homeVm: HomeViewModel = viewModel()
                 val homeState by homeVm.state.collectAsState()
+
+                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                    homeVm.refresh()
+                }
 
                 HomeScreen(
                     state = homeState,
