@@ -45,7 +45,6 @@ object ServiceLocator {
     val userApi: UserApi by lazy { authedRetrofit.create() }
 
     private val measurementApi: MeasurementApi by lazy { authedRetrofit.create() }
-    private val reminderApi: ReminderApi by lazy { authedRetrofit.create() }
     private val prescriptionApi: PrescriptionApi by lazy { authedRetrofit.create() }
     private val medicationItemApi: MedicationItemApi by lazy { authedRetrofit.create() }
     private val reminderConfigApi: ReminderConfigApi by lazy { authedRetrofit.create() }
@@ -55,11 +54,6 @@ object ServiceLocator {
     val measurementRepository: MeasurementRepository by lazy {
         if (MOCK_MODE) MockMeasurementRepository()
         else RealMeasurementRepository(measurementApi, database.measurementDao())
-    }
-
-    val reminderRepository: ReminderRepository by lazy {
-        if (MOCK_MODE) MockReminderRepository()
-        else RealReminderRepository(reminderApi, database.medIntakeDao())
     }
 
     val prescriptionRepository: PrescriptionRepository by lazy {

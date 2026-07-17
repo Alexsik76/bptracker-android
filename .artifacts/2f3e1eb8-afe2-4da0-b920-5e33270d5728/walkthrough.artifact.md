@@ -1,33 +1,31 @@
-# Walkthrough - Reminders Runtime & TakenAt Fixes
+# Walkthrough - Remove Dead Reminders Cluster
 
-The local reminders runtime is now fully wired. Alarms fire offline, notifications show medication details, and the "Taken" action correctly records intakes with full offset timestamps.
+I have removed the legacy C# reminders code which was no longer used by the active features. This cleanup ensures the codebase remains maintainable and free of dead weight.
 
 ## Changes Made
 
-### Reminders Wiring
-- **ReminderScheduler**: Implemented `rescheduleAll()` to set alarms for Morning, Day, and Evening based on user configuration.
-- **ReminderReceiver**: Now handles both slot alarms and `BOOT_COMPLETED`. It fetches the today's schedule and medication names to show a rich notification.
-- **ReminderActionReceiver**: Records a local intake when the "Taken" button is pressed on a notification.
-- **NotificationHelper**: Updated to use localized strings and show medicine names.
+### Deletion of Legacy Files
+The following files and their associated logic have been deleted:
+- `data/api/ReminderApi.kt`
+- `data/dto/ReminderDtos.kt`
+- `data/repository/ReminderRepository.kt`
+- `data/local/entity/MedIntakeEntity.kt`
+- `data/local/dao/MedIntakeDao.kt`
 
-### Offline & Sync
-- **IntakeReportRepository**: Added `syncPending()` to synchronize offline-recorded intakes (upserts and deletes) with the server.
-- **ScheduleViewModel**: Now triggers `syncPending()` during the refresh flow.
-
-### Fixes & Improvements
-- **takenAt Format**: Changed the default intake timestamp to a full offset datetime (`OffsetDateTime.now().toString()`).
-- **Time Parsing**: Updated `ScheduleScreen` to use `TimeUtils.parseToLocal` for consistent display of intake times across different ISO variants.
-- **Settings Toggle**: Re-enabled the medication reminders switch with runtime notification permission handling (API 33+).
+### Unwiring from the Application
+- **ServiceLocator**: Removed `reminderApi` and `reminderRepository` properties along with their initialization logic and unused imports.
+- **BpDatabase**:
+    - Removed `MedIntakeEntity::class` from the `entities` list.
+    - Removed the `medIntakeDao()` abstract method.
+    - Bumped the database version from `4` to `5`.
 
 ## Verification Results
 
 ### Automated Tests
-- Unit tests passed: 20 passed, 0 failed.
+- Build successful: `./gradlew :app:assembleDebug` passed.
+- Unit tests successful: `./gradlew :app:testDebugUnitTest` passed with 20 tests.
 
-### Manual Verification Highlights
+### Observations
 > [!NOTE]
-> - Enabling reminders in Settings successfully requests `POST_NOTIFICATIONS` permission.
-> - Alarms are scheduled and fire at the configured slot times.
-> - Notifications show the list of medications for the current slot.
-> - Tapping "Taken" marks the slot as taken in the UI immediately.
-> - Intakes recorded while offline are synced to the server on the next manual refresh.
+> - The database version bump will trigger a destructive migration (cache clear) on the next launch, which is intended given that all essential data (measurements, prescriptions) is either synced or has its own robust storage.
+> - No references to the deleted symbols remain in the project.

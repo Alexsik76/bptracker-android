@@ -10,18 +10,16 @@ import ua.vn.home.bptracker.data.local.entity.*
 @Database(
     entities = [
         MeasurementEntity::class,
-        MedIntakeEntity::class,
         PrescriptionEntity::class,
         MedicationItemEntity::class,
         IntakeReportEntity::class,
         ReminderConfigEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class BpDatabase : RoomDatabase() {
     abstract fun measurementDao(): MeasurementDao
-    abstract fun medIntakeDao(): MedIntakeDao
     abstract fun prescriptionDao(): PrescriptionDao
     abstract fun medicationItemDao(): MedicationItemDao
     abstract fun intakeReportDao(): IntakeReportDao

@@ -1,12 +1,8 @@
-- [x] Fix `takenAt` format in `IntakeReportRepository`
-- [x] Update `ScheduleScreen` time parsing
-- [x] Add `getTodayOnce` to `TodayScheduleUseCase`
-- [x] Implement `rescheduleAll` in `ReminderScheduler`
-- [x] Wire `ReminderReceiver` for alarms and boot
-- [x] Wire `ReminderActionReceiver` for "Taken" action
-- [x] Implement `syncPending` in `IntakeReportRepository`
-- [x] Update `ScheduleViewModel` to trigger sync
-- [x] Update `SettingsStore` for reminders preference
-- [x] Re-enable reminders toggle in `SettingsScreen` and `SettingsViewModel`
-- [x] Add localized strings
+- [x] Delete `data/api/ReminderApi.kt`
+- [x] Delete `data/dto/ReminderDtos.kt`
+- [x] Delete `data/repository/ReminderRepository.kt`
+- [x] Delete `data/local/entity/MedIntakeEntity.kt`
+- [x] Delete `data/local/dao/MedIntakeDao.kt`
+- [x] Unwire `ServiceLocator.kt` (remove `reminderApi`, `reminderRepository`, and unused imports)
+- [x] Unwire `BpDatabase.kt` (remove `MedIntakeEntity`, `medIntakeDao`, and bump version to 5)
 - [x] Verify build and unit tests
