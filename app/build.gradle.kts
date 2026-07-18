@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.InputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -6,6 +9,14 @@ plugins {
 }
 
 android {
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    val keystoreProps = Properties()
+    if (keystorePropsFile.exists()) {
+        val inputStream: InputStream = keystorePropsFile.inputStream()
+        keystoreProps.load(inputStream)
+        inputStream.close()
+    }
+
     namespace = "ua.vn.home.bptracker"
     compileSdk = 35
 
@@ -20,11 +31,24 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"https://api2-bptracker.home.vn.ua/\"")
     }
 
+    signingConfigs {
+        if (keystoreProps.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
         }
         release {
             isMinifyEnabled = false
+            signingConfig = if (keystoreProps.isNotEmpty())
+                signingConfigs.getByName("release") else null
         }
     }
     compileOptions {
