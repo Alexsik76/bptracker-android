@@ -1,8 +1,0 @@
-- [x] Fix reminder notification text and warnings in `ReminderReceiver.kt`
-- [x] Replace deprecated icon and address warnings in `ScheduleScreen.kt`
-- [x] Address warnings in `SettingsScreen.kt`
-- [x] Address warnings in `MainActivity.kt`
-- [x] Address warnings in `TodayScheduleUseCase.kt`
-- [x] Address warnings in `HomeScreen.kt`
-- [x] Address warnings in `MedicationItemFormScreen.kt`
-- [x] Verify build and unit tests

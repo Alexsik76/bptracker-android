@@ -1,9 +1,0 @@
-- [x] Fix course-start gate in `TodayScheduleUseCase.kt`
-- [x] Update unit tests in `TodayScheduleUseCaseTest.kt` with full ISO strings
-- [x] Add new strings in `values/strings.xml` and `values-uk/strings.xml`
-- [x] Rewrite `ScheduleViewModel.kt` with `TodayScheduleUseCase` integration
-- [x] Rewrite `ScheduleScreen.kt` with slot cards and `IntakeBottomSheet`
-- [x] Update `MainActivity.kt` with `ON_RESUME` refresh and new action surface
-- [x] Verify unit tests pass: `./gradlew :app:testDebugUnitTest`
-- [x] Verify build succeeds: `./gradlew app:assembleDebug`
-- [x] Create walkthrough artifact

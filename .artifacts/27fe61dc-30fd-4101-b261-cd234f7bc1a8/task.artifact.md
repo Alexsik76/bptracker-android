@@ -1,3 +1,0 @@
-- `[/]` Update `gradle.properties`: remove legacy flag, add KSP opt-out
-- `[ ]` Update `app/build.gradle.kts`: manually register KSP sources via `androidComponents`
-- `[ ]` Verify build and check for warnings

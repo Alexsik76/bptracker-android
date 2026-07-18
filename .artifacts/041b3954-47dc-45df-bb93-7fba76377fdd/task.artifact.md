@@ -1,2 +1,0 @@
-- [ ] Update `docs/design-brief-native.md` to reflect current project state
-- [ ] Commit and push changes
