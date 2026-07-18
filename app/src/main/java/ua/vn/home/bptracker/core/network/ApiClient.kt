@@ -24,6 +24,8 @@ object ApiClient {
     private fun createLoggingInterceptor() = HttpLoggingInterceptor().apply {
         level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
         else HttpLoggingInterceptor.Level.NONE
+        redactHeader("Authorization")
+        redactHeader("Cookie")
     }
 
     fun plainRetrofit(): Retrofit {

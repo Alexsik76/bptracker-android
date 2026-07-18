@@ -1,9 +1,11 @@
 package ua.vn.home.bptracker.data.repository
 
+import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.IntakeReportApi
 import ua.vn.home.bptracker.data.dto.IntakeReportCreateDto
 import ua.vn.home.bptracker.data.dto.WhenSlot
@@ -99,7 +101,7 @@ class RealIntakeReportRepository(
                     SyncState.PENDING_DELETE -> {
                         if (entity.serverId != null) {
                             val response = api.deleteIntakeReport(entity.serverId)
-                            if (response.isSuccessful) {
+                            if (response.isSuccessful || response.code() in 400..499) {
                                 dao.delete(entity.date, entity.period)
                             }
                         } else {
@@ -107,8 +109,13 @@ class RealIntakeReportRepository(
                         }
                     }
                 }
+            } catch (e: HttpException) {
+                if (e.code() in 400..499) {
+                    Log.w("IntakeRepo", "Permanent sync failure for ${entity.date}_${entity.period}: ${e.code()}")
+                    dao.delete(entity.date, entity.period)
+                }
             } catch (e: Exception) {
-                // Keep pending
+                // Keep pending for transient errors
             }
         }
     }
@@ -141,6 +148,11 @@ class RealIntakeReportRepository(
                     snapshotJson = json.encodeToString(result.snapshot)
                 )
             )
+        } catch (e: HttpException) {
+            if (e.code() in 400..499) {
+                Log.w("IntakeRepo", "Permanent failure on confirm: ${e.code()}")
+                dao.delete(date, period.name)
+            }
         } catch (e: Exception) {
             // Leave as PENDING_UPSERT for worker
         }
@@ -157,7 +169,7 @@ class RealIntakeReportRepository(
             dao.markPendingDelete(date, period.name)
             try {
                 val response = api.deleteIntakeReport(existing.serverId)
-                if (response.isSuccessful) {
+                if (response.isSuccessful || response.code() in 400..499) {
                     dao.delete(date, period.name)
                 }
             } catch (e: Exception) {

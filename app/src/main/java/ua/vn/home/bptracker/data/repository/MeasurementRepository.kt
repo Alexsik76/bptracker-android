@@ -1,5 +1,7 @@
 package ua.vn.home.bptracker.data.repository
 
+import android.util.Log
+import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
@@ -57,6 +59,13 @@ class RealMeasurementRepository(
         try {
             api.deleteMeasurement(id)
             dao.deleteById(id)
+        } catch (e: HttpException) {
+            if (e.code() in 400..499) {
+                // 404 or other 4xx means we should just drop it locally
+                dao.deleteById(id)
+            } else {
+                dao.markPendingDelete(id)
+            }
         } catch (e: Exception) {
             dao.markPendingDelete(id)
         }
@@ -78,6 +87,11 @@ class RealMeasurementRepository(
                         api.deleteMeasurement(entity.id)
                         dao.deleteById(entity.id)
                     }
+                }
+            } catch (e: HttpException) {
+                if (e.code() in 400..499) {
+                    Log.w("MeasRepo", "Permanent sync failure for ${entity.id}: ${e.code()}")
+                    dao.deleteById(entity.id)
                 }
             } catch (e: Exception) {
                 // Keep pending for next run

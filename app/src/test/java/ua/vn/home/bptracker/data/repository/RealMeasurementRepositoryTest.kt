@@ -3,9 +3,12 @@ package ua.vn.home.bptracker.data.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
@@ -133,5 +136,25 @@ class RealMeasurementRepositoryTest {
         // 2. Verify it is still in storage but hidden from getAll
         assertEquals(SyncState.PENDING_DELETE, mockDao.storage["server_id_old"]?.syncState)
         assertEquals(0, repoWithFail.getMeasurements(7).size)
+    }
+
+    @Test
+    fun `syncPending drops row on permanent 4xx error`() = runBlocking {
+        val permanentFailApi = object : MeasurementApi {
+            override suspend fun getMeasurements(days: Int): List<MeasurementDto> = emptyList()
+            override suspend fun createMeasurement(body: CreateMeasurementRequest): MeasurementDto {
+                throw HttpException(Response.error<Any>(400, "".toResponseBody()))
+            }
+            override suspend fun deleteMeasurement(id: String) {}
+        }
+        val repo = RealMeasurementRepository(permanentFailApi, mockDao)
+        
+        // 1. Create offline row
+        mockDao.insert(MeasurementEntity("poison_id", "now", 130, 85, 75, SyncState.PENDING_CREATE))
+        
+        // 2. Sync - should catch 400 and delete locally
+        repo.syncPending()
+        
+        assertNull(mockDao.storage["poison_id"])
     }
 }
