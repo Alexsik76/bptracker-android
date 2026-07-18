@@ -1,5 +1,9 @@
 package ua.vn.home.bptracker.data.repository
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.ReminderConfigApi
 import ua.vn.home.bptracker.data.dto.ReminderConfigDto
@@ -11,6 +15,7 @@ interface ReminderConfigRepository {
     suspend fun getConfig(): ReminderConfigDto?
     suspend fun saveConfig(config: ReminderConfigDto): ReminderConfigDto
     suspend fun getCachedConfig(): ReminderConfigDto?
+    fun observeConfig(): Flow<ReminderConfigDto?>
 }
 
 class RealReminderConfigRepository(
@@ -38,6 +43,10 @@ class RealReminderConfigRepository(
     override suspend fun getCachedConfig(): ReminderConfigDto? {
         return dao.getConfig()?.toDto()
     }
+
+    override fun observeConfig(): Flow<ReminderConfigDto?> {
+        return dao.observeConfig().map { it?.toDto() }
+    }
 }
 
 class MockReminderConfigRepository : ReminderConfigRepository {
@@ -49,12 +58,17 @@ class MockReminderConfigRepository : ReminderConfigRepository {
         durationMinutes = 60
     )
 
+    private val _stream = MutableStateFlow<ReminderConfigDto?>(mockConfig)
+
     override suspend fun getConfig(): ReminderConfigDto? = mockConfig
 
     override suspend fun saveConfig(config: ReminderConfigDto): ReminderConfigDto {
         mockConfig = config
+        _stream.value = config
         return mockConfig
     }
 
     override suspend fun getCachedConfig(): ReminderConfigDto? = mockConfig
+
+    override fun observeConfig(): Flow<ReminderConfigDto?> = _stream.asStateFlow()
 }

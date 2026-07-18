@@ -28,9 +28,9 @@ class TodayScheduleUseCase(
                 }
             }
         },
-        intakeReportRepository.observeForDate(date)
-    ) { activeItems, intakes ->
-        val config = reminderConfigRepository.getCachedConfig()
+        intakeReportRepository.observeForDate(date),
+        reminderConfigRepository.observeConfig()
+    ) { activeItems, intakes, config ->
         buildTodaySchedule(date, config, activeItems, intakes)
     }
 
