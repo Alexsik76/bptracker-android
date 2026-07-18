@@ -1,6 +1,10 @@
 package ua.vn.home.bptracker.data.repository
 
 import android.util.Log
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
@@ -17,12 +21,16 @@ interface MeasurementRepository {
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
+    fun observeMeasurements(): Flow<List<MeasurementDto>>
 }
 
 class RealMeasurementRepository(
     private val api: MeasurementApi,
     private val dao: MeasurementDao
 ) : MeasurementRepository {
+    override fun observeMeasurements(): Flow<List<MeasurementDto>> {
+        return dao.getAllFlow().map { entities -> entities.map { it.toDto() } }
+    }
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
         return try {
             val remote = api.getMeasurements(days)
@@ -110,8 +118,10 @@ class MockMeasurementRepository : MeasurementRepository {
         MeasurementDto("5", now.minusDays(3).toString(), 135, 85, 70)    // Older (Normal)
     )
 
+    private val _stream = MutableStateFlow(mockList.toList())
+
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
-        return mockList.toList()
+        return _stream.value
     }
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
@@ -123,12 +133,16 @@ class MockMeasurementRepository : MeasurementRepository {
             pulse = pulse
         )
         mockList.add(0, newReading)
+        _stream.value = mockList.toList()
         return newReading
     }
 
     override suspend fun deleteMeasurement(id: String) {
         mockList.removeAll { it.id == id }
+        _stream.value = mockList.toList()
     }
 
     override suspend fun syncPending() {}
+
+    override fun observeMeasurements(): Flow<List<MeasurementDto>> = _stream.asStateFlow()
 }
