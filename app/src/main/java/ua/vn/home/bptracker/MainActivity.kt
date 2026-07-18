@@ -27,12 +27,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.config.AppLanguage
+import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
 import ua.vn.home.bptracker.feature.home.*
@@ -66,6 +70,12 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        lifecycleScope.launch {
+            if (ServiceLocator.settingsStore.remindersEnabled.first()) {
+                ServiceLocator.reminderScheduler.rescheduleAll()
             }
         }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.ReminderConfigDto
@@ -99,6 +100,9 @@ class ReminderConfigViewModel : ViewModel() {
                         durationMinutes = s.durationMinutesInt
                     )
                 )
+                if (ServiceLocator.settingsStore.remindersEnabled.first()) {
+                    ServiceLocator.reminderScheduler.rescheduleAll()
+                }
                 _state.value = _state.value.copy(isLoading = false, isSaved = true)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Save failed")
