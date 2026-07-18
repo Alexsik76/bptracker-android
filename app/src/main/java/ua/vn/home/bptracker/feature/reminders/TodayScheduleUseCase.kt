@@ -5,6 +5,12 @@ import kotlinx.coroutines.flow.*
 import ua.vn.home.bptracker.data.dto.*
 import ua.vn.home.bptracker.data.repository.*
 
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.OffsetDateTime
+import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
+
 class TodayScheduleUseCase(
     private val prescriptionRepository: PrescriptionRepository,
     private val reminderConfigRepository: ReminderConfigRepository,
@@ -61,7 +67,16 @@ class TodayScheduleUseCase(
             val itemsForSlot = activeItems.filter { item ->
                 val includedByCourse = when (item.courseType) {
                     CourseType.Ongoing -> true
-                    CourseType.Course -> (item.courseStart == null) || (item.courseStart.take(10) <= date)
+                    CourseType.Course -> {
+                        val isDaily = item.freqPeriodUnit == FreqPeriodUnit.Day && item.freqPeriod == 1
+                        if (isDaily && item.courseStart != null && item.courseIntakes != null) {
+                            courseSlotActive(date, slot, item, slotTimes)
+                        } else {
+                            // v1 limitation: non-daily courses (weekly, etc.) or courses with 
+                            // incomplete data fallback to simple start-gate logic.
+                            (item.courseStart == null) || (item.courseStart.take(10) <= date)
+                        }
+                    }
                 }
                 includedByCourse && item.whenSlots.contains(slot)
             }
@@ -92,5 +107,52 @@ class TodayScheduleUseCase(
             date = date,
             slots = slots
         )
+    }
+
+    internal fun courseSlotActive(
+        date: String,
+        slot: WhenSlot,
+        item: MedicationItemReadDto,
+        slotTimes: Map<WhenSlot, String>
+    ): Boolean {
+        val courseStart = item.courseStart ?: return true
+        val intakes = item.courseIntakes ?: return true
+        val checkDate = try { LocalDate.parse(date) } catch (_: DateTimeParseException) { return false }
+
+        val startDT = try {
+            OffsetDateTime.parse(courseStart)
+        } catch (_: DateTimeParseException) {
+            try {
+                LocalDate.parse(courseStart.take(10)).atStartOfDay().atOffset(OffsetDateTime.now().offset)
+            } catch (_: Exception) {
+                return false
+            }
+        }
+
+        val startDate = startDT.toLocalDate()
+        val startTime = startDT.toLocalTime()
+
+        if (checkDate.isBefore(startDate)) return false
+
+        // Sort item slots chronologically based on config times
+        val sortedSlots = item.whenSlots.sortedBy { slotTimes[it] ?: "00:00" }
+        val activeDay0Slots = sortedSlots.filter { 
+            val timeStr = slotTimes[it] ?: "00:00"
+            val slotTime = try { LocalTime.parse(timeStr) } catch (_: Exception) { LocalTime.MIDNIGHT }
+            slotTime >= startTime 
+        }
+
+        val occurrenceIndex = if (checkDate == startDate) {
+            val idx = activeDay0Slots.indexOf(slot)
+            if (idx == -1) return false
+            (idx + 1).toLong()
+        } else {
+            val daysPassed = ChronoUnit.DAYS.between(startDate, checkDate)
+            val idxInDay = sortedSlots.indexOf(slot)
+            if (idxInDay == -1) return false
+            activeDay0Slots.size.toLong() + (daysPassed - 1) * sortedSlots.size + (idxInDay + 1)
+        }
+
+        return occurrenceIndex in 1..intakes.toLong()
     }
 }

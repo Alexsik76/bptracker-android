@@ -163,12 +163,85 @@ class TodayScheduleUseCaseTest {
         assertNull(med2.condition)
     }
 
+    @Test
+    fun `antibiotic daily course unrolling - Scenario 1`() {
+        val item = createItem(
+            id = "1",
+            medicine = "Amoxicillin",
+            slots = listOf(WhenSlot.Morning, WhenSlot.Day, WhenSlot.Evening),
+            courseType = CourseType.Course,
+            courseStart = "2026-07-20T18:43:00+03:00", // Day 0 Evening is intake #1
+            courseIntakes = 9
+        )
+
+        // Day 0: 2026-07-20. Morning/Day skipped, Evening active (#1)
+        val res0 = useCase.buildTodaySchedule("2026-07-20", config, listOf(item), emptyList())
+        assertEquals(1, res0.slots.size)
+        assertEquals(WhenSlot.Evening, res0.slots[0].slot)
+
+        // Day 1: 2026-07-21. Morning (#2), Day (#3), Evening (#4)
+        val res1 = useCase.buildTodaySchedule("2026-07-21", config, listOf(item), emptyList())
+        assertEquals(3, res1.slots.size)
+
+        // Day 2: 2026-07-22. Morning (#5), Day (#6), Evening (#7)
+        val res2 = useCase.buildTodaySchedule("2026-07-22", config, listOf(item), emptyList())
+        assertEquals(3, res2.slots.size)
+
+        // Day 3: 2026-07-23. Morning (#8), Day (#9) active. Evening (#10) NOT active.
+        val res3 = useCase.buildTodaySchedule("2026-07-23", config, listOf(item), emptyList())
+        assertEquals(2, res3.slots.size)
+        assertEquals(WhenSlot.Morning, res3.slots[0].slot)
+        assertEquals(WhenSlot.Day, res3.slots[1].slot)
+
+        // Day 4: 2026-07-24. Nothing active.
+        val res4 = useCase.buildTodaySchedule("2026-07-24", config, listOf(item), emptyList())
+        assertEquals(0, res4.slots.size)
+    }
+
+    @Test
+    fun `finished course is not shown`() {
+        val item = createItem(
+            id = "1",
+            medicine = "Finished",
+            slots = listOf(WhenSlot.Morning),
+            courseType = CourseType.Course,
+            courseStart = "2026-07-10T08:00:00+03:00",
+            courseIntakes = 5
+        )
+        // 5 intakes: July 10, 11, 12, 13, 14. July 17 is past end.
+        val result = useCase.buildTodaySchedule("2026-07-17", config, listOf(item), emptyList())
+        assertEquals(0, result.slots.size)
+    }
+
+    @Test
+    fun `weekly course fallbacks to simple start-gate`() {
+        val item = MedicationItemReadDto(
+            id = "1",
+            prescriptionId = "p1",
+            medicine = "Weekly",
+            condition = null,
+            whenSlots = listOf(WhenSlot.Morning),
+            doseAmount = "1",
+            doseUnit = null,
+            freqCount = 1,
+            freqPeriod = 1,
+            freqPeriodUnit = FreqPeriodUnit.Week,
+            courseType = CourseType.Course,
+            courseStart = "2026-07-10T08:00:00+03:00",
+            courseIntakes = 1 // In unrolling this would end on July 10, but weekly fallbacks.
+        )
+        // Simple gate shows it if date >= start.
+        val result = useCase.buildTodaySchedule("2026-07-17", config, listOf(item), emptyList())
+        assertEquals(1, result.slots.size)
+    }
+
     private fun createItem(
         id: String,
         medicine: String,
         slots: List<WhenSlot>,
         courseType: CourseType = CourseType.Ongoing,
         courseStart: String? = null,
+        courseIntakes: Int? = null,
         doseAmount: String = "1",
         doseUnit: DoseUnit? = null,
         condition: String? = null
@@ -185,6 +258,6 @@ class TodayScheduleUseCaseTest {
         freqPeriodUnit = FreqPeriodUnit.Day,
         courseType = courseType,
         courseStart = courseStart,
-        courseIntakes = null
+        courseIntakes = courseIntakes
     )
 }
