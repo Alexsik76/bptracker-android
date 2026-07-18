@@ -116,7 +116,7 @@ class TodayScheduleUseCase(
         slotTimes: Map<WhenSlot, String>
     ): Boolean {
         val courseStart = item.courseStart ?: return true
-        val intakes = item.courseIntakes ?: return true
+        val intakes = item.courseIntakes ?: return courseStart.take(10) <= date
         val checkDate = try { LocalDate.parse(date) } catch (_: DateTimeParseException) { return false }
 
         val startDT = try {

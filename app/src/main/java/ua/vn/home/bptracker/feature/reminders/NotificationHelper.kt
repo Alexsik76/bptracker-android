@@ -52,7 +52,7 @@ class NotificationHelper(private val context: Context) {
         val actionText = context.getString(R.string.notification_action_taken)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: Use medication icon
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(medList)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

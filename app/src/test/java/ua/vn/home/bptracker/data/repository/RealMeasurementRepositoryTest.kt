@@ -47,8 +47,10 @@ class RealMeasurementRepositoryTest {
     private val mockDao = object : MeasurementDao {
         val storage = mutableMapOf<String, MeasurementEntity>()
 
-        override fun getAllFlow(): Flow<List<MeasurementEntity>> = flowOf(storage.values.toList())
-        override suspend fun getAll(): List<MeasurementEntity> = storage.values.toList()
+        override fun getAllFlow(): Flow<List<MeasurementEntity>> = 
+            flowOf(storage.values.filter { it.syncState != SyncState.PENDING_DELETE })
+        override suspend fun getAll(): List<MeasurementEntity> = 
+            storage.values.filter { it.syncState != SyncState.PENDING_DELETE }
         override suspend fun insert(measurement: MeasurementEntity) { storage[measurement.id] = measurement }
         override suspend fun insertAll(measurements: List<MeasurementEntity>) {
             measurements.forEach { storage[it.id] = it }
@@ -61,7 +63,6 @@ class RealMeasurementRepositoryTest {
         override suspend fun markPendingDelete(id: String) {
             storage[id] = storage[id]!!.copy(syncState = SyncState.PENDING_DELETE)
         }
-        override suspend fun deleteAll() { storage.clear() }
     }
 
     private val repository = RealMeasurementRepository(mockApi, mockDao)
@@ -114,5 +115,23 @@ class RealMeasurementRepositoryTest {
         
         assertEquals("client_id", pending?.id)
         assertEquals("server_id_1", synced?.id)
+    }
+
+    @Test
+    fun `getMeasurements hides PENDING_DELETE rows`() = runBlocking {
+        val failingApi = object : MeasurementApi {
+            override suspend fun getMeasurements(days: Int): List<MeasurementDto> = emptyList()
+            override suspend fun createMeasurement(body: CreateMeasurementRequest): MeasurementDto = error("stub")
+            override suspend fun deleteMeasurement(id: String) = error("network error")
+        }
+        val repoWithFail = RealMeasurementRepository(failingApi, mockDao)
+
+        // 1. Prepare synced row then fail to delete (marks pending)
+        mockDao.insert(MeasurementEntity("server_id_old", "2026-07-18T08:00:00Z", 120, 80, 70, SyncState.SYNCED))
+        repoWithFail.deleteMeasurement("server_id_old")
+        
+        // 2. Verify it is still in storage but hidden from getAll
+        assertEquals(SyncState.PENDING_DELETE, mockDao.storage["server_id_old"]?.syncState)
+        assertEquals(0, repoWithFail.getMeasurements(7).size)
     }
 }
