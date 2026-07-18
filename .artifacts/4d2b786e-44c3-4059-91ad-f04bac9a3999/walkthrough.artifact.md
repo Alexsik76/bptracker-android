@@ -1,29 +1,53 @@
-# Walkthrough - Signed Release Build Configuration
+# Walkthrough - Offline-first Measurement Sync
 
-I have successfully wired the signed release build configuration and updated the project's `.gitignore` to prevent future secret leaks.
+Implemented a robust offline-first synchronization mechanism for blood pressure measurements, mirroring the established pattern for intake reports. This ensures that measurements taken while offline are stored locally and successfully synced when connectivity is restored, rather than being clobbered by server refreshes.
 
 ## Changes Made
 
-### [Component Name]
+### [Data Layer]
 
-#### [MODIFY] [build.gradle.kts](file:///D:/dev/bp_tracker/mobile_app/app/build.gradle.kts)
-- Integrated a property loader for `keystore.properties` at the start of the `android { }` block.
-- Added a `release` signing configuration that dynamically reads from the properties file.
-- Updated the `release` build type to use this signing configuration if the properties are present.
+#### [MODIFY] [MeasurementEntity.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/entity/MeasurementEntity.kt)
+- Replaced the `isSynced` boolean with a `syncState` string field.
+- Integrated the `SyncState` object to track `SYNCED`, `PENDING_CREATE`, and `PENDING_DELETE` states.
+- Updated `toDto()` and `toEntity()` extensions to support the new sync state.
 
-#### [MODIFY] [.gitignore](file:///D:/dev/bp_tracker/mobile_app/.gitignore)
-- Added exclusions for `keystore.properties`, `*.jks`, and `*.keystore` to prevent accidental commits of signing secrets.
+#### [MODIFY] [MeasurementDao.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/dao/MeasurementDao.kt)
+- Added `getPending()` to retrieve all rows requiring synchronization.
+- Added `deleteSynced()` to allow clearing the local cache of synced items without affecting pending offline data.
+- Added `markPendingDelete()` for logical deletion of synced items while offline.
+
+#### [MODIFY] [BpDatabase.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/local/BpDatabase.kt)
+- Bumped database version from **5 to 6**.
+- **Note**: This triggers a destructive migration, clearing local data. Users should be online and synced before upgrading.
+
+### [Repository Layer]
+
+#### [MODIFY] [MeasurementRepository.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/data/repository/MeasurementRepository.kt)
+- **`createMeasurement`**: Now creates a local `PENDING_CREATE` record with a client-side UUID if the network is unavailable.
+- **`getMeasurements`**: Implemented non-clobbering refresh; it deletes only `SYNCED` local records before inserting server data, keeping offline changes visible.
+- **`deleteMeasurement`**: Handles both local-only (hard delete) and synced (mark `PENDING_DELETE` on failure) scenarios.
+- **`syncPending`**: Added logic to drain the buffer of pending creations and deletions.
+
+### [Feature Layer]
+
+#### [MODIFY] [HomeViewModel.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/main/java/ua/vn/home/bptracker/feature/home/HomeViewModel.kt)
+- Updated `refresh()` to trigger `syncPending()` before fetching the latest measurements, ensuring any local changes are pushed first.
+
+### [Testing]
+
+#### [NEW] [RealMeasurementRepositoryTest.kt](file:///D:/dev/bp_tracker/mobile_app/app/src/test/java/ua/vn/home/bptracker/data/repository/RealMeasurementRepositoryTest.kt)
+- Added comprehensive unit tests covering:
+    - Offline creation of `PENDING_CREATE` rows.
+    - Buffer draining via `syncPending` (replacing temporary IDs with server IDs).
+    - Resilience of pending data during server refreshes (`getMeasurements`).
 
 ## Verification Results
 
 ### Automated Tests
-- **Gradle Sync**: Successful.
-- **Build Configuration**: Verified that the build still configures correctly without requiring `keystore.properties` to be present (graceful degradation).
+- **Build**: Successfully assembled debug APK.
+- **Unit Tests**: Passed all 23 tests in `:app:testDebugUnitTest`, including the new offline-sync scenarios.
 
-### Security Audit
-> [!CAUTION]
-> **Leaked Secrets Found**: The file `keystore.properties` was found to be already tracked by Git before my changes. While I have updated the `.gitignore` to prevent *future* tracking of these patterns, the existing file remains in the repository history. **You must rotate the passwords in that file and perform a sensitive data removal from your Git history.**
-
-## Note on System Warnings
-- This change allows for installing a properly signed release build, which removes the **"app is being debugged / under test"** system warning.
-- The **16 KB page-size** warning related to `libonnxruntime.so` remains, as it is an upstream limitation of the ONNX library.
+```bash
+./gradlew :app:testDebugUnitTest
+# 23 passed, 0 skipped, 0 failed
+```

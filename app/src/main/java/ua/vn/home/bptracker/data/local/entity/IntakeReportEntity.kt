@@ -5,6 +5,7 @@ import androidx.room.Entity
 object SyncState {
     const val SYNCED = "SYNCED"
     const val PENDING_UPSERT = "PENDING_UPSERT"
+    const val PENDING_CREATE = "PENDING_CREATE"
     const val PENDING_DELETE = "PENDING_DELETE"
 }
 

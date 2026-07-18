@@ -48,6 +48,8 @@ class HomeViewModel : ViewModel() {
             }
             
             try {
+                repository.syncPending()
+
                 // Fetch 14 days to calculate week-over-week change
                 val allList = repository.getMeasurements(days = 14)
                     .sortedByDescending { TimeUtils.parseToLocal(it.recordedAt) }

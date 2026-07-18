@@ -4,6 +4,7 @@ import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.data.local.dao.MeasurementDao
+import ua.vn.home.bptracker.data.local.entity.SyncState
 import ua.vn.home.bptracker.data.local.entity.toDto
 import ua.vn.home.bptracker.data.local.entity.toEntity
 import java.time.OffsetDateTime
@@ -13,6 +14,7 @@ interface MeasurementRepository {
     suspend fun getMeasurements(days: Int): List<MeasurementDto>
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
+    suspend fun syncPending()
 }
 
 class RealMeasurementRepository(
@@ -22,9 +24,9 @@ class RealMeasurementRepository(
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
         return try {
             val remote = api.getMeasurements(days)
-            dao.deleteAll()
-            dao.insertAll(remote.map { it.toEntity() })
-            remote
+            dao.deleteSynced()
+            dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+            dao.getAll().map { it.toDto() }
         } catch (e: Exception) {
             dao.getAll().map { it.toDto() }
         }
@@ -33,25 +35,53 @@ class RealMeasurementRepository(
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
         return try {
             val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
-            dao.insert(created.toEntity())
+            dao.insert(created.toEntity(SyncState.SYNCED))
             created
         } catch (e: Exception) {
-            // If offline, we could store it with isSynced = false
-            // For now, let's just throw or handle basic offline case if id is generated
             val id = UUID.randomUUID().toString()
             val local = MeasurementDto(id, OffsetDateTime.now().toString(), sys, dia, pulse)
-            dao.insert(local.toEntity(synced = false))
+            dao.insert(local.toEntity(SyncState.PENDING_CREATE))
             local
         }
     }
 
     override suspend fun deleteMeasurement(id: String) {
+        val all = dao.getAll()
+        val existing = all.find { it.id == id } ?: return
+
+        if (existing.syncState == SyncState.PENDING_CREATE) {
+            dao.deleteById(id)
+            return
+        }
+
         try {
             api.deleteMeasurement(id)
             dao.deleteById(id)
         } catch (e: Exception) {
-            // If it's a local unsynced one, just delete from DB
-            dao.deleteById(id)
+            dao.markPendingDelete(id)
+        }
+    }
+
+    override suspend fun syncPending() {
+        val pending = dao.getPending()
+        pending.forEach { entity ->
+            try {
+                when (entity.syncState) {
+                    SyncState.PENDING_CREATE -> {
+                        val result = api.createMeasurement(
+                            CreateMeasurementRequest(entity.sys, entity.dia, entity.pulse)
+                        )
+                        dao.deleteById(entity.id)
+                        dao.insert(result.toEntity(SyncState.SYNCED))
+                    }
+                    SyncState.PENDING_DELETE -> {
+                        api.deleteMeasurement(entity.id)
+                        dao.deleteById(entity.id)
+                    }
+                }
+            } catch (e: Exception) {
+                // Keep pending for next run
+            }
         }
     }
 }
@@ -85,4 +115,6 @@ class MockMeasurementRepository : MeasurementRepository {
     override suspend fun deleteMeasurement(id: String) {
         mockList.removeAll { it.id == id }
     }
+
+    override suspend fun syncPending() {}
 }

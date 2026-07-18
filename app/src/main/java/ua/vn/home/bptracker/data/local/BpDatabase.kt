@@ -15,7 +15,7 @@ import ua.vn.home.bptracker.data.local.entity.*
         IntakeReportEntity::class,
         ReminderConfigEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class BpDatabase : RoomDatabase() {

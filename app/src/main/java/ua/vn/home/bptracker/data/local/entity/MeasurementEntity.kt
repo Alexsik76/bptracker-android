@@ -11,7 +11,7 @@ data class MeasurementEntity(
     val sys: Int,
     val dia: Int,
     val pulse: Int,
-    val isSynced: Boolean = true
+    val syncState: String = SyncState.SYNCED
 )
 
 fun MeasurementEntity.toDto() = MeasurementDto(
@@ -22,11 +22,11 @@ fun MeasurementEntity.toDto() = MeasurementDto(
     pulse = pulse
 )
 
-fun MeasurementDto.toEntity(synced: Boolean = true) = MeasurementEntity(
+fun MeasurementDto.toEntity(syncState: String = SyncState.SYNCED) = MeasurementEntity(
     id = id,
     recordedAt = recordedAt,
     sys = sys,
     dia = dia,
     pulse = pulse,
-    isSynced = synced
+    syncState = syncState
 )
