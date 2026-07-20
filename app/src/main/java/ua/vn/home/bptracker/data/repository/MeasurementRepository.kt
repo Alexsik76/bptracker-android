@@ -1,6 +1,7 @@
 package ua.vn.home.bptracker.data.repository
 
 import android.util.Log
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,6 +10,7 @@ import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.local.BpDatabase
 import ua.vn.home.bptracker.data.local.dao.MeasurementDao
 import ua.vn.home.bptracker.data.local.entity.SyncState
 import ua.vn.home.bptracker.data.local.entity.toDto
@@ -24,7 +26,8 @@ interface MeasurementRepository {
     fun observeMeasurements(): Flow<List<MeasurementDto>>
 }
 
-class RealMeasurementRepository(
+open class RealMeasurementRepository(
+    private val db: BpDatabase,
     private val api: MeasurementApi,
     private val dao: MeasurementDao
 ) : MeasurementRepository {
@@ -34,8 +37,10 @@ class RealMeasurementRepository(
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
         return try {
             val remote = api.getMeasurements(days)
-            dao.deleteSynced()
-            dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+            db.withTransaction {
+                dao.deleteSynced()
+                dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+            }
             dao.getAll().map { it.toDto() }
         } catch (e: Exception) {
             dao.getAll().map { it.toDto() }

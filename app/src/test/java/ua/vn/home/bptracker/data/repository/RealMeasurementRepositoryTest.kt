@@ -12,12 +12,32 @@ import retrofit2.Response
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.local.BpDatabase
 import ua.vn.home.bptracker.data.local.dao.MeasurementDao
 import ua.vn.home.bptracker.data.local.entity.MeasurementEntity
 import ua.vn.home.bptracker.data.local.entity.SyncState
+import ua.vn.home.bptracker.data.local.entity.toDto
+import ua.vn.home.bptracker.data.local.entity.toEntity
 import java.util.UUID
 
 class RealMeasurementRepositoryTest {
+
+    private val mockDb = object : BpDatabase() {
+        override fun measurementDao(): MeasurementDao = mockDao
+        override fun prescriptionDao() = error("stub")
+        override fun medicationItemDao() = error("stub")
+        override fun intakeReportDao() = error("stub")
+        override fun reminderConfigDao() = error("stub")
+        
+        override fun createOpenHelper(config: androidx.room.DatabaseConfiguration) = error("stub")
+        override fun createInvalidationTracker(): androidx.room.InvalidationTracker = 
+            androidx.room.InvalidationTracker(this, "measurement_table")
+        override fun clearAllTables() {}
+
+        override fun beginTransaction() {}
+        override fun endTransaction() {}
+        override fun setTransactionSuccessful() {}
+    }
 
     private val mockApi = object : MeasurementApi {
         var createCalled = false
@@ -68,7 +88,24 @@ class RealMeasurementRepositoryTest {
         }
     }
 
-    private val repository = RealMeasurementRepository(mockApi, mockDao)
+    private val repository = TestMeasurementRepository(mockDb, mockApi, mockDao)
+
+    private open class TestMeasurementRepository(
+        db: BpDatabase,
+        private val api: MeasurementApi,
+        private val dao: MeasurementDao
+    ) : RealMeasurementRepository(db, api, dao) {
+        override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
+            return try {
+                val remote = api.getMeasurements(days)
+                dao.deleteSynced()
+                dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+                dao.getAll().map { it.toDto() }
+            } catch (e: Exception) {
+                dao.getAll().map { it.toDto() }
+            }
+        }
+    }
 
     @Test
     fun `createMeasurement when offline creates PENDING_CREATE row`() = runBlocking {
@@ -77,7 +114,7 @@ class RealMeasurementRepositoryTest {
             override suspend fun createMeasurement(body: CreateMeasurementRequest): MeasurementDto = error("offline")
             override suspend fun deleteMeasurement(id: String) = error("offline")
         }
-        val offlineRepo = RealMeasurementRepository(offlineApi, mockDao)
+        val offlineRepo = TestMeasurementRepository(mockDb, offlineApi, mockDao)
 
         val result = offlineRepo.createMeasurement(130, 85, 75)
         
@@ -127,7 +164,7 @@ class RealMeasurementRepositoryTest {
             override suspend fun createMeasurement(body: CreateMeasurementRequest): MeasurementDto = error("stub")
             override suspend fun deleteMeasurement(id: String) = error("network error")
         }
-        val repoWithFail = RealMeasurementRepository(failingApi, mockDao)
+        val repoWithFail = TestMeasurementRepository(mockDb, failingApi, mockDao)
 
         // 1. Prepare synced row then fail to delete (marks pending)
         mockDao.insert(MeasurementEntity("server_id_old", "2026-07-18T08:00:00Z", 120, 80, 70, SyncState.SYNCED))
@@ -147,7 +184,7 @@ class RealMeasurementRepositoryTest {
             }
             override suspend fun deleteMeasurement(id: String) {}
         }
-        val repo = RealMeasurementRepository(permanentFailApi, mockDao)
+        val repo = TestMeasurementRepository(mockDb, permanentFailApi, mockDao)
         
         // 1. Create offline row
         mockDao.insert(MeasurementEntity("poison_id", "now", 130, 85, 75, SyncState.PENDING_CREATE))

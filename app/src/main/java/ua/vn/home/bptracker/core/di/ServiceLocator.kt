@@ -53,7 +53,7 @@ object ServiceLocator {
 
     val measurementRepository: MeasurementRepository by lazy {
         if (MOCK_MODE) MockMeasurementRepository()
-        else RealMeasurementRepository(measurementApi, database.measurementDao())
+        else RealMeasurementRepository(database, measurementApi, database.measurementDao())
     }
 
     val prescriptionRepository: PrescriptionRepository by lazy {
