@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.ui.OperationUiState
-import ua.vn.home.bptracker.ui.theme.DarkPrimary
+import ua.vn.home.bptracker.ui.theme.*
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -93,15 +93,16 @@ fun PrescriptionFormScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(MaterialTheme.spacing.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
             OutlinedTextField(
                 value = state.doctor,
                 onValueChange = onDoctorChange,
                 label = { Text(stringResource(R.string.prescriptions_doctor_hint)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -112,6 +113,7 @@ fun PrescriptionFormScreen(
                     .fillMaxWidth()
                     .clickable { showDatePicker = true },
                 readOnly = true,
+                shape = MaterialTheme.shapes.medium,
                 trailingIcon = {
                     IconButton(onClick = { showDatePicker = true }) {
                         Icon(
@@ -137,14 +139,14 @@ fun PrescriptionFormScreen(
                 Text(state.saveOperation.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(MaterialTheme.spacing.large))
 
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = state.isValid && state.saveOperation !is OperationUiState.InProgress,
-                colors = ButtonDefaults.buttonColors(containerColor = DarkPrimary),
-                shape = RoundedCornerShape(14.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.medium
             ) {
                 if (state.saveOperation is OperationUiState.InProgress) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
@@ -152,6 +154,8 @@ fun PrescriptionFormScreen(
                     Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
+            
+            Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
         }
     }
 }

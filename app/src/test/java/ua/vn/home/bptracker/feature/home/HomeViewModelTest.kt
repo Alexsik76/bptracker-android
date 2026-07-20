@@ -48,7 +48,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `initial state is never Loading`() = runTest {
+    fun `initial state is skeleton Content`() = runTest {
         mockkObject(ServiceLocator)
         val repo = io.mockk.mockk<ua.vn.home.bptracker.data.repository.MeasurementRepository>(relaxed = true)
         every { ServiceLocator.measurementRepository } returns repo
@@ -57,7 +57,9 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel()
         viewModel.state.test {
             val first = awaitItem()
-            assertEquals(ListUiState.Idle, first)
+            assertTrue(first is ListUiState.Content)
+            assertTrue((first as ListUiState.Content).isRefreshing)
+            assertEquals(HomePayload.EMPTY, first.data)
             
             val second = awaitItem()
             assertTrue(second is ListUiState.Empty)

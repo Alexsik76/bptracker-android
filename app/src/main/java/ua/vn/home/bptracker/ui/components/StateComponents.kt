@@ -58,11 +58,9 @@ fun <T> ListStateHost(
     state: ListUiState<T>,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    onIdle: @Composable () -> Unit = { Box(modifier.fillMaxSize()) },
-    onLoading: @Composable () -> Unit = { LoadingState(modifier) },
     onEmpty: @Composable () -> Unit = {
         EmptyState(
-            title = stringResource(R.string.dashboard_no_measurements),
+            title = stringResource(R.string.common_no_data),
             modifier = modifier
         )
     },
@@ -76,8 +74,6 @@ fun <T> ListStateHost(
     onContent: @Composable (data: T, isRefreshing: Boolean) -> Unit
 ) {
     when (state) {
-        ListUiState.Idle -> onIdle()
-        ListUiState.Loading -> onLoading()
         ListUiState.Empty -> onEmpty()
         is ListUiState.Error -> onError(state.message)
         is ListUiState.Content -> Box(modifier) {

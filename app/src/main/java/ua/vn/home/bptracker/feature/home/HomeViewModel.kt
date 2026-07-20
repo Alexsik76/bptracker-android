@@ -26,7 +26,17 @@ data class HomePayload(
     val inRangePercent: Int,
     val sysChange: Int,
     val diaChange: Int
-)
+) {
+    companion object {
+        val EMPTY = HomePayload(
+            latest = MeasurementDto("", "", 0, 0, 0),
+            zone = BpZone.NORMAL,
+            recent = emptyList(),
+            avgSys = 0, avgDia = 0, avgPulse = 0,
+            inRangePercent = 0, sysChange = 0, diaChange = 0
+        )
+    }
+}
 
 class HomeViewModel : ViewModel() {
 
@@ -54,7 +64,7 @@ class HomeViewModel : ViewModel() {
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ListUiState.Idle
+            initialValue = ListUiState.Content(HomePayload.EMPTY, isRefreshing = true)
         )
 
     init {

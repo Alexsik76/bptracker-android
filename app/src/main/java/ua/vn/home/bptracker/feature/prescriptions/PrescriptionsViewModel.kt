@@ -26,7 +26,7 @@ class PrescriptionsViewModel : ViewModel() {
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ListUiState.Idle
+        initialValue = ListUiState.Content(emptyList(), isRefreshing = true)
     )
 
     fun refresh(isManual: Boolean = false) {

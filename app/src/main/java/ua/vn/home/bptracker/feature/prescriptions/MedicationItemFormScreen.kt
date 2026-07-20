@@ -3,7 +3,6 @@ package ua.vn.home.bptracker.feature.prescriptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.*
-import ua.vn.home.bptracker.ui.theme.DarkPrimary
+import ua.vn.home.bptracker.ui.theme.*
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -137,25 +136,27 @@ fun MedicationItemFormScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(MaterialTheme.spacing.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
             OutlinedTextField(
                 value = state.medicine,
                 onValueChange = onMedicineChange,
                 label = { Text(stringResource(R.string.med_items_medicine_hint)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
                 value = state.condition ?: "",
                 onValueChange = onConditionChange,
                 label = { Text(stringResource(R.string.med_items_condition_hint)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             )
 
             Text(stringResource(R.string.med_items_when), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
                 WhenSlot.entries.forEach { slot ->
                     FilterChip(
                         selected = state.whenSlots.contains(slot),
@@ -166,12 +167,13 @@ fun MedicationItemFormScreen(
             }
 
             Text(stringResource(R.string.med_items_dose), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
                 OutlinedTextField(
                     value = state.doseAmount,
                     onValueChange = onDoseAmountChange,
                     label = { Text(stringResource(R.string.med_items_dose_amount)) },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.medium
                 )
                 var unitExpanded by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.weight(1f)) {
@@ -180,6 +182,7 @@ fun MedicationItemFormScreen(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.med_items_dose_unit)) },
+                        shape = MaterialTheme.shapes.medium,
                         trailingIcon = { 
                             IconButton(onClick = { unitExpanded = true }) {
                                 Text("▼") 
@@ -202,18 +205,20 @@ fun MedicationItemFormScreen(
             }
 
             Text(stringResource(R.string.med_items_frequency), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = state.freqCount.toString(),
                     onValueChange = { onFreqCountChange(it.toIntOrNull() ?: 1) },
-                    modifier = Modifier.width(60.dp)
+                    modifier = Modifier.width(60.dp),
+                    shape = MaterialTheme.shapes.medium
                 )
                 Text(stringResource(R.string.med_items_freq_times))
                 Text(stringResource(R.string.med_items_freq_every))
                 OutlinedTextField(
                     value = state.freqPeriod.toString(),
                     onValueChange = { onFreqPeriodChange(it.toIntOrNull() ?: 1) },
-                    modifier = Modifier.width(60.dp)
+                    modifier = Modifier.width(60.dp),
+                    shape = MaterialTheme.shapes.medium
                 )
                 var periodExpanded by remember { mutableStateOf(false) }
                 Box {
@@ -232,7 +237,7 @@ fun MedicationItemFormScreen(
             }
 
             Text(stringResource(R.string.med_items_course), style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
                 FilterChip(
                     selected = state.courseType == CourseType.Ongoing,
                     onClick = { onCourseTypeChange(CourseType.Ongoing) },
@@ -257,9 +262,10 @@ fun MedicationItemFormScreen(
                     label = { Text(stringResource(R.string.med_items_course_start)) },
                     modifier = Modifier.fillMaxWidth(),
                     readOnly = true,
+                    shape = MaterialTheme.shapes.medium,
                     trailingIcon = {
                         TextButton(onClick = { showDatePicker = true }) {
-                            Text(stringResource(R.string.schedule_confirm_btn))
+                            Text(stringResource(R.string.common_edit))
                         }
                     }
                 )
@@ -267,7 +273,8 @@ fun MedicationItemFormScreen(
                     value = state.courseIntakes?.toString() ?: "",
                     onValueChange = { onCourseIntakesChange(it.toIntOrNull()) },
                     label = { Text(stringResource(R.string.med_items_course_intakes)) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
                 )
             }
 
@@ -281,14 +288,14 @@ fun MedicationItemFormScreen(
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(MaterialTheme.spacing.large))
 
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = state.isValid && state.saveOperation !is OperationUiState.InProgress,
-                colors = ButtonDefaults.buttonColors(containerColor = DarkPrimary),
-                shape = RoundedCornerShape(14.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.medium
             ) {
                 if (state.saveOperation is OperationUiState.InProgress) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
@@ -296,6 +303,8 @@ fun MedicationItemFormScreen(
                     Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
+            
+            Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
         }
     }
 }

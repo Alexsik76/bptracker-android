@@ -7,7 +7,15 @@ data class TodaySchedule(
     val configured: Boolean,   // false when no reminder_config cached
     val date: String,          // YYYY-MM-DD
     val slots: List<TodaySlot> // only slots that have at least one med, ordered Morning→Day→Evening
-)
+) {
+    companion object {
+        fun empty(date: String) = TodaySchedule(
+            configured = true, // We assume configured for the skeleton to show the list layout
+            date = date,
+            slots = emptyList()
+        )
+    }
+}
 
 data class TodaySlot(
     val slot: WhenSlot,

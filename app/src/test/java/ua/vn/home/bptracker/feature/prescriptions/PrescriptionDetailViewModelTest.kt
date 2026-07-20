@@ -15,7 +15,7 @@ import ua.vn.home.bptracker.core.ui.ListUiState
 class PrescriptionDetailViewModelTest {
 
     @Test
-    fun `initial state is never Loading`() = runTest {
+    fun `initial state is skeleton Content`() = runTest {
         mockkObject(ServiceLocator)
         val repository = mockk<ua.vn.home.bptracker.data.repository.PrescriptionRepository>(relaxed = true)
         every { ServiceLocator.prescriptionRepository } returns repository
@@ -24,7 +24,9 @@ class PrescriptionDetailViewModelTest {
         val viewModel = PrescriptionDetailViewModel()
         viewModel.state.test {
             val first = awaitItem()
-            assertEquals(ListUiState.Idle, first)
+            assertTrue(first is ListUiState.Content)
+            assertTrue((first as ListUiState.Content).isRefreshing)
+            assertEquals(PrescriptionDetailPayload.EMPTY, first.data)
         }
     }
 }

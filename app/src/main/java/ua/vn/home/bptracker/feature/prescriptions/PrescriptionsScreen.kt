@@ -75,21 +75,26 @@ fun PrescriptionsScreen(
         ) {
             ListStateHost(
                 state = state,
-                onRetry = onRefresh
+                onRetry = onRefresh,
+                onEmpty = {
+                    PullToRefreshBox(
+                        isRefreshing = false,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        EmptyState(
+                            title = stringResource(R.string.prescriptions_empty),
+                            description = stringResource(R.string.prescriptions_empty_hint)
+                        )
+                    }
+                }
             ) { list, refreshing ->
                 PullToRefreshBox(
                     isRefreshing = refreshing,
                     onRefresh = onRefresh,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    if (list.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            EmptyState(
-                                title = stringResource(R.string.prescriptions_empty),
-                                description = stringResource(R.string.prescriptions_empty_hint)
-                            )
-                        }
-                    } else {
+                    if (list.isNotEmpty()) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = MaterialTheme.spacing.large)
@@ -109,6 +114,11 @@ fun PrescriptionsScreen(
                                 Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
                             }
                         }
+                    } else {
+                        // This branch is for the initial skeleton frame: Content(emptyList, refreshing=true)
+                        // We show nothing or a specific skeleton if we want, but keeping it empty is fine
+                        // as the transition to Empty state will happen once refreshing is false.
+                        Box(Modifier.fillMaxSize())
                     }
                 }
             }

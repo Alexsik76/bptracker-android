@@ -11,6 +11,8 @@
     <string name="common_yesterday">Вчора</string>
     <string name="common_back">Назад</string>
     <string name="common_retry">Повторити</string>
+    <string name="common_no_data">Немає даних</string>
+    <string name="common_edit">Змінити</string>
 
     <!-- Auth -->
     <string name="auth_login_passkey">Увійти через Passkey</string>

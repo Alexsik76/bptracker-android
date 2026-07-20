@@ -35,7 +35,7 @@ class ScheduleViewModel : ViewModel() {
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ListUiState.Idle
+        initialValue = ListUiState.Content(TodaySchedule.empty(today), isRefreshing = true)
     )
 
     fun refresh(isManual: Boolean = false) {

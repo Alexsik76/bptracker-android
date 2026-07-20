@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.ui.OperationUiState
-import ua.vn.home.bptracker.ui.theme.DarkPrimary
+import ua.vn.home.bptracker.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,8 +91,8 @@ fun ReminderConfigScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(MaterialTheme.spacing.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
         ) {
             TimeField(
                 label = stringResource(R.string.rem_config_morning),
@@ -117,7 +117,8 @@ fun ReminderConfigScreen(
                 onValueChange = onMaxRemindersChange,
                 label = { Text(stringResource(R.string.rem_config_max)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -125,7 +126,8 @@ fun ReminderConfigScreen(
                 onValueChange = onDurationChange,
                 label = { Text(stringResource(R.string.rem_config_duration)) },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             if (state.saveOperation is OperationUiState.Error) {
@@ -136,14 +138,14 @@ fun ReminderConfigScreen(
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(MaterialTheme.spacing.large))
 
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = state.isValid && state.saveOperation !is OperationUiState.InProgress,
-                colors = ButtonDefaults.buttonColors(containerColor = DarkPrimary),
-                shape = RoundedCornerShape(14.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.medium
             ) {
                 if (state.saveOperation is OperationUiState.InProgress) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
@@ -151,6 +153,8 @@ fun ReminderConfigScreen(
                     Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
+            
+            Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
         }
     }
 }
@@ -163,9 +167,10 @@ fun TimeField(label: String, value: String, onClick: () -> Unit) {
         label = { Text(label) },
         readOnly = true,
         modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
         trailingIcon = {
             TextButton(onClick = onClick) {
-                Text(stringResource(R.string.schedule_confirm_btn))
+                Text(stringResource(R.string.common_edit))
             }
         }
     )

@@ -13,7 +13,14 @@ import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
 data class PrescriptionDetailPayload(
     val prescription: PrescriptionReadDto,
     val items: List<MedicationItemReadDto>
-)
+) {
+    companion object {
+        val EMPTY = PrescriptionDetailPayload(
+            prescription = PrescriptionReadDto("", "", "", false, ""),
+            items = emptyList()
+        )
+    }
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PrescriptionDetailViewModel : ViewModel() {
@@ -36,7 +43,7 @@ class PrescriptionDetailViewModel : ViewModel() {
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ListUiState.Idle
+            initialValue = ListUiState.Content(PrescriptionDetailPayload.EMPTY, isRefreshing = true)
         )
 
     fun setPrescriptionId(id: String) {
