@@ -194,6 +194,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
+    val homeVm: HomeViewModel = viewModel()
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -234,7 +235,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
         popExitTransition = { ExitTransition.None },
     ) {
             composable("home") {
-                val homeVm: HomeViewModel = viewModel()
                 val homeState by homeVm.state.collectAsState()
 
                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -379,7 +379,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             }
 
             composable("history") {
-                val homeVm: HomeViewModel = viewModel()
                 val homeState by homeVm.state.collectAsState()
 
                 MeasurementHistoryScreen(
