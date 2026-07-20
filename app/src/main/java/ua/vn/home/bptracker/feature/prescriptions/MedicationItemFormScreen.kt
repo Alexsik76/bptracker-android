@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.*
 import ua.vn.home.bptracker.ui.theme.DarkPrimary
 import java.time.Instant
@@ -42,8 +43,8 @@ fun MedicationItemFormScreen(
     onSave: () -> Unit,
     onBack: () -> Unit,
 ) {
-    LaunchedEffect(state.isSaved) {
-        if (state.isSaved) onBack()
+    LaunchedEffect(state.saveOperation) {
+        if (state.saveOperation is OperationUiState.Success) onBack()
     }
 
     var showDatePicker by remember { mutableStateOf(value = false) }
@@ -270,12 +271,14 @@ fun MedicationItemFormScreen(
                 )
             }
 
-            state.error?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            state.saveOperation.let { op ->
+                if (op is OperationUiState.Error) {
+                    Text(
+                        text = op.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
 
             Spacer(Modifier.height(32.dp))
@@ -283,11 +286,11 @@ fun MedicationItemFormScreen(
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = state.isValid && !state.isSaving,
+                enabled = state.isValid && state.saveOperation !is OperationUiState.InProgress,
                 colors = ButtonDefaults.buttonColors(containerColor = DarkPrimary),
                 shape = RoundedCornerShape(14.dp)
             ) {
-                if (state.isSaving) {
+                if (state.saveOperation is OperationUiState.InProgress) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                 } else {
                     Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)

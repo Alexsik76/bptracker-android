@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
 import ua.vn.home.bptracker.feature.home.*
@@ -245,8 +246,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     state = homeState,
                     onRefresh = homeVm::refresh,
                     onSettingsClick = {
-                        if (homeState is HomeState.Content) {
-                            selectedMeasurement = (homeState as HomeState.Content).latest
+                        (homeState as? ListUiState.Content)?.data?.let {
+                            selectedMeasurement = it.latest
                         }
                         navController.navigate("settings")
                     },
@@ -420,7 +421,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onPrescriptionClick = { p ->
                         navController.navigate("prescription_detail/${p.id}")
                     },
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onRefresh = listVm::refresh
                 )
             }
 
@@ -472,8 +474,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     formVm.init(prescriptionId)
                 }
 
-                LaunchedEffect(formState.isSaved) {
-                    if (formState.isSaved) {
+                LaunchedEffect(formState.saveOperation) {
+                    if (formState.saveOperation is ua.vn.home.bptracker.core.ui.OperationUiState.Success) {
                         val newId = formState.savedId
                         if (newId != null) {
                             navController.navigate("prescription_detail/$newId") {

@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.ui.components.*
 import ua.vn.home.bptracker.ui.theme.*
@@ -40,7 +41,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
-    state: HomeState,
+    state: ListUiState<HomePayload>,
     onRefresh: () -> Unit,
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
@@ -71,17 +72,17 @@ fun HomeScreen(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-            when (state) {
-                is HomeState.Loading -> LoadingState()
-                is HomeState.Empty -> EmptyState(
-                    title = stringResource(R.string.dashboard_no_measurements),
-                    description = stringResource(R.string.dashboard_empty_hint)
-                )
-                is HomeState.Error -> ErrorState(
-                    message = state.message,
-                    onRetry = onRefresh
-                )
-                is HomeState.Content -> DashboardContent(state, onHistoryClick, onMeasurementClick)
+            ListStateHost(
+                state = state,
+                onRetry = onRefresh,
+                onEmpty = {
+                    EmptyState(
+                        title = stringResource(R.string.dashboard_no_measurements),
+                        description = stringResource(R.string.dashboard_empty_hint)
+                    )
+                }
+            ) { content, _ ->
+                DashboardContent(content, onHistoryClick, onMeasurementClick)
             }
         }
     }
@@ -89,7 +90,7 @@ fun HomeScreen(
 
 @Composable
 fun DashboardContent(
-    content: HomeState.Content,
+    content: HomePayload,
     onHistoryClick: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit
 ) {
@@ -278,7 +279,7 @@ fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 
 }
 
 @Composable
-fun KpiGrid(content: HomeState.Content) {
+fun KpiGrid(content: HomePayload) {
     val isDark = isSystemInDarkTheme()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

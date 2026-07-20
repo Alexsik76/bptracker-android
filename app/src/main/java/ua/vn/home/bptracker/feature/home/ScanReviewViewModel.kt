@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.feature.ocr.OcrOutcome
 
 sealed interface ScanReviewState {
@@ -22,9 +23,8 @@ sealed interface ScanReviewState {
         val dia: String,
         val pulse: String,
         val recognized: Boolean,
-        val saving: Boolean = false,
-        val saved: Boolean = false,
-        val error: Int? = null,
+        val saveOperation: OperationUiState = OperationUiState.Idle,
+        val ocrError: Int? = null,
     ) : ScanReviewState {
         val sysInt = sys.toIntOrNull()
         val diaInt = dia.toIntOrNull()
@@ -71,7 +71,7 @@ class ScanReviewViewModel : ViewModel() {
                         dia = "",
                         pulse = "",
                         recognized = false,
-                        error = R.string.scan_review_ocr_failed
+                        ocrError = R.string.scan_review_ocr_failed
                     )
                 }
             }
@@ -80,17 +80,17 @@ class ScanReviewViewModel : ViewModel() {
 
     fun onSysChange(value: String) {
         val current = _state.value as? ScanReviewState.Ready ?: return
-        _state.value = current.copy(sys = value.filter { it.isDigit() }, error = null)
+        _state.value = current.copy(sys = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle, ocrError = null)
     }
 
     fun onDiaChange(value: String) {
         val current = _state.value as? ScanReviewState.Ready ?: return
-        _state.value = current.copy(dia = value.filter { it.isDigit() }, error = null)
+        _state.value = current.copy(dia = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle, ocrError = null)
     }
 
     fun onPulseChange(value: String) {
         val current = _state.value as? ScanReviewState.Ready ?: return
-        _state.value = current.copy(pulse = value.filter { it.isDigit() }, error = null)
+        _state.value = current.copy(pulse = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle, ocrError = null)
     }
 
     fun save() {
@@ -98,16 +98,16 @@ class ScanReviewViewModel : ViewModel() {
         if (!current.isValid) return
 
         viewModelScope.launch {
-            _state.value = current.copy(saving = true, error = null)
+            _state.value = current.copy(saveOperation = OperationUiState.InProgress, ocrError = null)
             try {
                 repository.createMeasurement(
                     sys = current.sysInt!!,
                     dia = current.diaInt!!,
                     pulse = current.pulseInt!!
                 )
-                _state.value = current.copy(saving = false, saved = true)
+                _state.value = current.copy(saveOperation = OperationUiState.Success)
             } catch (_: Exception) {
-                _state.value = current.copy(saving = false, error = R.string.scan_review_save_failed)
+                _state.value = current.copy(saveOperation = OperationUiState.Error("Save failed"))
             }
         }
     }
@@ -134,7 +134,7 @@ class ScanReviewViewModel : ViewModel() {
                     dia = current.dia, 
                     pulse = current.pulse,
                     recognized = false,
-                    error = R.string.scan_review_ocr_failed
+                    ocrError = R.string.scan_review_ocr_failed
                 )
             }
         }

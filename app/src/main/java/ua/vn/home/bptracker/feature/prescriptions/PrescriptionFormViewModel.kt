@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import java.time.LocalDate
 
 data class PrescriptionFormState(
@@ -15,10 +16,8 @@ data class PrescriptionFormState(
     val doctor: String = "",
     val prescribedOn: String = LocalDate.now().toString(),
     val isActive: Boolean = true,
-    val isSaving: Boolean = false,
-    val isSaved: Boolean = false,
-    val savedId: String? = null,
-    val error: String? = null
+    val saveOperation: OperationUiState = OperationUiState.Idle,
+    val savedId: String? = null
 ) {
     val isValid = doctor.isNotBlank() && prescribedOn.isNotBlank()
 }
@@ -49,15 +48,15 @@ class PrescriptionFormViewModel : ViewModel() {
     }
 
     fun onDoctorChange(value: String) {
-        _state.value = _state.value.copy(doctor = value, error = null, isSaved = false)
+        _state.value = _state.value.copy(doctor = value, saveOperation = OperationUiState.Idle)
     }
 
     fun onDateChange(value: String) {
-        _state.value = _state.value.copy(prescribedOn = value, error = null, isSaved = false)
+        _state.value = _state.value.copy(prescribedOn = value, saveOperation = OperationUiState.Idle)
     }
 
     fun onIsActiveChange(value: Boolean) {
-        _state.value = _state.value.copy(isActive = value, error = null, isSaved = false)
+        _state.value = _state.value.copy(isActive = value, saveOperation = OperationUiState.Idle)
     }
 
     fun save() {
@@ -65,7 +64,7 @@ class PrescriptionFormViewModel : ViewModel() {
         if (!s.isValid) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isSaving = true, error = null)
+            _state.value = _state.value.copy(saveOperation = OperationUiState.InProgress)
             try {
                 val savedId = if (s.id == null) {
                     val created = repository.createPrescription(s.doctor, s.prescribedOn)
@@ -74,9 +73,9 @@ class PrescriptionFormViewModel : ViewModel() {
                     repository.updatePrescription(s.id, s.doctor, s.prescribedOn, s.isActive)
                     null
                 }
-                _state.value = _state.value.copy(isSaving = false, isSaved = true, savedId = savedId)
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Success, savedId = savedId)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isSaving = false, error = e.message ?: "Save failed")
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
             }
         }
     }

@@ -3,22 +3,16 @@ package ua.vn.home.bptracker.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.WhenSlot
 import ua.vn.home.bptracker.feature.reminders.TodaySchedule
 import java.time.LocalDate
-
-sealed interface ScheduleState {
-    data object NotConfigured : ScheduleState
-    data class Content(
-        val schedule: TodaySchedule,
-        val isRefreshing: Boolean = false
-    ) : ScheduleState
-    data class Error(val message: String) : ScheduleState
-}
 
 class ScheduleViewModel : ViewModel() {
     private val today = LocalDate.now().toString()
@@ -26,45 +20,36 @@ class ScheduleViewModel : ViewModel() {
     private val intakeRepo = ServiceLocator.intakeReportRepository
     private val prescriptionRepo = ServiceLocator.prescriptionRepository
 
-    private val _state = MutableStateFlow<ScheduleState>(ScheduleState.Content(TodaySchedule(false, today, emptyList())))
-    val state: StateFlow<ScheduleState> = _state.asStateFlow()
+    private val _refreshing = MutableStateFlow(false)
+    private val _error = MutableStateFlow<String?>(null)
 
-    init {
-        viewModelScope.launch {
-            useCase.observeToday(today).collect { schedule ->
-                val current = _state.value
-                val isRefreshing = if (current is ScheduleState.Content) current.isRefreshing else false
-                _state.value = if (!schedule.configured) {
-                    ScheduleState.NotConfigured
-                } else {
-                    ScheduleState.Content(schedule, isRefreshing)
-                }
-            }
+    val state: StateFlow<ListUiState<TodaySchedule>> = combine(
+        useCase.observeToday(today),
+        _refreshing,
+        _error
+    ) { schedule, refreshing, error ->
+        when {
+            error != null && schedule.slots.isEmpty() -> ListUiState.Error(error)
+            else -> ListUiState.Content(schedule, refreshing)
         }
-    }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ListUiState.Content(TodaySchedule(false, today, emptyList()))
+    )
 
     fun refresh() {
-        val current = _state.value
-        if (current is ScheduleState.Content) {
-            _state.value = current.copy(isRefreshing = true)
-        }
-        
         viewModelScope.launch {
+            _refreshing.value = true
+            _error.value = null
             try {
                 intakeRepo.refresh()
                 intakeRepo.syncPending()
                 prescriptionRepo.refresh()
             } catch (e: Exception) {
-                if (_state.value is ScheduleState.Content) {
-                    // Just log or handle silently if we already have content
-                } else {
-                    _state.value = ScheduleState.Error(e.message ?: "Refresh failed")
-                }
+                _error.value = e.message ?: "Refresh failed"
             } finally {
-                val endState = _state.value
-                if (endState is ScheduleState.Content) {
-                    _state.value = endState.copy(isRefreshing = false)
-                }
+                _refreshing.value = false
             }
         }
     }

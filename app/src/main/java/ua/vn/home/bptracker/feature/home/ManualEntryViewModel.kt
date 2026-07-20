@@ -8,14 +8,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.OperationUiState
 
 data class ManualEntryState(
     val sys: String = "",
     val dia: String = "",
     val pulse: String = "",
-    val saving: Boolean = false,
-    val saved: Boolean = false,
-    val error: String? = null
+    val saveOperation: OperationUiState = OperationUiState.Idle
 ) {
     val sysInt = sys.toIntOrNull()
     val diaInt = dia.toIntOrNull()
@@ -38,15 +37,15 @@ class ManualEntryViewModel : ViewModel() {
     val state: StateFlow<ManualEntryState> = _state.asStateFlow()
 
     fun onSysChange(value: String) {
-        _state.value = _state.value.copy(sys = value.filter { it.isDigit() }, error = null)
+        _state.value = _state.value.copy(sys = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle)
     }
 
     fun onDiaChange(value: String) {
-        _state.value = _state.value.copy(dia = value.filter { it.isDigit() }, error = null)
+        _state.value = _state.value.copy(dia = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle)
     }
 
     fun onPulseChange(value: String) {
-        _state.value = _state.value.copy(pulse = value.filter { it.isDigit() }, error = null)
+        _state.value = _state.value.copy(pulse = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle)
     }
 
     fun save() {
@@ -54,16 +53,16 @@ class ManualEntryViewModel : ViewModel() {
         if (!s.isValid) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(saving = true, error = null)
+            _state.value = _state.value.copy(saveOperation = OperationUiState.InProgress)
             try {
                 repository.createMeasurement(
                     sys = s.sysInt!!,
                     dia = s.diaInt!!,
                     pulse = s.pulseInt!!
                 )
-                _state.value = _state.value.copy(saving = false, saved = true)
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Success)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(saving = false, error = e.message ?: "Save failed")
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
             }
         }
     }

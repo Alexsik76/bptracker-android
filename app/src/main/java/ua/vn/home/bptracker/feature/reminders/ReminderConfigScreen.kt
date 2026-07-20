@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.ui.theme.DarkPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,8 +29,8 @@ fun ReminderConfigScreen(
     onSave: () -> Unit,
     onBack: () -> Unit
 ) {
-    LaunchedEffect(state.isSaved) {
-        if (state.isSaved) onBack()
+    LaunchedEffect(state.saveOperation) {
+        if (state.saveOperation is OperationUiState.Success) onBack()
     }
 
     var activePickerSlot by remember { mutableStateOf<String?>(null) }
@@ -127,9 +128,9 @@ fun ReminderConfigScreen(
                 singleLine = true
             )
 
-            if (state.error != null) {
+            if (state.saveOperation is OperationUiState.Error) {
                 Text(
-                    text = state.error,
+                    text = state.saveOperation.message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -140,11 +141,11 @@ fun ReminderConfigScreen(
             Button(
                 onClick = onSave,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = state.isValid && !state.isLoading,
+                enabled = state.isValid && state.saveOperation !is OperationUiState.InProgress,
                 colors = ButtonDefaults.buttonColors(containerColor = DarkPrimary),
                 shape = RoundedCornerShape(14.dp)
             ) {
-                if (state.isLoading) {
+                if (state.saveOperation is OperationUiState.InProgress) {
                     CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                 } else {
                     Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)

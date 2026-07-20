@@ -3,66 +3,72 @@ package ua.vn.home.bptracker.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import java.time.OffsetDateTime
 
-sealed interface HomeState {
-    data object Loading : HomeState
-    data object Empty : HomeState
-    data class Error(val message: String) : HomeState
-    data class Content(
-        val latest: MeasurementDto,
-        val zone: BpZone,
-        val recent: List<MeasurementDto>,
-        val avgSys: Int,
-        val avgDia: Int,
-        val avgPulse: Int,
-        val inRangePercent: Int,
-        val sysChange: Int,
-        val diaChange: Int
-    ) : HomeState
-}
+data class HomePayload(
+    val latest: MeasurementDto,
+    val zone: BpZone,
+    val recent: List<MeasurementDto>,
+    val avgSys: Int,
+    val avgDia: Int,
+    val avgPulse: Int,
+    val inRangePercent: Int,
+    val sysChange: Int,
+    val diaChange: Int
+)
 
 class HomeViewModel : ViewModel() {
 
     private val repository = ServiceLocator.measurementRepository
-    private val _state = MutableStateFlow<HomeState>(HomeState.Loading)
-    val state: StateFlow<HomeState> = _state.asStateFlow()
+    
+    private val _refreshError = MutableStateFlow<String?>(null)
 
-    init {
-        viewModelScope.launch {
-            repository.observeMeasurements().collect { list ->
-                _state.value = computeHomeState(list)
+    val state: StateFlow<ListUiState<HomePayload>> = repository.observeMeasurements()
+        .map { list -> computeHomeState(list) }
+        .combine(_refreshError) { uiState, error ->
+            if (error != null && uiState is ListUiState.Empty) {
+                ListUiState.Error(error)
+            } else {
+                uiState
             }
         }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ListUiState.Empty
+        )
+
+    init {
         refresh()
     }
 
     fun refresh() {
         viewModelScope.launch {
             try {
+                _refreshError.value = null
                 repository.syncPending()
-                // Fetch 14 days to calculate week-over-week change
                 repository.getMeasurements(days = 14)
             } catch (e: Exception) {
-                // Surface error only if we don't have content yet
-                if (_state.value is HomeState.Loading) {
-                    _state.value = HomeState.Error(e.message ?: "Unknown error")
-                }
+                _refreshError.value = e.message ?: "Unknown error"
             }
         }
     }
 
     companion object {
-        internal fun computeHomeState(measurements: List<MeasurementDto>): HomeState {
+        internal fun computeHomeState(measurements: List<MeasurementDto>): ListUiState<HomePayload> {
             if (measurements.isEmpty()) {
-                return HomeState.Empty
+                return ListUiState.Empty
             }
 
             val allList = measurements.sortedByDescending { TimeUtils.parseToLocal(it.recordedAt) }
@@ -78,11 +84,13 @@ class HomeViewModel : ViewModel() {
 
             if (thisWeek.isEmpty()) {
                 val latest = allList.first()
-                return HomeState.Content(
-                    latest = latest,
-                    zone = BpZone.classify(latest.sys, latest.dia),
-                    recent = allList.take(50),
-                    avgSys = 0, avgDia = 0, avgPulse = 0, inRangePercent = 0, sysChange = 0, diaChange = 0
+                return ListUiState.Content(
+                    HomePayload(
+                        latest = latest,
+                        zone = BpZone.classify(latest.sys, latest.dia),
+                        recent = allList.take(50),
+                        avgSys = 0, avgDia = 0, avgPulse = 0, inRangePercent = 0, sysChange = 0, diaChange = 0
+                    )
                 )
             }
 
@@ -108,16 +116,18 @@ class HomeViewModel : ViewModel() {
                 diaChange = avgDia - prevAvgDia
             }
 
-            return HomeState.Content(
-                latest = latest,
-                zone = zone,
-                recent = allList.take(50),
-                avgSys = avgSys,
-                avgDia = avgDia,
-                avgPulse = avgPulse,
-                inRangePercent = inRangePercent,
-                sysChange = sysChange,
-                diaChange = diaChange
+            return ListUiState.Content(
+                HomePayload(
+                    latest = latest,
+                    zone = zone,
+                    recent = allList.take(50),
+                    avgSys = avgSys,
+                    avgDia = avgDia,
+                    avgPulse = avgPulse,
+                    inRangePercent = inRangePercent,
+                    sysChange = sysChange,
+                    diaChange = diaChange
+                )
             )
         }
     }

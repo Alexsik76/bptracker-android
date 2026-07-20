@@ -9,8 +9,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
+import ua.vn.home.bptracker.data.dto.WhenSlot
 
-class PrescriptionFormViewModelTest {
+class MedicationItemFormViewModelTest {
 
     @Test
     fun `save success transitions Idle to InProgress to Success`() = runTest {
@@ -18,8 +19,11 @@ class PrescriptionFormViewModelTest {
         val repo = mockk<ua.vn.home.bptracker.data.repository.PrescriptionRepository>(relaxed = true)
         every { ServiceLocator.prescriptionRepository } returns repo
         
-        val viewModel = PrescriptionFormViewModel()
-        viewModel.onDoctorChange("Dr. House")
+        val viewModel = MedicationItemFormViewModel()
+        viewModel.init("p1", null)
+        viewModel.onMedicineChange("Aspirin")
+        viewModel.onWhenSlotsChange(WhenSlot.Morning, true)
+        viewModel.onDoseAmountChange("100")
         
         viewModel.state.test {
             assertEquals(OperationUiState.Idle, awaitItem().saveOperation)

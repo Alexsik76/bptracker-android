@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.ReminderConfigDto
 
 data class ReminderConfigState(
@@ -17,8 +18,7 @@ data class ReminderConfigState(
     val maxReminders: String = "3",
     val durationMinutes: String = "60",
     val isLoading: Boolean = false,
-    val isSaved: Boolean = false,
-    val error: String? = null
+    val saveOperation: OperationUiState = OperationUiState.Idle
 ) {
     val morningHour = morningTime.substringBefore(":").toIntOrNull() ?: 8
     val morningMinute = morningTime.substringAfter(":").substringBefore(":").toIntOrNull() ?: 0
@@ -46,7 +46,7 @@ class ReminderConfigViewModel : ViewModel() {
 
     fun loadConfig() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.value = _state.value.copy(isLoading = true, saveOperation = OperationUiState.Idle)
             try {
                 val config = repository.getConfig()
                 if (config != null) {
@@ -62,7 +62,7 @@ class ReminderConfigViewModel : ViewModel() {
                     _state.value = _state.value.copy(isLoading = false)
                 }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Failed to load config")
+                _state.value = _state.value.copy(isLoading = false, saveOperation = OperationUiState.Error(e.message ?: "Failed to load config"))
             }
         }
     }
@@ -74,14 +74,15 @@ class ReminderConfigViewModel : ViewModel() {
             "day" -> _state.value = _state.value.copy(dayTime = timeStr)
             "evening" -> _state.value = _state.value.copy(eveningTime = timeStr)
         }
+        _state.value = _state.value.copy(saveOperation = OperationUiState.Idle)
     }
 
     fun onMaxRemindersChange(value: String) {
-        _state.value = _state.value.copy(maxReminders = value.filter { it.isDigit() })
+        _state.value = _state.value.copy(maxReminders = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle)
     }
 
     fun onDurationMinutesChange(value: String) {
-        _state.value = _state.value.copy(durationMinutes = value.filter { it.isDigit() })
+        _state.value = _state.value.copy(durationMinutes = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle)
     }
 
     fun save() {
@@ -89,7 +90,7 @@ class ReminderConfigViewModel : ViewModel() {
         if (!s.isValid) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.value = _state.value.copy(saveOperation = OperationUiState.InProgress)
             try {
                 repository.saveConfig(
                     ReminderConfigDto(
@@ -103,9 +104,9 @@ class ReminderConfigViewModel : ViewModel() {
                 if (ServiceLocator.settingsStore.remindersEnabled.first()) {
                     ServiceLocator.reminderScheduler.rescheduleAll()
                 }
-                _state.value = _state.value.copy(isLoading = false, isSaved = true)
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Success)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, error = e.message ?: "Save failed")
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
             }
         }
     }

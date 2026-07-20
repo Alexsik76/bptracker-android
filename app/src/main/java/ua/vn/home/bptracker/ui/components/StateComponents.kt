@@ -13,6 +13,36 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.ListUiState
+
+@Composable
+fun <T> ListStateHost(
+    state: ListUiState<T>,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLoading: @Composable () -> Unit = { LoadingState(modifier) },
+    onEmpty: @Composable () -> Unit = {
+        EmptyState(
+            title = stringResource(R.string.dashboard_no_measurements),
+            modifier = modifier
+        )
+    },
+    onError: @Composable (String) -> Unit = { message ->
+        ErrorState(
+            message = message,
+            onRetry = onRetry,
+            modifier = modifier
+        )
+    },
+    onContent: @Composable (data: T, isRefreshing: Boolean) -> Unit
+) {
+    when (state) {
+        ListUiState.Loading -> onLoading()
+        ListUiState.Empty -> onEmpty()
+        is ListUiState.Error -> onError(state.message)
+        is ListUiState.Content -> onContent(state.data, state.isRefreshing)
+    }
+}
 
 @Composable
 fun LoadingState(modifier: Modifier = Modifier) {

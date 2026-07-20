@@ -5,30 +5,29 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
-
-data class PrescriptionsState(
-    val list: List<PrescriptionReadDto> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
 
 class PrescriptionsViewModel : ViewModel() {
     private val repository = ServiceLocator.prescriptionRepository
     private val _refreshing = MutableStateFlow(false)
     private val _error = MutableStateFlow<String?>(null)
 
-    val state: StateFlow<PrescriptionsState> = combine(
+    val state: StateFlow<ListUiState<List<PrescriptionReadDto>>> = combine(
         repository.getPrescriptions(),
         _refreshing,
         _error
     ) { list, refreshing, error ->
-        PrescriptionsState(
-            list = list,
-            isLoading = refreshing,
-            error = error
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PrescriptionsState())
+        when {
+            error != null && list.isEmpty() -> ListUiState.Error(error)
+            list.isEmpty() && !refreshing -> ListUiState.Empty
+            else -> ListUiState.Content(list, refreshing)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ListUiState.Empty
+    )
 
     fun refresh() {
         viewModelScope.launch {

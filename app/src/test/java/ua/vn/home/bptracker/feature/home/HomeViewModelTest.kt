@@ -1,8 +1,16 @@
 package ua.vn.home.bptracker.feature.home
 
+import app.cash.turbine.test
+import io.mockk.every
+import io.mockk.mockkObject
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 
 class HomeViewModelTest {
@@ -10,7 +18,7 @@ class HomeViewModelTest {
     @Test
     fun `computeHomeState with empty list returns Empty`() {
         val result = HomeViewModel.computeHomeState(emptyList())
-        assertTrue(result is HomeState.Empty)
+        assertTrue(result is ListUiState.Empty)
     }
 
     @Test
@@ -20,8 +28,8 @@ class HomeViewModelTest {
         
         val result = HomeViewModel.computeHomeState(listOf(a, b))
         
-        assertTrue(result is HomeState.Content)
-        val content = result as HomeState.Content
+        assertTrue(result is ListUiState.Content)
+        val content = (result as ListUiState.Content).data
         assertEquals("b", content.latest.id)
     }
     
@@ -33,10 +41,25 @@ class HomeViewModelTest {
         
         val result = HomeViewModel.computeHomeState(listOf(m1, m2))
         
-        assertTrue(result is HomeState.Content)
-        val content = result as HomeState.Content
+        assertTrue(result is ListUiState.Content)
+        val content = (result as ListUiState.Content).data
         assertEquals(130, content.avgSys)
         assertEquals(85, content.avgDia)
         assertEquals(75, content.avgPulse)
+    }
+
+    @Test
+    fun `initial state is never Loading`() = runTest {
+        mockkObject(ServiceLocator)
+        val repo = io.mockk.mockk<ua.vn.home.bptracker.data.repository.MeasurementRepository>(relaxed = true)
+        every { ServiceLocator.measurementRepository } returns repo
+        every { repo.observeMeasurements() } returns flowOf(emptyList())
+
+        val viewModel = HomeViewModel()
+        viewModel.state.test {
+            val first = awaitItem()
+            assertNotEquals(ListUiState.Loading, first)
+            assertTrue(first is ListUiState.Empty)
+        }
     }
 }

@@ -19,16 +19,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
 import ua.vn.home.bptracker.ui.components.EmptyState
+import ua.vn.home.bptracker.ui.components.ListStateHost
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrescriptionsScreen(
-    state: PrescriptionsState,
+    state: ListUiState<List<PrescriptionReadDto>>,
     onAddClick: () -> Unit,
     onPrescriptionClick: (PrescriptionReadDto) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onRefresh: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -66,47 +69,38 @@ fun PrescriptionsScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (state.error != null) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = state.error,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(8.dp)
-                        )
+            ListStateHost(
+                state = state,
+                onRetry = onRefresh
+            ) { list, refreshing ->
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (refreshing) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     }
-                }
 
-                if (state.isLoading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                }
-
-                if (state.list.isEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        EmptyState(
-                            title = stringResource(R.string.prescriptions_empty),
-                            description = stringResource(R.string.prescriptions_empty_hint)
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        items(state.list) { prescription ->
-                            PrescriptionRow(
-                                prescription = prescription,
-                                onClick = { onPrescriptionClick(prescription) }
+                    if (list.isEmpty()) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            EmptyState(
+                                title = stringResource(R.string.prescriptions_empty),
+                                description = stringResource(R.string.prescriptions_empty_hint)
                             )
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
-                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(bottom = 80.dp)
+                        ) {
+                            items(list) { prescription ->
+                                PrescriptionRow(
+                                    prescription = prescription,
+                                    onClick = { onPrescriptionClick(prescription) }
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                                )
+                            }
                         }
                     }
                 }

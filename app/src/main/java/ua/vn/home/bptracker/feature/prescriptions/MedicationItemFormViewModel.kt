@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.*
 import java.time.OffsetDateTime
 
@@ -25,9 +26,7 @@ data class MedicationItemFormState(
     val courseType: CourseType = CourseType.Ongoing,
     val courseStart: String? = null,
     val courseIntakes: Int? = null,
-    val isSaving: Boolean = false,
-    val isSaved: Boolean = false,
-    val error: String? = null
+    val saveOperation: OperationUiState = OperationUiState.Idle
 ) {
     val isValid: Boolean
         get() {
@@ -76,8 +75,8 @@ class MedicationItemFormViewModel : ViewModel() {
         }
     }
 
-    fun onMedicineChange(value: String) { _state.value = _state.value.copy(medicine = value, error = null) }
-    fun onConditionChange(value: String) { _state.value = _state.value.copy(condition = value, error = null) }
+    fun onMedicineChange(value: String) { _state.value = _state.value.copy(medicine = value, saveOperation = OperationUiState.Idle) }
+    fun onConditionChange(value: String) { _state.value = _state.value.copy(condition = value, saveOperation = OperationUiState.Idle) }
     fun onWhenSlotsChange(slot: WhenSlot, checked: Boolean) {
         val current = _state.value.whenSlots.toMutableList()
         if (checked) {
@@ -85,7 +84,7 @@ class MedicationItemFormViewModel : ViewModel() {
         } else {
             current.remove(slot)
         }
-        _state.value = _state.value.copy(whenSlots = current, error = null)
+        _state.value = _state.value.copy(whenSlots = current, saveOperation = OperationUiState.Idle)
     }
     fun onDoseAmountChange(value: String) {
         val filtered = value.filter { it.isDigit() || it == '.' }
@@ -95,29 +94,29 @@ class MedicationItemFormViewModel : ViewModel() {
         } else {
             filtered
         }
-        _state.value = _state.value.copy(doseAmount = finalValue, error = null)
+        _state.value = _state.value.copy(doseAmount = finalValue, saveOperation = OperationUiState.Idle)
     }
-    fun onDoseUnitChange(value: DoseUnit?) { _state.value = _state.value.copy(doseUnit = value, error = null) }
-    fun onFreqCountChange(value: Int) { _state.value = _state.value.copy(freqCount = value, error = null) }
-    fun onFreqPeriodChange(value: Int) { _state.value = _state.value.copy(freqPeriod = value, error = null) }
-    fun onFreqPeriodUnitChange(value: FreqPeriodUnit) { _state.value = _state.value.copy(freqPeriodUnit = value, error = null) }
+    fun onDoseUnitChange(value: DoseUnit?) { _state.value = _state.value.copy(doseUnit = value, saveOperation = OperationUiState.Idle) }
+    fun onFreqCountChange(value: Int) { _state.value = _state.value.copy(freqCount = value, saveOperation = OperationUiState.Idle) }
+    fun onFreqPeriodChange(value: Int) { _state.value = _state.value.copy(freqPeriod = value, saveOperation = OperationUiState.Idle) }
+    fun onFreqPeriodUnitChange(value: FreqPeriodUnit) { _state.value = _state.value.copy(freqPeriodUnit = value, saveOperation = OperationUiState.Idle) }
     fun onCourseTypeChange(value: CourseType) {
         _state.value = _state.value.copy(
             courseType = value,
             courseStart = if (value == CourseType.Course) OffsetDateTime.now().toString() else null,
             courseIntakes = if (value == CourseType.Course) _state.value.courseIntakes ?: 1 else null,
-            error = null
+            saveOperation = OperationUiState.Idle
         )
     }
-    fun onCourseStartChange(value: String) { _state.value = _state.value.copy(courseStart = value, error = null) }
-    fun onCourseIntakesChange(value: Int?) { _state.value = _state.value.copy(courseIntakes = value, error = null) }
+    fun onCourseStartChange(value: String) { _state.value = _state.value.copy(courseStart = value, saveOperation = OperationUiState.Idle) }
+    fun onCourseIntakesChange(value: Int?) { _state.value = _state.value.copy(courseIntakes = value, saveOperation = OperationUiState.Idle) }
 
     fun save() {
         val s = _state.value
         if (!s.isValid) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isSaving = true, error = null)
+            _state.value = _state.value.copy(saveOperation = OperationUiState.InProgress)
             try {
                 if (s.id == null) {
                     repository.createItem(s.prescriptionId, MedicationItemCreateDto(
@@ -148,9 +147,9 @@ class MedicationItemFormViewModel : ViewModel() {
                         courseIntakes = s.courseIntakes
                     ))
                 }
-                _state.value = _state.value.copy(isSaving = false, isSaved = true)
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Success)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isSaving = false, error = e.message ?: "Save failed")
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
             }
         }
     }

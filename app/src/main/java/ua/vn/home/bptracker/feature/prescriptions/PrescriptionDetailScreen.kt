@@ -19,14 +19,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.CourseType
 import ua.vn.home.bptracker.data.dto.MedicationItemReadDto
 import ua.vn.home.bptracker.ui.components.EmptyState
+import ua.vn.home.bptracker.ui.components.ListStateHost
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrescriptionDetailScreen(
-    state: PrescriptionDetailState,
+    state: ListUiState<PrescriptionDetailPayload>,
     onEditPrescription: () -> Unit,
     onDeletePrescription: () -> Unit,
     onAddItem: () -> Unit,
@@ -59,8 +61,9 @@ fun PrescriptionDetailScreen(
 
     Scaffold(
         topBar = {
+            val title = (state as? ListUiState.Content)?.data?.prescription?.doctor ?: ""
             TopAppBar(
-                title = { Text(state.prescription?.doctor ?: "") },
+                title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
@@ -80,13 +83,19 @@ fun PrescriptionDetailScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            state.prescription?.let { p ->
+        ListStateHost(
+            state = state,
+            onRetry = { /* TODO */ },
+            modifier = Modifier.padding(padding)
+        ) { payload, _ ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                val p = payload.prescription
+                val items = payload.items
+
                 PrescriptionHeader(p)
                 
                 Row(
@@ -108,14 +117,14 @@ fun PrescriptionDetailScreen(
                     }
                 }
 
-                if (state.items.isEmpty()) {
+                if (items.isEmpty()) {
                     EmptyState(
                         title = stringResource(R.string.med_items_empty),
                         description = ""
                     )
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(state.items) { item ->
+                        items(items) { item ->
                             MedicationItemRow(
                                 item = item,
                                 onClick = { onEditItem(item) },

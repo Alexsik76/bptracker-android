@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.ui.theme.*
 import ua.vn.home.bptracker.ui.components.*
 
@@ -32,8 +33,8 @@ fun ManualEntryScreen(
     onSave: () -> Unit,
     onBack: () -> Unit
 ) {
-    LaunchedEffect(state.saved) {
-        if (state.saved) onBack()
+    LaunchedEffect(state.saveOperation) {
+        if (state.saveOperation is OperationUiState.Success) onBack()
     }
 
     Scaffold(
@@ -129,6 +130,14 @@ fun ManualEntryScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            if (state.saveOperation is OperationUiState.Error) {
+                Text(
+                    text = state.saveOperation.message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             // Action Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -149,14 +158,14 @@ fun ManualEntryScreen(
                 Button(
                     onClick = onSave,
                     modifier = Modifier.weight(1f).height(56.dp),
-                    enabled = state.isValid && !state.saving,
+                    enabled = state.isValid && state.saveOperation !is OperationUiState.InProgress,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = DarkPrimary,
                         disabledContainerColor = DarkPrimary.copy(alpha = 0.3f)
                     ),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    if (state.saving) {
+                    if (state.saveOperation is OperationUiState.InProgress) {
                         CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                     } else {
                         Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)

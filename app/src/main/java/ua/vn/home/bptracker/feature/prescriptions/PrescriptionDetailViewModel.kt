@@ -6,14 +6,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MedicationItemReadDto
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
 
-data class PrescriptionDetailState(
-    val prescription: PrescriptionReadDto? = null,
-    val items: List<MedicationItemReadDto> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
+data class PrescriptionDetailPayload(
+    val prescription: PrescriptionReadDto,
+    val items: List<MedicationItemReadDto>
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -21,19 +20,24 @@ class PrescriptionDetailViewModel : ViewModel() {
     private val repository = ServiceLocator.prescriptionRepository
     private val _prescriptionId = MutableStateFlow<String?>(null)
 
-    val state: StateFlow<PrescriptionDetailState> = _prescriptionId
+    val state: StateFlow<ListUiState<PrescriptionDetailPayload>> = _prescriptionId
         .filterNotNull()
         .flatMapLatest { id ->
             combine(
                 repository.getPrescriptions().map { list -> list.find { it.id == id } },
                 repository.getItems(id)
             ) { prescription, items ->
-                PrescriptionDetailState(
-                    prescription = prescription,
-                    items = items
-                )
+                if (prescription == null) {
+                    ListUiState.Empty
+                } else {
+                    ListUiState.Content(PrescriptionDetailPayload(prescription, items))
+                }
             }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PrescriptionDetailState())
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ListUiState.Empty
+        )
 
     fun setPrescriptionId(id: String) {
         _prescriptionId.value = id

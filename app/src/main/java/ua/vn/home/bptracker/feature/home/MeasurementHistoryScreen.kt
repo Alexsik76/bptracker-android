@@ -12,15 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
-import ua.vn.home.bptracker.ui.components.LoadingState
-import ua.vn.home.bptracker.ui.components.EmptyState
-import ua.vn.home.bptracker.ui.components.ErrorState
+import ua.vn.home.bptracker.ui.components.ListStateHost
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeasurementHistoryScreen(
-    state: HomeState,
+    state: ListUiState<HomePayload>,
     onRefresh: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit,
     onBack: () -> Unit
@@ -46,24 +45,22 @@ fun MeasurementHistoryScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            when (state) {
-                is HomeState.Loading -> LoadingState()
-                is HomeState.Empty -> EmptyState(title = stringResource(R.string.dashboard_no_measurements))
-                is HomeState.Error -> ErrorState(message = state.message, onRetry = onRefresh)
-                is HomeState.Content -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        items(state.recent) { m ->
-                            MeasurementRow(m, onClick = { onMeasurementClick(m) })
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 20.dp),
-                                thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
-                            )
-                        }
+            ListStateHost(
+                state = state,
+                onRetry = onRefresh
+            ) { content, _ ->
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    items(content.recent) { m ->
+                        MeasurementRow(m, onClick = { onMeasurementClick(m) })
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 20.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                        )
                     }
                 }
             }

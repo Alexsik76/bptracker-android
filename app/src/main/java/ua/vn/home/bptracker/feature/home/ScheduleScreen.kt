@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.DoseUnit
 import ua.vn.home.bptracker.data.dto.WhenSlot
@@ -61,7 +62,7 @@ fun getLocalizedDoseUnit(unit: DoseUnit?): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
-    state: ScheduleState,
+    state: ListUiState<TodaySchedule>,
     onConfirm: (WhenSlot) -> Unit,
     onEditTime: (WhenSlot, String) -> Unit,
     onDelete: (WhenSlot) -> Unit,
@@ -106,26 +107,26 @@ fun ScheduleScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (state) {
-                is ScheduleState.NotConfigured -> NotConfiguredState(onEditClick)
-                is ScheduleState.Error -> ErrorState(
-                    message = state.message,
-                    onRetry = onRefresh
-                )
-                is ScheduleState.Content -> {
+            ListStateHost(
+                state = state,
+                onRetry = onRefresh
+            ) { schedule, refreshing ->
+                if (!schedule.configured) {
+                    NotConfiguredState(onEditClick)
+                } else {
                     Column(Modifier.fillMaxSize()) {
-                        if (state.isRefreshing) {
+                        if (refreshing) {
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         }
                         
-                        if (state.schedule.slots.isEmpty()) {
+                        if (schedule.slots.isEmpty()) {
                             EmptyState(
                                 title = stringResource(R.string.schedule_empty),
                                 description = stringResource(R.string.schedule_empty_hint),
                             )
                         } else {
                             ScheduleContent(
-                                schedule = state.schedule,
+                                schedule = schedule,
                                 onSlotClick = { selectedSlotForIntake = it },
                             )
                         }
