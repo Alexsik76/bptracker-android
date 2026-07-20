@@ -22,7 +22,6 @@ import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.data.dto.CourseType
 import ua.vn.home.bptracker.data.dto.MedicationItemReadDto
 import ua.vn.home.bptracker.ui.components.EmptyState
-import ua.vn.home.bptracker.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,10 +86,7 @@ fun PrescriptionDetailScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            val p = state.prescription
-            if (p == null) {
-                LoadingState()
-            } else {
+            state.prescription?.let { p ->
                 PrescriptionHeader(p)
                 
                 Row(

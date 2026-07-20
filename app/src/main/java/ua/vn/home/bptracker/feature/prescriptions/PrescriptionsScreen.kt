@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
 import ua.vn.home.bptracker.ui.components.EmptyState
-import ua.vn.home.bptracker.ui.components.LoadingState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,9 +81,11 @@ fun PrescriptionsScreen(
                     }
                 }
 
-                if (state.isLoading && state.list.isEmpty()) {
-                    Box(modifier = Modifier.weight(1f)) { LoadingState() }
-                } else if (state.list.isEmpty()) {
+                if (state.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+
+                if (state.list.isEmpty()) {
                     Box(modifier = Modifier.weight(1f)) {
                         EmptyState(
                             title = stringResource(R.string.prescriptions_empty),

@@ -107,23 +107,28 @@ fun ScheduleScreen(
                 .padding(padding)
         ) {
             when (state) {
-                is ScheduleState.Loading -> LoadingState()
                 is ScheduleState.NotConfigured -> NotConfiguredState(onEditClick)
                 is ScheduleState.Error -> ErrorState(
                     message = state.message,
                     onRetry = onRefresh
                 )
                 is ScheduleState.Content -> {
-                    if (state.schedule.slots.isEmpty()) {
-                        EmptyState(
-                            title = stringResource(R.string.schedule_empty),
-                            description = stringResource(R.string.schedule_empty_hint),
-                        )
-                    } else {
-                        ScheduleContent(
-                            schedule = state.schedule,
-                            onSlotClick = { selectedSlotForIntake = it },
-                        )
+                    Column(Modifier.fillMaxSize()) {
+                        if (state.isRefreshing) {
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        }
+                        
+                        if (state.schedule.slots.isEmpty()) {
+                            EmptyState(
+                                title = stringResource(R.string.schedule_empty),
+                                description = stringResource(R.string.schedule_empty_hint),
+                            )
+                        } else {
+                            ScheduleContent(
+                                schedule = state.schedule,
+                                onSlotClick = { selectedSlotForIntake = it },
+                            )
+                        }
                     }
                 }
             }
