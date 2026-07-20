@@ -39,21 +39,27 @@ fun BpBottomNavBar(
     onScanClick: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
+    val bottomGap = MaterialTheme.spacing.cardPadding // 20dp
     
+    // Total container height: 
+    // 36dp (button top half) + 72dp (bar/button bottom half) + 20dp (bottom gap) = 128dp
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(108.dp + bottomGap)
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 20.dp),
-        contentAlignment = Alignment.BottomCenter
+            .padding(horizontal = MaterialTheme.spacing.screenPadding),
+        contentAlignment = Alignment.TopCenter // Align everything to top first
     ) {
+        // 1. The main navigation bar surface
+        // Positioned 36dp from the top of the 128dp container, making it 72dp high
         Surface(
             modifier = Modifier
+                .padding(top = 36.dp)
                 .fillMaxWidth()
                 .height(72.dp),
             color = MaterialTheme.colorScheme.secondary,
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             border = BorderStroke(
                 1.dp, 
                 if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.07f)
@@ -84,13 +90,16 @@ fun BpBottomNavBar(
             }
         }
 
+        // 2. The Scan FAB
+        // Positioned at the very top of the container, 72dp high.
+        // It overlaps the Surface by exactly 36dp.
         Box(
             modifier = Modifier
-                .offset(y = (-36).dp)
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(ZoneOptimalDark) // Green brand color
-                .clickable { onScanClick() },
+                .background(ZoneOptimalDark)
+                .clickable { onScanClick() }
+                .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -169,9 +178,9 @@ fun ValueField(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(72.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f))
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = MaterialTheme.spacing.cardPadding),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(
@@ -211,11 +220,14 @@ fun BpCard(
     val isDark = isSystemInDarkTheme()
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = if (isDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)) else BorderStroke(1.dp, Color.Black.copy(alpha = 0.07f)),
+        border = BorderStroke(
+            1.dp,
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.07f)
+        ),
         elevation = if (isDark) CardDefaults.cardElevation(0.dp) else CardDefaults.cardElevation(2.dp),
         content = content
     )
@@ -288,7 +300,7 @@ fun KpiTile(
     BpCard(modifier = modifier) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(MaterialTheme.spacing.medium)
                 .fillMaxWidth()
         ) {
             Text(
@@ -296,10 +308,10 @@ fun KpiTile(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineMedium, // DM Mono 25sp
+                style = MaterialTheme.typography.headlineMedium, // DM Mono 17sp
                 color = valueColor
             )
             if (sub != null) {
@@ -429,17 +441,17 @@ fun ListGroupCard(
     title: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
         if (title != null) {
             Text(
                 title.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp)
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.extraSmall)
             )
         }
         BpCard(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+            Column(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.cardPadding)) {
                 content()
             }
         }

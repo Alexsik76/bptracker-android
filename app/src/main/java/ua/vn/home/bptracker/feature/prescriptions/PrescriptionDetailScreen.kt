@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -24,6 +23,7 @@ import ua.vn.home.bptracker.data.dto.CourseType
 import ua.vn.home.bptracker.data.dto.MedicationItemReadDto
 import ua.vn.home.bptracker.ui.components.EmptyState
 import ua.vn.home.bptracker.ui.components.ListStateHost
+import ua.vn.home.bptracker.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,6 +63,7 @@ fun PrescriptionDetailScreen(
         topBar = {
             val title = (state as? ListUiState.Content)?.data?.prescription?.doctor ?: ""
             TopAppBar(
+                modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -101,7 +102,7 @@ fun PrescriptionDetailScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(MaterialTheme.spacing.medium),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -112,7 +113,7 @@ fun PrescriptionDetailScreen(
                     )
                     TextButton(onClick = onAddItem) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(MaterialTheme.spacing.extraSmall))
                         Text(stringResource(R.string.med_items_add_btn))
                     }
                 }
@@ -131,10 +132,13 @@ fun PrescriptionDetailScreen(
                                 onDelete = { onDeleteItem(item.id) }
                             )
                             HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
                                 thickness = 0.5.dp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
                             )
+                        }
+                        item {
+                            Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
                         }
                     }
                 }
@@ -149,18 +153,18 @@ fun PrescriptionHeader(p: ua.vn.home.bptracker.data.dto.PrescriptionReadDto) {
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(MaterialTheme.spacing.medium)) {
             Text(
                 text = stringResource(R.string.prescriptions_prescribed_on, p.prescribedOn),
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.small))
             Surface(
                 color = if (p.isActive) 
                     MaterialTheme.colorScheme.primaryContainer 
                 else 
                     MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(4.dp)
+                shape = MaterialTheme.shapes.extraSmall
             ) {
                 Text(
                     text = stringResource(
@@ -168,7 +172,10 @@ fun PrescriptionHeader(p: ua.vn.home.bptracker.data.dto.PrescriptionReadDto) {
                         else R.string.prescriptions_inactive
                     ),
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(
+                        horizontal = MaterialTheme.spacing.small,
+                        vertical = MaterialTheme.spacing.extraSmall
+                    ),
                     color = if (p.isActive) 
                         MaterialTheme.colorScheme.onPrimaryContainer 
                     else 
@@ -189,7 +196,7 @@ fun MedicationItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(MaterialTheme.spacing.medium),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -205,7 +212,7 @@ fun MedicationItemRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.extraSmall))
             val doseUnitLabel = item.doseUnit?.let { stringResource(it.labelRes()) } ?: ""
             val slotsLabels = item.whenSlots.map { stringResource(it.labelRes()) }
             val slotsLabel = slotsLabels.joinToString()

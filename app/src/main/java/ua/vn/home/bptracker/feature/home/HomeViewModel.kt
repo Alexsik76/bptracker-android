@@ -33,6 +33,7 @@ class HomeViewModel : ViewModel() {
     private val repository = ServiceLocator.measurementRepository
     
     private val _refreshError = MutableStateFlow<String?>(null)
+    private val _isRefreshing = MutableStateFlow(false)
 
     val state: StateFlow<ListUiState<HomePayload>> = repository.observeMeasurements()
         .map { list -> computeHomeState(list) }
@@ -43,24 +44,34 @@ class HomeViewModel : ViewModel() {
                 uiState
             }
         }
+        .combine(_isRefreshing) { uiState, refreshing ->
+            if (uiState is ListUiState.Content) {
+                uiState.copy(isRefreshing = refreshing)
+            } else {
+                uiState
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ListUiState.Empty
+            initialValue = ListUiState.Idle
         )
 
     init {
-        refresh()
+        refresh(isManual = false)
     }
 
-    fun refresh() {
+    fun refresh(isManual: Boolean = false) {
         viewModelScope.launch {
             try {
+                if (isManual) _isRefreshing.value = true
                 _refreshError.value = null
                 repository.syncPending()
                 repository.getMeasurements(days = 14)
             } catch (e: Exception) {
                 _refreshError.value = e.message ?: "Unknown error"
+            } finally {
+                _isRefreshing.value = false
             }
         }
     }

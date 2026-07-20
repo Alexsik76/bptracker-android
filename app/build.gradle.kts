@@ -24,8 +24,8 @@ android {
         applicationId = "ua.vn.home.bptracker"
         minSdk = 28
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.1-b"
+        versionCode = 3
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "API_BASE_URL", "\"https://api2-bptracker.home.vn.ua/\"")

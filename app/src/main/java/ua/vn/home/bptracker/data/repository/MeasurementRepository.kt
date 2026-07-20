@@ -2,10 +2,14 @@ package ua.vn.home.bptracker.data.repository
 
 import android.util.Log
 import androidx.room.withTransaction
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
@@ -31,6 +35,9 @@ open class RealMeasurementRepository(
     private val api: MeasurementApi,
     private val dao: MeasurementDao
 ) : MeasurementRepository {
+    
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun observeMeasurements(): Flow<List<MeasurementDto>> {
         return dao.getAllFlow().map { entities -> entities.map { it.toDto() } }
     }
@@ -48,16 +55,27 @@ open class RealMeasurementRepository(
     }
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
-        return try {
-            val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
-            dao.insert(created.toEntity(SyncState.SYNCED))
-            created
-        } catch (e: Exception) {
-            val id = UUID.randomUUID().toString()
-            val local = MeasurementDto(id, OffsetDateTime.now().toString(), sys, dia, pulse)
-            dao.insert(local.toEntity(SyncState.PENDING_CREATE))
-            local
+        val id = UUID.randomUUID().toString()
+        val local = MeasurementDto(id, OffsetDateTime.now().toString(), sys, dia, pulse)
+        
+        // 1. Optimistically save to local DB
+        dao.insert(local.toEntity(SyncState.PENDING_CREATE))
+        
+        // 2. Launch background sync
+        repositoryScope.launch {
+            try {
+                val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
+                db.withTransaction {
+                    dao.deleteById(id)
+                    dao.insert(created.toEntity(SyncState.SYNCED))
+                }
+            } catch (e: Exception) {
+                Log.e("MeasRepo", "Failed to sync created measurement: ${e.message}")
+            }
         }
+        
+        // 3. Return local DTO immediately
+        return local
     }
 
     override suspend fun deleteMeasurement(id: String) {

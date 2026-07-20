@@ -6,7 +6,6 @@ import io.mockk.mockkObject
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -58,8 +57,10 @@ class HomeViewModelTest {
         val viewModel = HomeViewModel()
         viewModel.state.test {
             val first = awaitItem()
-            assertNotEquals(ListUiState.Loading, first)
-            assertTrue(first is ListUiState.Empty)
+            assertEquals(ListUiState.Idle, first)
+            
+            val second = awaitItem()
+            assertTrue(second is ListUiState.Empty)
         }
     }
 }

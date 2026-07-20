@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,7 +23,7 @@ import ua.vn.home.bptracker.data.dto.WhenSlot
 import ua.vn.home.bptracker.feature.reminders.TodaySchedule
 import ua.vn.home.bptracker.feature.reminders.TodaySlot
 import ua.vn.home.bptracker.ui.components.*
-import ua.vn.home.bptracker.ui.theme.ColorSuccess
+import ua.vn.home.bptracker.ui.theme.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -72,41 +73,40 @@ fun ScheduleScreen(
 ) {
     var selectedSlotForIntake by remember { mutableStateOf<TodaySlot?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.schedule_title),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                actions = {
-                    IconButton(onClick = onPrescriptionsClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Assignment,
-                            contentDescription = stringResource(R.string.prescriptions_title),
-                        )
-                    }
-                    IconButton(onClick = onEditClick) {
-                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.rem_config_title))
-                    }
-                    IconButton(onClick = onRefresh) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        TopAppBar(
+            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+            title = {
+                Text(
+                    text = stringResource(R.string.schedule_title),
+                    style = MaterialTheme.typography.titleMedium
                 )
+            },
+            actions = {
+                IconButton(onClick = onPrescriptionsClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Assignment,
+                        contentDescription = stringResource(R.string.prescriptions_title),
+                    )
+                }
+                IconButton(onClick = onEditClick) {
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.rem_config_title))
+                }
+                IconButton(onClick = onRefresh) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground
             )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
+        )
+
+        Box(modifier = Modifier.fillMaxSize()) {
             ListStateHost(
                 state = state,
                 onRetry = onRefresh
@@ -127,7 +127,7 @@ fun ScheduleScreen(
                         } else {
                             ScheduleContent(
                                 schedule = schedule,
-                                onSlotClick = { selectedSlotForIntake = it },
+                                onSlotClick = { selectedSlotForIntake = it }
                             )
                         }
                     }
@@ -172,18 +172,15 @@ fun NotConfiguredState(onEditClick: () -> Unit) {
 @Composable
 fun ScheduleContent(
     schedule: TodaySchedule,
-    onSlotClick: (TodaySlot) -> Unit
+    onSlotClick: (TodaySlot) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(MaterialTheme.spacing.screenPadding),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         items(schedule.slots) { slot ->
             SlotCard(slot, onClick = { onSlotClick(slot) })
-        }
-        item {
-            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -196,7 +193,7 @@ fun SlotCard(slot: TodaySlot, onClick: () -> Unit) {
             color = Color.Transparent,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(MaterialTheme.spacing.cardPadding)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,7 +206,7 @@ fun SlotCard(slot: TodaySlot, onClick: () -> Unit) {
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(MaterialTheme.spacing.small))
                         Text(
                             text = "${getLocalizedPeriod(slot.slot)} · ${slot.time}",
                             style = MaterialTheme.typography.titleSmall

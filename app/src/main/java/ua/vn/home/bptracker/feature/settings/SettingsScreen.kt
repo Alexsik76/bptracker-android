@@ -28,6 +28,7 @@ import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.ui.components.ListGroupCard
 import ua.vn.home.bptracker.ui.components.SegmentedControl
 import ua.vn.home.bptracker.ui.components.SettingRow
+import ua.vn.home.bptracker.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +58,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
@@ -69,7 +71,10 @@ fun SettingsScreen(
                     IconButton(onClick = onHelpClick) {
                         Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "Help")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { innerPadding ->
@@ -78,16 +83,16 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(MaterialTheme.spacing.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
         ) {
             // Appearance
             ListGroupCard(title = stringResource(R.string.settings_group_appearance)) {
-                Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                Column(modifier = Modifier.padding(vertical = MaterialTheme.spacing.medium)) {
                     Text(
                         stringResource(R.string.settings_theme),
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        modifier = Modifier.padding(bottom = MaterialTheme.spacing.listSpacing)
                     )
                     SegmentedControl(
                         options = listOf(
@@ -103,7 +108,7 @@ fun SettingsScreen(
 
             // Language
             ListGroupCard(title = stringResource(R.string.settings_group_language)) {
-                Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                Column(modifier = Modifier.padding(vertical = MaterialTheme.spacing.medium)) {
                     SegmentedControl(
                         options = listOf("System", "Українська", "English"),
                         selectedIndex = state.language.ordinal,
@@ -117,7 +122,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = MaterialTheme.spacing.medium),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -140,7 +145,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = MaterialTheme.spacing.medium),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -201,7 +206,8 @@ fun SettingsScreen(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
         }
     }
 }

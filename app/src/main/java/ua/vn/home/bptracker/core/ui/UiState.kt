@@ -4,6 +4,7 @@ package ua.vn.home.bptracker.core.ui
  * Generic UI state for screens displaying a list or collection of data.
  */
 sealed interface ListUiState<out T> {
+    data object Idle : ListUiState<Nothing>
     data object Loading : ListUiState<Nothing>
     data object Empty : ListUiState<Nothing>
     data class Error(val message: String) : ListUiState<Nothing>

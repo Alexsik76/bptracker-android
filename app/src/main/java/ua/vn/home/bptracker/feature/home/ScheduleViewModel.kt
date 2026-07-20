@@ -35,12 +35,12 @@ class ScheduleViewModel : ViewModel() {
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = ListUiState.Content(TodaySchedule(false, today, emptyList()))
+        initialValue = ListUiState.Idle
     )
 
-    fun refresh() {
+    fun refresh(isManual: Boolean = false) {
         viewModelScope.launch {
-            _refreshing.value = true
+            if (isManual) _refreshing.value = true
             _error.value = null
             try {
                 intakeRepo.refresh()

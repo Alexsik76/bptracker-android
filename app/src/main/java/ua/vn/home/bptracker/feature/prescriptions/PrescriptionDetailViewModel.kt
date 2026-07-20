@@ -36,7 +36,7 @@ class PrescriptionDetailViewModel : ViewModel() {
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ListUiState.Empty
+            initialValue = ListUiState.Idle
         )
 
     fun setPrescriptionId(id: String) {

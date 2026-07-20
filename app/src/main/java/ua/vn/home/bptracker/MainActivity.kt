@@ -11,19 +11,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -203,38 +204,42 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     val showBottomBar = currentRoute in listOf("home", "schedule")
+    var isBottomBarVisible by remember { mutableStateOf(true) }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            if (showBottomBar) {
-                val selectedTab = if (currentRoute == "schedule") 1 else 0
-                BpBottomNavBar(
-                    selectedTab = selectedTab,
-                    onTabSelected = { tab ->
-                        val route = if (tab == 1) "schedule" else "home"
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onScanClick = { navController.navigate("camera") }
-                )
+    // Reset visibility when switching tabs
+    LaunchedEffect(currentRoute) {
+        isBottomBarVisible = true
+    }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta < -12f) { // Scrolling down
+                    isBottomBarVisible = false
+                } else if (delta > 12f) { // Scrolling up
+                    isBottomBarVisible = true
+                }
+                return Offset.Zero
             }
         }
-    ) { innerPadding ->
-    NavHost(
-        navController = navController,
-        startDestination = "home",
-        modifier = Modifier.padding(innerPadding),
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None },
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .nestedScroll(nestedScrollConnection)
     ) {
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = { fadeIn(tween(300)) + slideInHorizontally(tween(300)) { it / 10 } },
+            exitTransition = { fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { -it / 10 } },
+            popEnterTransition = { fadeIn(tween(300)) + slideInHorizontally(tween(300)) { -it / 10 } },
+            popExitTransition = { fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 10 } },
+        ) {
             composable("home") {
                 val homeState by homeVm.state.collectAsState()
 
@@ -244,7 +249,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
 
                 HomeScreen(
                     state = homeState,
-                    onRefresh = homeVm::refresh,
+                    onRefresh = { homeVm.refresh(isManual = true) },
                     onSettingsClick = {
                         (homeState as? ListUiState.Content)?.data?.let {
                             selectedMeasurement = it.latest
@@ -255,7 +260,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onMeasurementClick = { m ->
                         selectedMeasurement = m
                         navController.navigate("measurement_detail")
-                    },
+                    }
                 )
             }
 
@@ -272,7 +277,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onConfirm = scheduleVm::confirmSlot,
                     onEditTime = scheduleVm::editTime,
                     onDelete = scheduleVm::deleteIntake,
-                    onRefresh = scheduleVm::refresh,
+                    onRefresh = { scheduleVm.refresh(isManual = true) },
                     onEditClick = { navController.navigate("reminder_config") },
                     onPrescriptionsClick = { navController.navigate("prescriptions") }
                 )
@@ -384,7 +389,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
 
                 MeasurementHistoryScreen(
                     state = homeState,
-                    onRefresh = homeVm::refresh,
+                    onRefresh = { homeVm.refresh(isManual = true) },
                     onMeasurementClick = { m ->
                         selectedMeasurement = m
                         navController.navigate("measurement_detail")
@@ -411,7 +416,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 val listVm: PrescriptionsViewModel = viewModel()
                 val listState by listVm.state.collectAsState()
 
-                LaunchedEffect(Unit) { listVm.refresh() }
+                LaunchedEffect(Unit) { listVm.refresh(isManual = false) }
 
                 PrescriptionsScreen(
                     state = listState,
@@ -422,7 +427,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                         navController.navigate("prescription_detail/${p.id}")
                     },
                     onBack = { navController.popBackStack() },
-                    onRefresh = listVm::refresh
+                    onRefresh = { listVm.refresh(isManual = true) }
                 )
             }
 
@@ -534,6 +539,30 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onBack = { navController.popBackStack() }
                 )
             }
+        }
+
+        // Overlay Bottom Bar with Animation
+        AnimatedVisibility(
+            visible = showBottomBar && isBottomBarVisible,
+            enter = slideInVertically(tween(300)) { it } + fadeIn(),
+            exit = slideOutVertically(tween(300)) { it } + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .graphicsLayer(clip = false) // Crucial to prevent clipping protruding button
+        ) {
+            val selectedTab = if (currentRoute == "schedule") 1 else 0
+            BpBottomNavBar(
+                selectedTab = selectedTab,
+                onTabSelected = { tab ->
+                    val route = if (tab == 1) "schedule" else "home"
+                    navController.navigate(route) {
+                        popUpTo("home") { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                onScanClick = { navController.navigate("camera") }
+            )
         }
     }
 }

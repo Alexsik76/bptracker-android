@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
 import ua.vn.home.bptracker.ui.components.EmptyState
 import ua.vn.home.bptracker.ui.components.ListStateHost
+import ua.vn.home.bptracker.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun PrescriptionsScreen(
     onRefresh: () -> Unit
 ) {
     Scaffold(
+        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.prescriptions_title)) },
@@ -54,6 +57,7 @@ fun PrescriptionsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
+                modifier = Modifier.padding(bottom = MaterialTheme.spacing.large),
                 onClick = onAddClick,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White,
@@ -73,13 +77,13 @@ fun PrescriptionsScreen(
                 state = state,
                 onRetry = onRefresh
             ) { list, refreshing ->
-                Column(modifier = Modifier.fillMaxSize()) {
-                    if (refreshing) {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    }
-
+                PullToRefreshBox(
+                    isRefreshing = refreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     if (list.isEmpty()) {
-                        Box(modifier = Modifier.weight(1f)) {
+                        Box(modifier = Modifier.fillMaxSize()) {
                             EmptyState(
                                 title = stringResource(R.string.prescriptions_empty),
                                 description = stringResource(R.string.prescriptions_empty_hint)
@@ -87,8 +91,8 @@ fun PrescriptionsScreen(
                         }
                     } else {
                         LazyColumn(
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(bottom = 80.dp)
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = MaterialTheme.spacing.large)
                         ) {
                             items(list) { prescription ->
                                 PrescriptionRow(
@@ -96,10 +100,13 @@ fun PrescriptionsScreen(
                                     onClick = { onPrescriptionClick(prescription) }
                                 )
                                 HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.screenPadding),
                                     thickness = 0.5.dp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
                                 )
+                            }
+                            item {
+                                Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
                             }
                         }
                     }

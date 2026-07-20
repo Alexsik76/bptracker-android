@@ -6,7 +6,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -32,8 +32,10 @@ class ScheduleViewModelTest {
         val viewModel = ScheduleViewModel()
         viewModel.state.test {
             val first = awaitItem()
-            assertNotEquals(ListUiState.Loading, first)
-            assertTrue(first is ListUiState.Content)
+            assertEquals(ListUiState.Idle, first)
+            
+            val second = awaitItem()
+            assertTrue(second is ListUiState.Content)
         }
     }
 }
