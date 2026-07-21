@@ -1,9 +1,15 @@
 package ua.vn.home.bptracker.feature.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
@@ -43,16 +49,42 @@ fun ExportSheet(
                 )
             }
 
-            SegmentedControl(
-                options = listOf(
-                    stringResource(R.string.export_period_1m),
-                    stringResource(R.string.export_period_3m),
-                    stringResource(R.string.export_period_6m),
-                    stringResource(R.string.export_period_all)
-                ),
-                selectedIndex = selectedPeriod.ordinal,
-                onSelect = { onPeriodSelect(ExportPeriod.entries[it]) }
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
+                SegmentedControl(
+                    options = listOf(
+                        stringResource(R.string.export_period_1m),
+                        stringResource(R.string.export_period_3m),
+                        stringResource(R.string.export_period_6m)
+                    ),
+                    selectedIndex = if (selectedPeriod != ExportPeriod.ALL) selectedPeriod.ordinal else -1,
+                    onSelect = { onPeriodSelect(ExportPeriod.entries[it]) }
+                )
+
+                val isAllSelected = selectedPeriod == ExportPeriod.ALL
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(22.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isAllSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.22f) else Color.Transparent)
+                            .clickable { onPeriodSelect(ExportPeriod.ALL) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.export_period_all),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (isAllSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             Button(
                 onClick = onSend,
