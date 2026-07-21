@@ -140,8 +140,19 @@
     <string name="settings_group_help">Help</string>
     <string name="settings_bp_scale">ESC BP Scale →</string>
     <string name="settings_export_csv">Export CSV to email</string>
+    <string name="export_csv_success">Export requested. Check your email shortly.</string>
+    <string name="export_csv_cooldown">Too many requests. Please wait before exporting again.</string>
+    <string name="export_csv_error">Export failed. Please try again later.</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_logout">Log out</string>
+    <string name="settings_profile">Profile</string>
+
+    <string name="profile_title">Profile</string>
+    <string name="profile_email_label">Account email</string>
+    <string name="profile_name_label">Full name</string>
+    <string name="profile_name_hint">Printed on the PDF report you export for your doctor.</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_saved">Saved</string>
 
     <string name="notification_reminder_title">Time for your medications: %1$s</string>
     <string name="notification_action_taken">Taken</string>

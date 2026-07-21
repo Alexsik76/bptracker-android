@@ -50,9 +50,7 @@ import ua.vn.home.bptracker.feature.login.LoginScreen
 import ua.vn.home.bptracker.feature.prescriptions.*
 import ua.vn.home.bptracker.feature.reminders.ReminderConfigScreen
 import ua.vn.home.bptracker.feature.reminders.ReminderConfigViewModel
-import ua.vn.home.bptracker.feature.settings.BpScaleHelpScreen
-import ua.vn.home.bptracker.feature.settings.SettingsScreen
-import ua.vn.home.bptracker.feature.settings.SettingsViewModel
+import ua.vn.home.bptracker.feature.settings.*
 import ua.vn.home.bptracker.ui.components.BpBottomNavBar
 import ua.vn.home.bptracker.ui.components.LocalActivity
 import ua.vn.home.bptracker.ui.theme.BPTrackerTheme
@@ -360,17 +358,22 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             composable("settings") {
                 val settingsVm: SettingsViewModel = viewModel()
                 val settingsState by settingsVm.state.collectAsState()
+                val exportOperation by settingsVm.exportOperation.collectAsState()
                 val activity = LocalActivity.current
                 SettingsScreen(
                     state = settingsState,
+                    exportOperation = exportOperation,
                     onThemeSelect = settingsVm::setTheme,
                     onLanguageSelect = settingsVm::setLanguage,
                     onOcrImprovementToggle = settingsVm::setOcrImprovement,
                     onRemindersToggle = settingsVm::setRemindersEnabled,
                     onLogout = onLogout,
+                    onProfileClick = { navController.navigate("profile") },
                     onAddPasskey = {
                         activity?.let { authVm.registerPasskey(it) }
                     },
+                    onExportClick = settingsVm::exportCsv,
+                    onConsumeExportResult = settingsVm::consumeExportResult,
                     onHelpClick = { navController.navigate("bp_scale") },
                     onBack = { navController.popBackStack() },
                     onRefresh = settingsVm::refresh
@@ -381,6 +384,17 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 BpScaleHelpScreen(
                     latestMeasurement = selectedMeasurement,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable("profile") {
+                val profileVm: ProfileViewModel = viewModel()
+                val profileState by profileVm.state.collectAsState()
+                ProfileScreen(
+                    state = profileState,
+                    onNameChange = profileVm::onNameChange,
+                    onSave = profileVm::save,
+                    onBack = { navController.popBackStack() },
                 )
             }
 

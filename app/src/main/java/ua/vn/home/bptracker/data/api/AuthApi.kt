@@ -3,6 +3,7 @@ package ua.vn.home.bptracker.data.api
 import kotlinx.serialization.json.JsonElement
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import ua.vn.home.bptracker.data.dto.*
 
@@ -39,4 +40,7 @@ interface SessionApi {
 interface UserApi {
     @GET("users/me")
     suspend fun me(): MeResponse
+
+    @PATCH("users/me")
+    suspend fun updateMe(@Body body: UserUpdateRequest): MeResponse
 }

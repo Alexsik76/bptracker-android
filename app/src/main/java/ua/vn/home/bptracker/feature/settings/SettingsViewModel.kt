@@ -8,6 +8,8 @@ import ua.vn.home.bptracker.BuildConfig
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.data.repository.ExportResult
+import java.time.ZoneId
 
 data class SettingsState(
     val theme: AppTheme = AppTheme.AUTO,
@@ -20,8 +22,11 @@ data class SettingsState(
 
 class SettingsViewModel : ViewModel() {
     private val settingsStore = ServiceLocator.settingsStore
+    private val exportRepository = ServiceLocator.exportRepository
 
     private val _templateState = MutableStateFlow<Pair<String?, Boolean?>>(null to false)
+    private val _exportOperation = MutableStateFlow<ExportResult?>(null)
+    val exportOperation: StateFlow<ExportResult?> = _exportOperation.asStateFlow()
 
     val state: StateFlow<SettingsState> = combine(
         settingsStore.theme,
@@ -73,5 +78,17 @@ class SettingsViewModel : ViewModel() {
                 ServiceLocator.reminderScheduler.cancelAllReminders()
             }
         }
+    }
+
+    fun exportCsv() {
+        viewModelScope.launch {
+            _exportOperation.value = null // reset
+            val result = exportRepository.exportCsv(ZoneId.systemDefault().id)
+            _exportOperation.value = result
+        }
+    }
+
+    fun consumeExportResult() {
+        _exportOperation.value = null
     }
 }

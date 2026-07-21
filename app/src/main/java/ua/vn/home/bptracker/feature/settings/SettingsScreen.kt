@@ -11,10 +11,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +27,7 @@ import androidx.core.content.ContextCompat
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
+import ua.vn.home.bptracker.data.repository.ExportResult
 import ua.vn.home.bptracker.ui.components.ListGroupCard
 import ua.vn.home.bptracker.ui.components.SegmentedControl
 import ua.vn.home.bptracker.ui.components.SettingRow
@@ -34,17 +37,23 @@ import ua.vn.home.bptracker.ui.theme.*
 @Composable
 fun SettingsScreen(
     state: SettingsState,
+    exportOperation: ExportResult?,
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
     onLogout: () -> Unit,
+    onProfileClick: () -> Unit,
     onAddPasskey: () -> Unit,
+    onExportClick: () -> Unit,
+    onConsumeExportResult: () -> Unit,
     onHelpClick: () -> Unit,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -57,8 +66,21 @@ fun SettingsScreen(
         onRefresh()
     }
 
+    LaunchedEffect(exportOperation) {
+        exportOperation?.let { op ->
+            val message = when (op) {
+                is ExportResult.Success -> context.getString(R.string.export_csv_success)
+                is ExportResult.Cooldown -> context.getString(R.string.export_csv_cooldown)
+                is ExportResult.Error -> context.getString(R.string.export_csv_error)
+            }
+            snackbarHostState.showSnackbar(message)
+            onConsumeExportResult()
+        }
+    }
+
     Scaffold(
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
@@ -183,6 +205,17 @@ fun SettingsScreen(
 
             // Account
             ListGroupCard(title = stringResource(R.string.settings_group_account)) {
+                SettingRow(
+                    label = stringResource(R.string.settings_profile),
+                    icon = Icons.Outlined.Person,
+                    onClick = onProfileClick
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                SettingRow(
+                    label = stringResource(R.string.settings_export_csv),
+                    onClick = onExportClick
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingRow(
                     label = stringResource(R.string.auth_add_passkey),
                     icon = Icons.Outlined.Fingerprint,

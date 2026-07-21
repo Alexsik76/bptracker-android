@@ -17,8 +17,12 @@ data class RefreshRequest(val refreshToken: String)
 data class MeResponse(
     val id: String,
     val email: String,
+    val displayName: String? = null,
     val createdAt: String,
 )
+
+@Serializable
+data class UserUpdateRequest(val displayName: String?)
 
 @Serializable
 data class MagicLinkRequest(val email: String)
