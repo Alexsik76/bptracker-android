@@ -143,6 +143,13 @@
     <string name="export_csv_success">Export requested. Check your email shortly.</string>
     <string name="export_csv_cooldown">Too many requests. Please wait before exporting again.</string>
     <string name="export_csv_error">Export failed. Please try again later.</string>
+    <string name="export_title">Export data</string>
+    <string name="export_subtitle">CSV + PDF report will be sent to your email for:</string>
+    <string name="export_period_1m">1 month</string>
+    <string name="export_period_3m">3 months</string>
+    <string name="export_period_6m">6 months</string>
+    <string name="export_period_all">All time</string>
+    <string name="export_send">Send</string>
     <string name="settings_group_account">Account</string>
     <string name="settings_logout">Log out</string>
     <string name="settings_profile">Profile</string>

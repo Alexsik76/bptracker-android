@@ -20,6 +20,8 @@ data class SettingsState(
     val templateId: String? = null
 )
 
+enum class ExportPeriod(val months: Long) { ONE(1), THREE(3), SIX(6), ALL(-1) }
+
 class SettingsViewModel : ViewModel() {
     private val settingsStore = ServiceLocator.settingsStore
     private val exportRepository = ServiceLocator.exportRepository
@@ -27,6 +29,9 @@ class SettingsViewModel : ViewModel() {
     private val _templateState = MutableStateFlow<Pair<String?, Boolean?>>(null to false)
     private val _exportOperation = MutableStateFlow<ExportResult?>(null)
     val exportOperation: StateFlow<ExportResult?> = _exportOperation.asStateFlow()
+
+    private val _exportPeriod = MutableStateFlow(ExportPeriod.THREE)
+    val exportPeriod: StateFlow<ExportPeriod> = _exportPeriod.asStateFlow()
 
     val state: StateFlow<SettingsState> = combine(
         settingsStore.theme,
@@ -80,10 +85,27 @@ class SettingsViewModel : ViewModel() {
         }
     }
 
+    fun setExportPeriod(period: ExportPeriod) {
+        _exportPeriod.value = period
+    }
+
     fun exportCsv() {
         viewModelScope.launch {
             _exportOperation.value = null // reset
-            val result = exportRepository.exportCsv(ZoneId.systemDefault().id)
+            val period = _exportPeriod.value
+            val (dateFrom, dateTo) = if (period == ExportPeriod.ALL) {
+                null to null
+            } else {
+                val today = java.time.LocalDate.now()
+                val from = today.minusMonths(period.months)
+                from.toString() to today.toString()
+            }
+
+            val result = exportRepository.exportCsv(
+                timezoneId = ZoneId.systemDefault().id,
+                dateFrom = dateFrom,
+                dateTo = dateTo
+            )
             _exportOperation.value = result
         }
     }

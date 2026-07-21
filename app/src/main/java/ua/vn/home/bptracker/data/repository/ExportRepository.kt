@@ -10,15 +10,15 @@ sealed interface ExportResult {
 }
 
 interface ExportRepository {
-    suspend fun exportCsv(timezoneId: String): ExportResult
+    suspend fun exportCsv(timezoneId: String, dateFrom: String?, dateTo: String?): ExportResult
 }
 
 class RealExportRepository(
     private val api: ExportApi
 ) : ExportRepository {
-    override suspend fun exportCsv(timezoneId: String): ExportResult {
+    override suspend fun exportCsv(timezoneId: String, dateFrom: String?, dateTo: String?): ExportResult {
         return try {
-            val response = api.exportCsv(ExportRequest(timezoneId))
+            val response = api.exportCsv(ExportRequest(timezoneId, dateFrom, dateTo))
             if (response.isSuccessful) {
                 ExportResult.Success
             } else {
@@ -35,7 +35,7 @@ class RealExportRepository(
 }
 
 class MockExportRepository : ExportRepository {
-    override suspend fun exportCsv(timezoneId: String): ExportResult {
+    override suspend fun exportCsv(timezoneId: String, dateFrom: String?, dateTo: String?): ExportResult {
         return ExportResult.Success
     }
 }

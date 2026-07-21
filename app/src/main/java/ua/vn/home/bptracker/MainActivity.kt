@@ -359,7 +359,10 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 val settingsVm: SettingsViewModel = viewModel()
                 val settingsState by settingsVm.state.collectAsState()
                 val exportOperation by settingsVm.exportOperation.collectAsState()
+                val exportPeriod by settingsVm.exportPeriod.collectAsState()
+                var showExportSheet by remember { mutableStateOf(false) }
                 val activity = LocalActivity.current
+
                 SettingsScreen(
                     state = settingsState,
                     exportOperation = exportOperation,
@@ -372,12 +375,25 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onAddPasskey = {
                         activity?.let { authVm.registerPasskey(it) }
                     },
-                    onExportClick = settingsVm::exportCsv,
+                    onExportClick = { showExportSheet = true },
                     onConsumeExportResult = settingsVm::consumeExportResult,
                     onHelpClick = { navController.navigate("bp_scale") },
                     onBack = { navController.popBackStack() },
                     onRefresh = settingsVm::refresh
                 )
+
+                if (showExportSheet) {
+                    ExportSheet(
+                        selectedPeriod = exportPeriod,
+                        isSending = false, // Dismiss on send as per simple approach
+                        onPeriodSelect = settingsVm::setExportPeriod,
+                        onSend = {
+                            settingsVm.exportCsv()
+                            showExportSheet = false
+                        },
+                        onDismiss = { showExportSheet = false }
+                    )
+                }
             }
 
             composable("bp_scale") {

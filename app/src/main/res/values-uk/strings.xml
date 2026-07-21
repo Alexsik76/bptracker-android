@@ -144,6 +144,13 @@
     <string name="export_csv_success">Запит надіслано. Перевірте email за декілька хвилин.</string>
     <string name="export_csv_cooldown">Занадто багато запитів. Зачекайте перед повторним експортом.</string>
     <string name="export_csv_error">Помилка експорту. Спробуйте пізніше.</string>
+    <string name="export_title">Експорт даних</string>
+    <string name="export_subtitle">На вашу пошту надійде звіт CSV + PDF за…</string>
+    <string name="export_period_1m">1 місяць</string>
+    <string name="export_period_3m">3 місяці</string>
+    <string name="export_period_6m">6 місяців</string>
+    <string name="export_period_all">Весь період</string>
+    <string name="export_send">Надіслати</string>
     <string name="settings_logout">Вийти з акаунта</string>
     <string name="settings_profile">Профіль</string>
 

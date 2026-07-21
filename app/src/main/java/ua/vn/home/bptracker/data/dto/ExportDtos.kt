@@ -4,7 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ExportRequest(
-    val tz: String
+    val tz: String,
+    val dateFrom: String? = null,
+    val dateTo: String? = null,
 )
 
 @Serializable
