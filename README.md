@@ -1,63 +1,63 @@
 # BP Tracker (Android)
 
-Нативний Android-застосунок для моніторингу артеріального тиску та управління графіком прийому ліків. Частина екосистеми BP Tracker, що фокусується на швидкому введенні даних (включаючи сканування камерою) та нагадуваннях.
+A native Android app for monitoring blood pressure and managing medication schedules. It is part of the BP Tracker ecosystem, focusing on fast data entry (including camera scanning) and reminders.
 
-Робота ведеться в гілці `dev`.
+Development is currently happening in the `dev` branch.
 
-## 🟢 Основні можливості (MVP)
+## 🟢 Key Features (MVP)
 
-### 📊 Контроль тиску
-- **Швидке введення:** ручна форма або сканування екрана тонометра камерою.
-- **Оптимістичний UI:** миттєве збереження вимірів у локальну БД зі статусом черги та фоновою синхронізацією.
-- **Локальний OCR:** розпізнавання показників SYS/DIA/Pulse безпосередньо на пристрої за допомогою **ONNX Runtime**.
-- **Історія та деталі:** перегляд останніх замірів, класифікація за зонами (Optimal, Normal, Stage 1/2) згідно з рекомендаціями ESC/ESH.
-- **Експорт:** вивантаження історії замірів у форматі CSV на email.
+### 📊 Blood Pressure Control
+- **Quick Entry:** Manual form or scanning the tonometer screen with your camera.
+- **Optimistic UI:** Instant saving of measurements to the local database with background sync.
+- **Local OCR:** Recognition of SYS/DIA/Pulse values directly on the device using **ONNX Runtime**.
+- **History and Details:** View recent measurements, classified by zones (Optimal, Normal, Stage 1/2) according to ESC/ESH guidelines.
+- **Export:** Send measurement history as a CSV file via email.
 
-### 💊 Ліки та нагадування
-- **Розклад на сьогодні:** зручний список прийомів, що **обчислюється на пристрої** на основі активних рецептів та налаштованих годин.
-- **Підтвердження прийому:** можливість швидкого підтвердження ("Прийняв") з офлайн-буферизацією та синхронізацією при оновленні.
-- **Нагадування:** локальні пуш-сповіщення через `AlarmManager`, що працюють офлайн. Функція є **opt-in** (вимикається в налаштуваннях).
-- **Рецепти:** управління списком призначень від лікарів та деталізація по кожному медикаменту.
+### 💊 Medications and Reminders
+- **Today's Schedule:** A convenient list of doses **calculated on-device** based on active prescriptions and set times.
+- **Confirmation:** Quick "Taken" button with offline buffering and sync when online.
+- **Reminders:** Local push notifications via `AlarmManager` that work offline. This is an **opt-in** feature (can be turned off in settings).
+- **Prescriptions:** Manage doctor's prescriptions and see details for each medicine.
 
-### 🔐 Безпека та налаштування
-- **Авторизація:** підтримка сучасних **Passkeys** (Credential Manager) та Magic Links для входу без пароля.
-- **Персоналізація:** світла та темна теми, підтримка української та англійської мов.
-- **Приватність:** можливість вимкнути надсилання фото для покращення моделі OCR.
+### 🔐 Security and Settings
+- **Authorization:** Supports modern **Passkeys** (Credential Manager) and Magic Links for passwordless login.
+- **Personalization:** Light and dark themes, support for Ukrainian and English.
+- **Privacy:** Option to disable sending photos to help improve the OCR model.
 
-## 🛠 Технологічний стек
-- **Мова:** Kotlin 2.2.x
+## 🛠 Tech Stack
+- **Language:** Kotlin 2.2.x
 - **SDK:** compileSdk/targetSdk 35, minSdk 28
 - **UI:** Jetpack Compose (Material 3, BOM 2024.12.01)
-- **Архітектура:** MVVM (Compose + ViewModel), Repository pattern, DTO-through, Offline-First (Room SSoT).
-- **UI UX:** Дизайн-система на токенах, Shimmer-ефекти, адаптивні Window Insets (Edge-to-Edge), динамічна навігація (Hide on Scroll).
-- **Інструменти:** AGP 9.2.1, Gradle 9.6.1, KSP
-- **Локальна БД:** Room 2.8.4
-- **Мережа:** Retrofit 2.11.0, OkHttp 4.12.0, Kotlinx Serialization 1.7.3
-- **Камера та AI:** CameraX 1.4.0, ONNX Runtime 1.19.0 (для локальної моделі розпізнавання)
-- **Навігація:** Jetpack Navigation Compose 2.8.5
-- **DI:** Легковажний ServiceLocator
+- **Architecture:** MVVM (Compose + ViewModel), Repository pattern, DTO-through, Offline-First (Room SSoT).
+- **UI UX:** Token-based design system, Shimmer effects, adaptive Window Insets (Edge-to-Edge), dynamic navigation (Hide on Scroll).
+- **Tools:** AGP 9.2.1, Gradle 9.6.1, KSP
+- **Local DB:** Room 2.8.4
+- **Networking:** Retrofit 2.11.0, OkHttp 4.12.0, Kotlinx Serialization 1.7.3
+- **Camera and AI:** CameraX 1.4.0, ONNX Runtime 1.19.0 (for the local recognition model)
+- **Navigation:** Jetpack Navigation Compose 2.8.5
+- **DI:** Lightweight ServiceLocator
 
-## 📂 Структура проекту
-- `ua.vn.home.bptracker.core`: мережевий шар, DI, збереження токенів та налаштувань.
-- `ua.vn.home.bptracker.data`: API інтерфейси, Room DB, репозиторії та DTO.
-- `ua.vn.home.bptracker.feature`: логіка та екрани, згруповані за функціоналом (home, prescriptions, reminders, camera, login, settings).
-- `ua.vn.home.bptracker.ui`: спільні компоненти та тема застосунку.
+## 📂 Project Structure
+- `ua.vn.home.bptracker.core`: Network layer, DI, token and setting storage.
+- `ua.vn.home.bptracker.data`: API interfaces, Room DB, repositories, and DTOs.
+- `ua.vn.home.bptracker.feature`: Logic and screens grouped by feature (home, prescriptions, reminders, camera, login, settings).
+- `ua.vn.home.bptracker.ui`: Shared components and app theme.
 
-## 🚀 Як запустити
-1. **Клонування:** `git clone -b dev https://github.com/Alexsik76/bptracker-android.git`
-2. **Налаштування:** за замовчуванням застосунок налаштований на `https://api2-bptracker.home.vn.ua/`. Для локальної розробки без бекенду можна увімкнути `MOCK_MODE = true` у `ua.vn.home.bptracker.core.config.DevConfig`.
-3. **Збірка:** `./gradlew assembleDebug`
+## 🚀 How to Run
+1. **Clone:** `git clone -b dev https://github.com/Alexsik76/bptracker-android.git`
+2. **Setup:** By default, the app is connected to `https://api2-bptracker.home.vn.ua/`. For local development without a backend, you can enable `MOCK_MODE = true` in `ua.vn.home.bptracker.core.config.DevConfig`.
+3. **Build:** `./gradlew assembleDebug`
 
-## 🟡 Майбутні плани та відомі обмеження
+## 🟡 Future Plans and Known Limitations
 
-### Відомі обмеження / відкладене
-- **Спрощений механізм курсів:** ліки з обмеженим курсом з'являються в розкладі за датою `courseStart`, але без автоматичного завершення за кількіщо прийомів (потрібна деактивація рецепта).
-- **16 KB page-size:** підтримка заблокована на рівні ONNX Runtime JNI.
+### Known Limitations / Deferred
+- **Simplified Course Mechanism:** Medicines with a limited course appear in the schedule based on `courseStart`, but don't end automatically after a certain number of doses (requires manual deactivation).
+- **16 KB page-size:** Support is blocked at the ONNX Runtime JNI level.
 
-### Плани
-- **Live-OCR:** розпізнавання через консенсус кадрів (див. `docs/live-ocr-scanning.md`).
-- Інтеграція з **Health Connect** для синхронізації даних.
-- Підтримка **Bluetooth (BLE)** тонометрів.
+### Plans
+- **Live-OCR:** Recognition through frame consensus (see `docs/live-ocr-scanning.md`).
+- Integration with **Health Connect** to sync data.
+- Support for **Bluetooth (BLE)** tonometers.
 
 ---
 © 2026 BP Tracker Team
