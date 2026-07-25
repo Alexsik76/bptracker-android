@@ -7,6 +7,7 @@ import android.graphics.Paint
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -31,9 +32,9 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
     override fun warmUp() {
         // Touch both lazy sessions to trigger eager model loading
         try {
-            val d1 = displaySession.inputNames
-            val d2 = digitSession.inputNames
-        } catch (e: Exception) {
+            displaySession.inputNames
+            digitSession.inputNames
+        } catch (_: Exception) {
             // Warm-up is best effort; don't crash app launch
         }
     }
@@ -48,7 +49,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             val croppedBitmap = cropDisplay(bitmap, bestDisplay.box)
 
             // Stage 2: Detect Digits
-            val digitBoxes = runDetection(digitSession, croppedBitmap, 480, 10, 0.25f)
+            val digitBoxes = runDetection(digitSession, croppedBitmap, 320, 10, 0.25f)
             if (digitBoxes.isEmpty()) return@withContext OcrOutcome.Failure("digits-not-found")
 
             val nmsBoxes = OcrPostprocess.nms(digitBoxes, 0.4f)
@@ -60,7 +61,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             val dia = OcrPostprocess.assembleNumber(rows[1])
             val pul = OcrPostprocess.assembleNumber(rows[2])
 
-            if (sys == null || dia == null || pul == null) {
+            if ((sys == null) || (dia == null) || (pul == null)) {
                 return@withContext OcrOutcome.Failure("assemble-failed")
             }
 
@@ -68,7 +69,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             OcrOutcome.Success(
                 sys = sys, dia = dia, pul = pul,
                 minConf = allConfs.min(),
-                meanConf = allConfs.average().toFloat()
+                meanConf = allConfs.average().toFloat(),
             )
         } catch (e: Exception) {
             OcrOutcome.Failure("ocr-error: ${e.message}")
@@ -84,13 +85,13 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             val requestBody = byteArray.toRequestBody("image/jpeg".toMediaTypeOrNull())
             val part = MultipartBody.Part.createFormData("image", "scan.jpg", requestBody)
             
-            val response = ServiceLocator.ocrApi.recognize(part)
+            val response = ServiceLocator.ocrApi.analyze(part)
             OcrOutcome.Success(
                 sys = response.sys,
                 dia = response.dia,
                 pul = response.pulse,
                 minConf = 1.0f,
-                meanConf = 1.0f
+                meanConf = 1.0f,
             )
         } catch (e: Exception) {
             OcrOutcome.Failure("remote-ocr-error: ${e.message}")
@@ -112,7 +113,6 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
             session.run(mapOf(inputName to t)).use { results ->
                 @Suppress("UNCHECKED_CAST")
                 val output = results[0].value as Array<Array<FloatArray>> // [1, 4+numClasses, numAnchors]
-
                 // Flatten output for postprocessor
                 val flatOutput = flattenYoloOutput(output[0])
                 val numAnchors = flatOutput.size / (4 + numClasses)
@@ -123,7 +123,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
     }
 
     private fun bitmapToTensor(bitmap: Bitmap, targetSize: Int, params: LetterboxParams): OnnxTensor {
-        val letterboxed = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
+        val letterboxed = createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(letterboxed)
         canvas.drawColor(android.graphics.Color.rgb(114, 114, 114))
 

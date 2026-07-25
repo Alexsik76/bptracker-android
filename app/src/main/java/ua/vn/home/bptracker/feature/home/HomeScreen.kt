@@ -12,12 +12,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,31 +29,30 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.ui.components.*
 import ua.vn.home.bptracker.ui.theme.*
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    state: HomeState,
+    state: ListUiState<HomePayload>,
     onRefresh: () -> Unit,
-    onLogout: () -> Unit,
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onMeasurementClick: (MeasurementDto) -> Unit
+    onMeasurementClick: (MeasurementDto) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        @OptIn(ExperimentalMaterial3Api::class)
         TopAppBar(
+            modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
             title = {
                 Text(
                     text = "∿ " + stringResource(R.string.app_name),
@@ -73,17 +71,29 @@ fun HomeScreen(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-            when (state) {
-                is HomeState.Loading -> LoadingState()
-                is HomeState.Empty -> EmptyState(
-                    title = stringResource(R.string.dashboard_no_measurements),
-                    description = stringResource(R.string.dashboard_empty_hint)
-                )
-                is HomeState.Error -> ErrorState(
-                    message = state.message,
-                    onRetry = onRefresh
-                )
-                is HomeState.Content -> DashboardContent(state, onHistoryClick, onMeasurementClick)
+            ListStateHost(
+                state = state,
+                onRetry = onRefresh,
+                onEmpty = {
+                    PullToRefreshBox(
+                        isRefreshing = false,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        EmptyState(
+                            title = stringResource(R.string.dashboard_no_measurements),
+                            description = stringResource(R.string.dashboard_empty_hint)
+                        )
+                    }
+                }
+            ) { content, isRefreshing ->
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    DashboardContent(content, onHistoryClick, onMeasurementClick)
+                }
             }
         }
     }
@@ -91,17 +101,21 @@ fun HomeScreen(
 
 @Composable
 fun DashboardContent(
-    content: HomeState.Content,
+    content: HomePayload,
     onHistoryClick: () -> Unit,
-    onMeasurementClick: (MeasurementDto) -> Unit
+    onMeasurementClick: (MeasurementDto) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        contentPadding = PaddingValues(MaterialTheme.spacing.screenPadding),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.cardPadding)
     ) {
         item {
-            HeroCard(content.latest, content.zone, onClick = { onMeasurementClick(content.latest) })
+            HeroCard(
+                latest = content.latest,
+                zone = content.zone,
+                onClick = { onMeasurementClick(content.latest) },
+            )
         }
         
         item {
@@ -110,10 +124,6 @@ fun DashboardContent(
         
         item {
             RecentReadingsSection(content.recent, onHistoryClick)
-        }
-        
-        item {
-            Spacer(Modifier.height(80.dp))
         }
     }
 }
@@ -134,7 +144,7 @@ fun RecentReadingsSection(
     BpCard(
         modifier = Modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .border(1.dp, borderColor, RoundedCornerShape(20.dp))
+            .border(1.dp, borderColor, MaterialTheme.shapes.large)
             .clickable(
                 interactionSource = interaction,
                 indication = ripple(color = MaterialTheme.colorScheme.primary),
@@ -149,11 +159,14 @@ fun RecentReadingsSection(
                     text = stringResource(R.string.dashboard_recent_readings).uppercase(),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+                    modifier = Modifier.padding(
+                        horizontal = MaterialTheme.spacing.cardPadding,
+                        vertical = MaterialTheme.spacing.listSpacing
+                    )
                 )
 
                 HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.cardPadding),
                     thickness = 0.5.dp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
                 )
@@ -162,7 +175,7 @@ fun RecentReadingsSection(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    Column(modifier = Modifier.padding(vertical = MaterialTheme.spacing.small)) {
                         val now = OffsetDateTime.now()
                         val filtered = recent
                             .filter { TimeUtils.parseToLocal(it.recordedAt).isAfter(now.minusHours(24)) }
@@ -173,16 +186,18 @@ fun RecentReadingsSection(
                                 text = "No readings in the last 24h",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(20.dp).align(Alignment.CenterHorizontally)
+                                modifier = Modifier
+                                    .padding(MaterialTheme.spacing.cardPadding)
+                                    .align(Alignment.CenterHorizontally),
                             )
                         } else {
                             filtered.forEachIndexed { index, m ->
                                 MeasurementRow(m, endPadding = if (index == 0) 36.dp else 0.dp)
-                                if (index < filtered.size - 1) {
+                                if (index < (filtered.size - 1)) {
                                     HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 20.dp),
+                                        modifier = Modifier.padding(horizontal = MaterialTheme.spacing.cardPadding),
                                         thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
                                     )
                                 }
                             }
@@ -233,16 +248,21 @@ fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(start = 20.dp, top = 12.dp, bottom = 12.dp, end = 20.dp + endPadding),
+            .padding(
+                start = MaterialTheme.spacing.cardPadding,
+                top = MaterialTheme.spacing.listSpacing,
+                bottom = MaterialTheme.spacing.listSpacing,
+                end = MaterialTheme.spacing.cardPadding + endPadding
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
             modifier = Modifier.size(10.dp),
             color = zone.color(isDark),
-            shape = RoundedCornerShape(50)
+            shape = CircleShape
         ) {}
         
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(MaterialTheme.spacing.medium))
         
         Text(
             text = "${m.sys}/${m.dia}",
@@ -276,10 +296,10 @@ fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 
 }
 
 @Composable
-fun KpiGrid(content: HomeState.Content) {
+fun KpiGrid(content: HomePayload) {
     val isDark = isSystemInDarkTheme()
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.listSpacing)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.listSpacing)) {
             val avgZone = BpZone.classify(content.avgSys, content.avgDia)
             KpiTile(
                 label = stringResource(R.string.kpi_avg_7d),
@@ -301,7 +321,7 @@ fun KpiGrid(content: HomeState.Content) {
                 modifier = Modifier.weight(1f)
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.listSpacing)) {
             KpiTile(
                 label = stringResource(R.string.kpi_in_range),
                 value = "${content.inRangePercent}%",
@@ -334,7 +354,7 @@ fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
     BpCard(
         modifier = Modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
-            .border(1.dp, borderColor, RoundedCornerShape(20.dp))
+            .border(1.dp, borderColor, MaterialTheme.shapes.large)
             .clickable(
                 interactionSource = interaction,
                 indication = ripple(color = MaterialTheme.colorScheme.primary),
@@ -344,7 +364,7 @@ fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
             )
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(MaterialTheme.spacing.cardPadding)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(end = 36.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -358,7 +378,7 @@ fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
                     ZoneBadge(zone)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
 
                 ReadingValue(
                     sys = latest.sys,
@@ -379,7 +399,7 @@ fun HeroCard(latest: MeasurementDto, zone: BpZone, onClick: () -> Unit) {
                     fontFamily = MaterialTheme.typography.headlineMedium.fontFamily
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
 
                 PositionScaleBar(latest.sys, latest.dia)
             }

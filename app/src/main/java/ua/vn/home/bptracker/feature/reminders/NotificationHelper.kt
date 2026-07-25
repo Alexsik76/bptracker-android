@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import ua.vn.home.bptracker.MainActivity
 import ua.vn.home.bptracker.R
@@ -22,15 +21,13 @@ class NotificationHelper(private val context: Context) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Medication Reminders"
-            val descriptionText = "Notifications for scheduled medications"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
-            }
-            notificationManager.createNotificationChannel(channel)
+        val name = "Medication Reminders"
+        val descriptionText = "Notifications for scheduled medications"
+        val importance = NotificationManager.IMPORTANCE_HIGH
+        val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            description = descriptionText
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     fun showReminderNotification(period: String, meds: List<String>) {
@@ -51,14 +48,17 @@ class NotificationHelper(private val context: Context) {
         )
 
         val medList = meds.joinToString(", ")
+        val title = context.getString(R.string.notification_reminder_title, period)
+        val actionText = context.getString(R.string.notification_action_taken)
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: Use medication icon
-            .setContentTitle("Time to take your meds: $period")
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
             .setContentText(medList)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .addAction(R.drawable.ic_launcher_foreground, "Taken", takenPendingIntent)
+            .addAction(R.drawable.ic_launcher_foreground, actionText, takenPendingIntent)
             .build()
 
         notificationManager.notify(NOTIFICATION_ID_BASE + period.hashCode(), notification)

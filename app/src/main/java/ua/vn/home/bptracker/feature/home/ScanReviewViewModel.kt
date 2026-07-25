@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.home
 
+import android.util.Log
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,8 +9,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.feature.ocr.OcrOutcome
 
 sealed interface ScanReviewState {
@@ -20,9 +23,8 @@ sealed interface ScanReviewState {
         val dia: String,
         val pulse: String,
         val recognized: Boolean,
-        val saving: Boolean = false,
-        val saved: Boolean = false,
-        val error: String? = null
+        val saveOperation: OperationUiState = OperationUiState.Idle,
+        val ocrError: Int? = null,
     ) : ScanReviewState {
         val sysInt = sys.toIntOrNull()
         val diaInt = dia.toIntOrNull()
@@ -61,31 +63,34 @@ class ScanReviewViewModel : ViewModel() {
                     pulse = outcome.pul.toString(),
                     recognized = true
                 )
-                is OcrOutcome.Failure -> ScanReviewState.Ready(
-                    image = image,
-                    sys = "",
-                    dia = "",
-                    pulse = "",
-                    recognized = false,
-                    error = "OCR failed: ${outcome.reason}"
-                )
+                is OcrOutcome.Failure -> {
+                    Log.w("Ocr", "recognize failed: ${outcome.reason}")
+                    ScanReviewState.Ready(
+                        image = image,
+                        sys = "",
+                        dia = "",
+                        pulse = "",
+                        recognized = false,
+                        ocrError = R.string.scan_review_ocr_failed
+                    )
+                }
             }
         }
     }
 
     fun onSysChange(value: String) {
         val current = _state.value as? ScanReviewState.Ready ?: return
-        _state.value = current.copy(sys = value.filter { it.isDigit() }, error = null)
+        _state.value = current.copy(sys = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle, ocrError = null)
     }
 
     fun onDiaChange(value: String) {
         val current = _state.value as? ScanReviewState.Ready ?: return
-        _state.value = current.copy(dia = value.filter { it.isDigit() }, error = null)
+        _state.value = current.copy(dia = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle, ocrError = null)
     }
 
     fun onPulseChange(value: String) {
         val current = _state.value as? ScanReviewState.Ready ?: return
-        _state.value = current.copy(pulse = value.filter { it.isDigit() }, error = null)
+        _state.value = current.copy(pulse = value.filter { it.isDigit() }, saveOperation = OperationUiState.Idle, ocrError = null)
     }
 
     fun save() {
@@ -93,16 +98,16 @@ class ScanReviewViewModel : ViewModel() {
         if (!current.isValid) return
 
         viewModelScope.launch {
-            _state.value = current.copy(saving = true, error = null)
+            _state.value = current.copy(saveOperation = OperationUiState.InProgress, ocrError = null)
             try {
                 repository.createMeasurement(
                     sys = current.sysInt!!,
                     dia = current.diaInt!!,
                     pulse = current.pulseInt!!
                 )
-                _state.value = current.copy(saving = false, saved = true)
-            } catch (e: Exception) {
-                _state.value = current.copy(saving = false, error = e.message ?: "Save failed")
+                _state.value = current.copy(saveOperation = OperationUiState.Success)
+            } catch (_: Exception) {
+                _state.value = current.copy(saveOperation = OperationUiState.Error("Save failed"))
             }
         }
     }
@@ -125,9 +130,11 @@ class ScanReviewViewModel : ViewModel() {
                 )
                 is OcrOutcome.Failure -> ScanReviewState.Ready(
                     image = image,
-                    sys = "", dia = "", pulse = "",
+                    sys = current.sys, 
+                    dia = current.dia, 
+                    pulse = current.pulse,
                     recognized = false,
-                    error = "Remote OCR failed: ${outcome.reason}"
+                    ocrError = R.string.scan_review_ocr_failed
                 )
             }
         }

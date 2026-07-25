@@ -7,25 +7,28 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
-import ua.vn.home.bptracker.ui.components.LoadingState
 import ua.vn.home.bptracker.ui.components.EmptyState
-import ua.vn.home.bptracker.ui.components.ErrorState
+import ua.vn.home.bptracker.ui.components.ListStateHost
+import ua.vn.home.bptracker.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeasurementHistoryScreen(
-    state: HomeState,
+    state: ListUiState<HomePayload>,
     onRefresh: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
 ) {
     Scaffold(
+        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.dashboard_recent_readings)) },
@@ -46,24 +49,46 @@ fun MeasurementHistoryScreen(
                 .padding(padding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            when (state) {
-                is HomeState.Loading -> LoadingState()
-                is HomeState.Empty -> EmptyState(title = stringResource(R.string.dashboard_no_measurements))
-                is HomeState.Error -> ErrorState(message = state.message, onRetry = onRefresh)
-                is HomeState.Content -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
+            ListStateHost(
+                state = state,
+                onRetry = onRefresh,
+                onEmpty = {
+                    PullToRefreshBox(
+                        isRefreshing = false,
+                        onRefresh = onRefresh,
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        items(state.recent) { m ->
-                            MeasurementRow(m, onClick = { onMeasurementClick(m) })
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 20.dp),
-                                thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
-                            )
+                        EmptyState(
+                            title = stringResource(R.string.dashboard_no_measurements)
+                        )
+                    }
+                }
+            ) { content, isRefreshing ->
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (content.recent.isNotEmpty()) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = MaterialTheme.spacing.large),
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
+                        ) {
+                            items(content.recent) { m ->
+                                MeasurementRow(m, onClick = { onMeasurementClick(m) })
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.cardPadding),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)
+                                )
+                            }
+                            item {
+                                Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+                            }
                         }
+                    } else {
+                        Box(Modifier.fillMaxSize())
                     }
                 }
             }

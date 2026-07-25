@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.ui.theme.*
 import ua.vn.home.bptracker.ui.components.*
 
@@ -44,12 +45,12 @@ fun ScanReviewScreen(
     val readyState = state as? ScanReviewState.Ready
     val recognizingState = state as? ScanReviewState.Recognizing
 
-    LaunchedEffect(readyState?.saved) {
-        if (readyState?.saved == true) onBack()
+    LaunchedEffect(readyState?.saveOperation) {
+        if (readyState?.saveOperation is OperationUiState.Success) onBack()
     }
 
     Scaffold(
-        modifier = Modifier.imePadding(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
@@ -86,6 +87,7 @@ fun ScanReviewScreen(
                     modifier = Modifier
                         .background(MaterialTheme.colorScheme.background)
                         .navigationBarsPadding()
+                        .imePadding()
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -108,14 +110,14 @@ fun ScanReviewScreen(
                         Button(
                             onClick = onSave,
                             modifier = Modifier.weight(1f).height(56.dp),
-                            enabled = readyState.isValid && !readyState.saving,
+                            enabled = readyState.isValid && readyState.saveOperation !is OperationUiState.InProgress,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = DarkPrimary,
                                 disabledContainerColor = DarkPrimary.copy(alpha = 0.3f)
                             ),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            if (readyState.saving) {
+                            if (readyState.saveOperation is OperationUiState.InProgress) {
                                 CircularProgressIndicator(Modifier.size(24.dp), color = Color.White)
                             } else {
                                 Text(stringResource(R.string.common_save), fontWeight = FontWeight.SemiBold, color = Color.White)
@@ -194,6 +196,39 @@ fun ScanReviewScreen(
             }
 
             if (readyState != null) {
+                // Error Messages
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    readyState.ocrError?.let { errorRes ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(errorRes),
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    if (readyState.saveOperation is OperationUiState.Error) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = readyState.saveOperation.message,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+
                 // Entry Fields
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     ValueField(

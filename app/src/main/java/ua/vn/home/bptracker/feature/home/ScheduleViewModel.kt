@@ -3,61 +3,72 @@ package ua.vn.home.bptracker.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
-import ua.vn.home.bptracker.data.dto.TodayIntake
-import ua.vn.home.bptracker.feature.reminders.NotificationHelper
-import java.util.TimeZone
-
-sealed interface ScheduleState {
-    data object Loading : ScheduleState
-    data object Empty : ScheduleState
-    data class Error(val message: String) : ScheduleState
-    data class Content(val intakes: List<TodayIntake>) : ScheduleState
-}
+import ua.vn.home.bptracker.core.ui.ListUiState
+import ua.vn.home.bptracker.data.dto.WhenSlot
+import ua.vn.home.bptracker.feature.reminders.TodaySchedule
+import java.time.LocalDate
 
 class ScheduleViewModel : ViewModel() {
-    private val repository = ServiceLocator.reminderRepository
-    private val _state = MutableStateFlow<ScheduleState>(ScheduleState.Loading)
-    val state: StateFlow<ScheduleState> = _state.asStateFlow()
+    private val today = LocalDate.now().toString()
+    private val useCase = ServiceLocator.todayScheduleUseCase
+    private val intakeRepo = ServiceLocator.intakeReportRepository
+    private val prescriptionRepo = ServiceLocator.prescriptionRepository
 
-    private val timezone = TimeZone.getDefault().id
+    private val _refreshing = MutableStateFlow(false)
+    private val _error = MutableStateFlow<String?>(null)
 
-    init {
-        refresh()
-    }
+    val state: StateFlow<ListUiState<TodaySchedule>> = combine(
+        useCase.observeToday(today),
+        _refreshing,
+        _error
+    ) { schedule, refreshing, error ->
+        when {
+            error != null && schedule.slots.isEmpty() -> ListUiState.Error(error)
+            else -> ListUiState.Content(schedule, refreshing)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ListUiState.Content(TodaySchedule.empty(today), isRefreshing = true)
+    )
 
-    fun refresh() {
+    fun refresh(isManual: Boolean = false) {
         viewModelScope.launch {
-            _state.value = ScheduleState.Loading
+            if (isManual) _refreshing.value = true
+            _error.value = null
             try {
-                val todayMeds = repository.getToday(timezone)
-                android.util.Log.d("ScheduleViewModel", "Fetched meds: $todayMeds")
-
-                if (todayMeds.intakes.isEmpty()) {
-                    _state.value = ScheduleState.Empty
-                } else {
-                    val sortedIntakes = todayMeds.intakes.sortedBy { it.time }
-                    _state.value = ScheduleState.Content(sortedIntakes)
-                }
+                intakeRepo.refresh()
+                intakeRepo.syncPending()
+                prescriptionRepo.refresh()
             } catch (e: Exception) {
-                _state.value = ScheduleState.Error(e.message ?: "Unknown error")
+                _error.value = e.message ?: "Refresh failed"
+            } finally {
+                _refreshing.value = false
             }
         }
     }
 
-    fun confirm(period: String) {
+    fun confirmSlot(slot: WhenSlot) {
         viewModelScope.launch {
-            try {
-                repository.confirm(period, timezone)
-                // Dismiss notification if it was showing
-                NotificationHelper(ServiceLocator.applicationContext).cancelNotification(period)
-                refresh() // Refresh after confirmation
-            } catch (e: Exception) {
-                // Optionally handle confirmation error, e.g., show a snackbar
-            }
+            intakeRepo.confirm(slot, today, takenAt = null)
+        }
+    }
+
+    fun editTime(slot: WhenSlot, takenAtIso: String) {
+        viewModelScope.launch {
+            intakeRepo.confirm(slot, today, takenAt = takenAtIso)
+        }
+    }
+
+    fun deleteIntake(slot: WhenSlot) {
+        viewModelScope.launch {
+            intakeRepo.delete(slot, today)
         }
     }
 }

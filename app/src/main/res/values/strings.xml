@@ -11,10 +11,21 @@
     <string name="common_yesterday">Yesterday</string>
     <string name="common_back">Back</string>
     <string name="common_retry">Retry</string>
+    <string name="common_no_data">No data available</string>
+    <string name="common_edit">Edit</string>
 
     <!-- Auth -->
     <string name="auth_login_passkey">Sign in with passkey</string>
+    <string name="auth_login_email_hint">Email address</string>
+    <string name="auth_login_send_link">Send magic link</string>
+    <string name="auth_login_link_sent">Check your inbox. If you have an account, we\'ve sent a login link.</string>
+    <string name="auth_login_link_error">Failed to send the link. Please try again.</string>
+    <string name="auth_login_link_expired">The link is invalid, expired, or already used.</string>
     <string name="auth_logout">Log out</string>
+    <string name="auth_add_passkey">Add passkey to this device</string>
+    <string name="auth_add_passkey_prompt">Since you signed in via email, would you like to add a passkey for easier access next time?</string>
+    <string name="auth_passkey_registered">Passkey registered successfully!</string>
+    <string name="auth_passkey_failed">Failed to register passkey. Please try again.</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Dashboard</string>
@@ -45,6 +56,7 @@
 
     <!-- Schedule -->
     <string name="schedule_title">Schedule</string>
+    <string name="schedule_coming_soon">Reminders — coming soon</string>
     <string name="schedule_empty">No medications scheduled for today</string>
     <string name="schedule_empty_hint">You will see your medication plan here once it is synced from the server.</string>
     <string name="schedule_taken">Taken</string>
@@ -52,6 +64,12 @@
     <string name="schedule_pending">Pending</string>
     <string name="schedule_confirm_btn">Taken</string>
     <string name="schedule_taken_at">Taken at %1$s</string>
+    <string name="schedule_intake_title">Intake</string>
+    <string name="schedule_action_confirm">Confirm</string>
+    <string name="schedule_action_edit">Edit time</string>
+    <string name="schedule_action_delete">Delete intake</string>
+    <string name="schedule_not_configured">Reminders not configured</string>
+    <string name="schedule_set_hours">Set hours</string>
     <string name="schedule_edit_title">Edit Schedule</string>
     <string name="schedule_edit_empty">No active medication template found. Please set up your plan in the web application.</string>
     <string name="schedule_edit_periods">Daily Periods</string>
@@ -61,19 +79,28 @@
     <string name="schedule_edit_max_reminders">Reminder limit</string>
     <string name="schedule_edit_per_period">per period</string>
 
+    <!-- Reminder Config -->
+    <string name="rem_config_title">Reminder Settings</string>
+    <string name="rem_config_morning">Morning reminders start</string>
+    <string name="rem_config_day">Day reminders start</string>
+    <string name="rem_config_evening">Evening reminders start</string>
+    <string name="rem_config_max">Maximum reminders per slot</string>
+    <string name="rem_config_duration">Confirmation window (minutes)</string>
+    <string name="rem_config_save_success">Settings saved</string>
+
     <!-- Periods -->
     <string name="period_morning">Morning</string>
     <string name="period_day">Day</string>
     <string name="period_evening">Evening</string>
 
     <!-- Measurement Entry -->
-    <string name="entry_title">New Reading</string>
+    <string name="entry_title">New measurement</string>
     <string name="entry_sys">Systolic</string>
     <string name="entry_sys_sub">upper</string>
     <string name="entry_dia">Diastolic</string>
     <string name="entry_dia_sub">lower</string>
     <string name="entry_pulse">Pulse</string>
-    <string name="entry_save">Save Reading</string>
+    <string name="entry_save">Save measurement</string>
     <string name="entry_range_sys">Range: 40–300</string>
     <string name="entry_range_dia">Range: 20–200</string>
     <string name="entry_range_pulse">Range: 30–250</string>
@@ -83,6 +110,8 @@
     <string name="local_ocr_zoom">Zoom</string>
     <string name="local_ocr_retake">Retake</string>
     <string name="local_ocr_server_recognize">Recognize via server</string>
+    <string name="scan_review_ocr_failed">Could not recognize the values. Please enter them manually.</string>
+    <string name="scan_review_save_failed">Failed to save the measurement. Please try again.</string>
 
     <!-- Measurement Detail -->
     <string name="measurement_detail_title">Reading</string>
@@ -109,10 +138,32 @@
     <string name="settings_reminders">Medication reminders</string>
     <string name="settings_reminders_no_template">Please set up a schedule in the web app first.</string>
     <string name="settings_group_help">Help</string>
-    <string name="settings_bp_scale">BP Scale (ESC) →</string>
-    <string name="settings_group_account">Account</string>
+    <string name="settings_bp_scale">ESC BP Scale →</string>
     <string name="settings_export_csv">Export CSV to email</string>
+    <string name="export_csv_success">Export requested. Check your email shortly.</string>
+    <string name="export_csv_cooldown">Too many requests. Please wait before exporting again.</string>
+    <string name="export_csv_error">Export failed. Please try again later.</string>
+    <string name="export_title">Export data</string>
+    <string name="export_subtitle">CSV + PDF report will be sent to your email for:</string>
+    <string name="export_period_1m">1 month</string>
+    <string name="export_period_3m">3 months</string>
+    <string name="export_period_6m">6 months</string>
+    <string name="export_period_all">All time</string>
+    <string name="export_send">Send</string>
+    <string name="settings_group_account">Account</string>
     <string name="settings_logout">Log out</string>
+    <string name="settings_profile">Profile</string>
+
+    <string name="profile_title">Profile</string>
+    <string name="profile_email_label">Account email</string>
+    <string name="profile_name_label">Full name</string>
+    <string name="profile_name_hint">Printed on the PDF report you export for your doctor.</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_saved">Saved</string>
+
+    <string name="notification_reminder_title">Time for your medications: %1$s</string>
+    <string name="notification_action_taken">Taken</string>
+    <string name="settings_reminders_rationale">We need notification permission to send you medication reminders at scheduled times.</string>
 
     <!-- BP Scale Help -->
     <string name="settings_bp_scale_title">ESC BP Scale</string>
@@ -123,4 +174,52 @@
     <string name="bp_scale_stage2_desc">Significantly high. Medical attention recommended.</string>
     <string name="bp_scale_your_latest">Your latest reading</string>
     <string name="bp_scale_disclaimer">This scale is based on ESC/ESH guidelines and is for informational purposes only. It does not replace professional medical advice or diagnosis.</string>
+
+    <!-- Prescriptions -->
+    <string name="prescriptions_title">Prescriptions</string>
+    <string name="prescriptions_empty">No prescriptions yet</string>
+    <string name="prescriptions_empty_hint">Add your first prescription from a doctor to start tracking medications.</string>
+    <string name="prescriptions_add_btn">Add Prescription</string>
+    <string name="prescriptions_active">Active</string>
+    <string name="prescriptions_inactive">Inactive</string>
+    <string name="prescriptions_prescribed_on">Prescribed on %1$s</string>
+    <string name="prescriptions_doctor_hint">Doctor Name</string>
+    <string name="prescriptions_date_hint">Prescription Date</string>
+    <string name="prescriptions_pick_date_desc">Pick date</string>
+    <string name="prescriptions_delete_confirm">Delete this prescription and all its items?</string>
+
+    <!-- Medication Items -->
+    <string name="med_items_title">Medications</string>
+    <string name="med_items_empty">No medications added yet</string>
+    <string name="med_items_add_btn">Add Medication</string>
+    <string name="med_items_medicine_hint">Medicine name</string>
+    <string name="med_items_condition_hint">Condition (e.g. after meals)</string>
+    <string name="med_items_dose">Dose</string>
+    <string name="med_items_dose_amount">Amount</string>
+    <string name="med_items_dose_unit">Unit</string>
+    <string name="med_items_dose_unspecified">unspecified</string>
+    <string name="med_items_when">When</string>
+    <string name="med_items_frequency">Frequency</string>
+    <string name="med_items_freq_times">times</string>
+    <string name="med_items_freq_every">every</string>
+    <string name="med_items_course">Course</string>
+    <string name="med_items_course_ongoing">Ongoing</string>
+    <string name="med_items_course_limited">Limited course</string>
+    <string name="med_items_course_start">Start date &amp; time</string>
+    <string name="med_items_course_intakes">Total intakes</string>
+    <string name="med_items_delete_confirm">Delete this medication item?</string>
+
+    <!-- Medication Enums -->
+    <string name="med_enum_slot_morning">Morning</string>
+    <string name="med_enum_slot_day">Day</string>
+    <string name="med_enum_slot_evening">Evening</string>
+    <string name="med_enum_unit_tablet">tablet</string>
+    <string name="med_enum_unit_mg">mg</string>
+    <string name="med_enum_unit_ml">ml</string>
+    <string name="med_enum_unit_drop">drop</string>
+    <string name="med_enum_unit_mcg">mcg</string>
+    <string name="med_enum_unit_iu">IU</string>
+    <string name="med_enum_freq_h">hour</string>
+    <string name="med_enum_freq_d">day</string>
+    <string name="med_enum_freq_wk">week</string>
 </resources>

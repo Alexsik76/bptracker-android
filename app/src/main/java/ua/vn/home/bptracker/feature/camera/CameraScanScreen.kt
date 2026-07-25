@@ -3,7 +3,6 @@ package ua.vn.home.bptracker.feature.camera
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,13 +39,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.scale
 import ua.vn.home.bptracker.R
 
 @Composable
 fun CameraScanScreen(
     onCapture: (Bitmap) -> Unit,
     onEnterManually: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -54,14 +54,13 @@ fun CameraScanScreen(
     
     var hasCameraPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED,
         )
     }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted -> hasCameraPermission = granted }
-    )
+    ) { granted -> hasCameraPermission = granted }
 
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
@@ -81,35 +80,38 @@ fun CameraScanScreen(
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             AndroidView(
                 factory = { previewView },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             ) { view ->
                 view.post {
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(view.surfaceProvider)
-                        }
-
-                        val viewPort = view.viewPort
-                        if (viewPort != null) {
-                            val useCaseGroup = UseCaseGroup.Builder()
-                                .addUseCase(preview)
-                                .addUseCase(imageCapture)
-                                .setViewPort(viewPort)
-                                .build()
-
-                            try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    CameraSelector.DEFAULT_BACK_CAMERA,
-                                    useCaseGroup
-                                )
-                            } catch (e: Exception) {
-                                Log.e("CameraScan", "Use case binding failed", e)
+                    cameraProviderFuture.addListener(
+                        {
+                            val cameraProvider = cameraProviderFuture.get()
+                            val preview = Preview.Builder().build().also {
+                                it.surfaceProvider = view.surfaceProvider
                             }
-                        }
-                    }, ContextCompat.getMainExecutor(context))
+
+                            val viewPort = view.viewPort
+                            if (viewPort != null) {
+                                val useCaseGroup = UseCaseGroup.Builder()
+                                    .addUseCase(preview)
+                                    .addUseCase(imageCapture)
+                                    .setViewPort(viewPort)
+                                    .build()
+
+                                try {
+                                    cameraProvider.unbindAll()
+                                    cameraProvider.bindToLifecycle(
+                                        lifecycleOwner,
+                                        CameraSelector.DEFAULT_BACK_CAMERA,
+                                        useCaseGroup,
+                                    )
+                                } catch (e: Exception) {
+                                    Log.e("CameraScan", "Use case binding failed", e)
+                                }
+                            }
+                        },
+                        ContextCompat.getMainExecutor(context),
+                    )
                 }
             }
 
@@ -273,21 +275,14 @@ private fun processBitmap(bitmap: Bitmap, rotation: Int): Bitmap {
     
     if (scale >= 1f) return rotated
 
-    val scaled = Bitmap.createScaledBitmap(
-        rotated,
-        (rotated.width * scale).toInt(),
-        (rotated.height * scale).toInt(),
-        true
+    return rotated.scale(
+        width = (rotated.width * scale).toInt(),
+        height = (rotated.height * scale).toInt(),
+        filter = true,
     )
-    return scaled
 }
 
 /**
  * ImageProxy to Bitmap helper
  */
-private fun ImageProxy.toBitmap(): Bitmap {
-    val buffer = planes[0].buffer
-    val bytes = ByteArray(buffer.remaining())
-    buffer.get(bytes)
-    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-}
+

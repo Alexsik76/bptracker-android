@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.core.utils
 
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -17,20 +18,20 @@ object TimeUtils {
             ZonedDateTime.parse(input, formatter)
                 .withZoneSameInstant(ZoneId.systemDefault())
                 .toOffsetDateTime()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             try {
                 // Fallback for ISO format: "2024-05-20T20:54:57.655+03:00"
                 OffsetDateTime.parse(input)
                     .atZoneSameInstant(ZoneId.systemDefault())
                     .toOffsetDateTime()
-            } catch (e2: Exception) {
+            } catch (_: Exception) {
                 try {
                     // Fallback for space-separated ISO without full offset: "2024-05-20 20:54:57"
                     val sanitized = input.replace(" ", "T")
-                    OffsetDateTime.parse(sanitized)
-                        .atZoneSameInstant(ZoneId.systemDefault())
+                    LocalDateTime.parse(sanitized)
+                        .atZone(ZoneId.systemDefault())
                         .toOffsetDateTime()
-                } catch (e3: Exception) {
+                } catch (_: Exception) {
                     OffsetDateTime.now()
                 }
             }

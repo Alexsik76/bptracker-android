@@ -3,13 +3,14 @@ package ua.vn.home.bptracker.data.local.dao
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 import ua.vn.home.bptracker.data.local.entity.MeasurementEntity
+import ua.vn.home.bptracker.data.local.entity.SyncState
 
 @Dao
 interface MeasurementDao {
-    @Query("SELECT * FROM measurements ORDER BY recordedAt DESC")
+    @Query("SELECT * FROM measurements WHERE syncState != '${SyncState.PENDING_DELETE}' ORDER BY recordedAt DESC")
     fun getAllFlow(): Flow<List<MeasurementEntity>>
 
-    @Query("SELECT * FROM measurements ORDER BY recordedAt DESC")
+    @Query("SELECT * FROM measurements WHERE syncState != '${SyncState.PENDING_DELETE}' ORDER BY recordedAt DESC")
     suspend fun getAll(): List<MeasurementEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -21,9 +22,12 @@ interface MeasurementDao {
     @Query("DELETE FROM measurements WHERE id = :id")
     suspend fun deleteById(id: String)
 
-    @Query("SELECT * FROM measurements WHERE isSynced = 0")
-    suspend fun getUnsynced(): List<MeasurementEntity>
+    @Query("SELECT * FROM measurements WHERE syncState != '${SyncState.SYNCED}'")
+    suspend fun getPending(): List<MeasurementEntity>
 
-    @Query("DELETE FROM measurements")
-    suspend fun deleteAll()
+    @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}'")
+    suspend fun deleteSynced()
+
+    @Query("UPDATE measurements SET syncState = '${SyncState.PENDING_DELETE}' WHERE id = :id")
+    suspend fun markPendingDelete(id: String)
 }

@@ -8,6 +8,6 @@ import ua.vn.home.bptracker.data.dto.OcrResponse
 
 interface OcrApi {
     @Multipart
-    @POST("recognize")
-    suspend fun recognize(@Part image: MultipartBody.Part): OcrResponse
+    @POST("measurements/analyze")
+    suspend fun analyze(@Part image: MultipartBody.Part): OcrResponse
 }

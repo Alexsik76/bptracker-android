@@ -1,44 +1,86 @@
 package ua.vn.home.bptracker.feature.settings
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
+import ua.vn.home.bptracker.data.repository.ExportResult
 import ua.vn.home.bptracker.ui.components.ListGroupCard
 import ua.vn.home.bptracker.ui.components.SegmentedControl
 import ua.vn.home.bptracker.ui.components.SettingRow
+import ua.vn.home.bptracker.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     state: SettingsState,
+    exportOperation: ExportResult?,
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
     onLogout: () -> Unit,
+    onProfileClick: () -> Unit,
+    onAddPasskey: () -> Unit,
+    onExportClick: () -> Unit,
+    onConsumeExportResult: () -> Unit,
     onHelpClick: () -> Unit,
     onBack: () -> Unit,
-    onRefresh: () -> Unit
+    onRefresh: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onRemindersToggle(true)
+        }
+    }
+
     LaunchedEffect(Unit) {
         onRefresh()
     }
 
+    LaunchedEffect(exportOperation) {
+        exportOperation?.let { op ->
+            val message = when (op) {
+                is ExportResult.Success -> context.getString(R.string.export_csv_success)
+                is ExportResult.Cooldown -> context.getString(R.string.export_csv_cooldown)
+                is ExportResult.Error -> context.getString(R.string.export_csv_error)
+            }
+            snackbarHostState.showSnackbar(message)
+            onConsumeExportResult()
+        }
+    }
+
     Scaffold(
+        modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
@@ -51,7 +93,10 @@ fun SettingsScreen(
                     IconButton(onClick = onHelpClick) {
                         Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "Help")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { innerPadding ->
@@ -60,16 +105,16 @@ fun SettingsScreen(
                 .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(MaterialTheme.spacing.screenPadding),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
         ) {
             // Appearance
             ListGroupCard(title = stringResource(R.string.settings_group_appearance)) {
-                Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                Column(modifier = Modifier.padding(vertical = MaterialTheme.spacing.medium)) {
                     Text(
                         stringResource(R.string.settings_theme),
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        modifier = Modifier.padding(bottom = MaterialTheme.spacing.listSpacing)
                     )
                     SegmentedControl(
                         options = listOf(
@@ -85,7 +130,7 @@ fun SettingsScreen(
 
             // Language
             ListGroupCard(title = stringResource(R.string.settings_group_language)) {
-                Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                Column(modifier = Modifier.padding(vertical = MaterialTheme.spacing.medium)) {
                     SegmentedControl(
                         options = listOf("System", "Українська", "English"),
                         selectedIndex = state.language.ordinal,
@@ -99,7 +144,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = MaterialTheme.spacing.medium),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -122,9 +167,9 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = MaterialTheme.spacing.medium),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.bodyLarge)
@@ -132,14 +177,28 @@ fun SettingsScreen(
                             Text(
                                 stringResource(R.string.settings_reminders_no_template),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                     Switch(
                         checked = state.remindersActive == true,
-                        onCheckedChange = onRemindersToggle,
-                        enabled = state.remindersActive != null
+                        onCheckedChange = { enabled ->
+                            if (enabled && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)) {
+                                val status = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS,
+                                )
+                                if (status != PackageManager.PERMISSION_GRANTED) {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    onRemindersToggle(true)
+                                }
+                            } else {
+                                onRemindersToggle(enabled)
+                            }
+                        },
+                        enabled = state.templateId != null,
                     )
                 }
             }
@@ -147,27 +206,20 @@ fun SettingsScreen(
             // Account
             ListGroupCard(title = stringResource(R.string.settings_group_account)) {
                 SettingRow(
-                    label = "Server",
-                    value = "https://api-bptracker...",
-                    showChevron = false
+                    label = stringResource(R.string.settings_profile),
+                    icon = Icons.Outlined.Person,
+                    onClick = onProfileClick
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingRow(
                     label = stringResource(R.string.settings_export_csv),
-                    onClick = { 
-                        // Plan says: redirect to existing backend /export/csv (email)
-                        // For now we'll simulate opening the browser to the export endpoint
-                        // or using an email intent if we had the file. 
-                        // Given "redirect to backend", we use URL.
-                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                            data = android.net.Uri.parse("https://api-bptracker.home.vn.ua/api/v1/export/csv")
-                        }
-                        try {
-                            val context = ua.vn.home.bptracker.core.di.ServiceLocator.applicationContext
-                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        } catch (e: Exception) {}
-                    }
+                    onClick = onExportClick
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                SettingRow(
+                    label = stringResource(R.string.auth_add_passkey),
+                    icon = Icons.Outlined.Fingerprint,
+                    onClick = onAddPasskey
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                 SettingRow(
@@ -187,7 +239,8 @@ fun SettingsScreen(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
         }
     }
 }
