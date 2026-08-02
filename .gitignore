@@ -17,3 +17,4 @@ keystore.properties
 .cxx
 local.properties
 .artifacts/
+.idea/
