@@ -36,7 +36,7 @@ interface MeasurementRepository {
 open class RealMeasurementRepository(
     private val db: BpDatabase,
     private val api: MeasurementApi,
-    private val dao: MeasurementDao
+    private val dao: MeasurementDao,
 ) : MeasurementRepository {
     
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -60,7 +60,7 @@ open class RealMeasurementRepository(
                     dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
                 }
                 dao.getAll().map { it.toDto() }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 dao.getAll().map { it.toDto() }
             }
         }
@@ -82,8 +82,8 @@ open class RealMeasurementRepository(
                         dao.deleteById(id)
                         dao.insert(created.toEntity(SyncState.SYNCED))
                     }
-                } catch (e: Exception) {
-                    Log.e("MeasRepo", "Failed to sync created measurement: ${e.message}")
+                } catch (_: Exception) {
+                    Log.e("MeasRepo", "Failed to sync created measurement")
                 }
             }
         }
@@ -105,13 +105,13 @@ open class RealMeasurementRepository(
             api.deleteMeasurement(id)
             dao.deleteById(id)
         } catch (e: HttpException) {
-            if (e.code() in 400..499) {
+            if (e.code() in (400..499)) {
                 // 404 or other 4xx means we should just drop it locally
                 dao.deleteById(id)
             } else {
                 dao.markPendingDelete(id)
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             dao.markPendingDelete(id)
         }
     }
@@ -123,7 +123,7 @@ open class RealMeasurementRepository(
                 when (entity.syncState) {
                     SyncState.PENDING_CREATE -> {
                         val result = api.createMeasurement(
-                            CreateMeasurementRequest(entity.sys, entity.dia, entity.pulse)
+                            CreateMeasurementRequest(entity.sys, entity.dia, entity.pulse),
                         )
                         dao.deleteById(entity.id)
                         dao.insert(result.toEntity(SyncState.SYNCED))
@@ -134,11 +134,11 @@ open class RealMeasurementRepository(
                     }
                 }
             } catch (e: HttpException) {
-                if (e.code() in 400..499) {
+                if (e.code() in (400..499)) {
                     Log.w("MeasRepo", "Permanent sync failure for ${entity.id}: ${e.code()}")
                     dao.deleteById(entity.id)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // Keep pending for next run
             }
         }

@@ -7,7 +7,7 @@
 ## 0. Технологічний стек (припущення)
 
 | Шар | Бібліотека |
-|---|---|
+|:---|:---|
 | UI | Jetpack Compose + Material 3 (`androidx.compose.material3`) |
 | Навігація | Navigation-Compose (`androidx.navigation:navigation-compose`) |
 | Стан / DI | ViewModel + StateFlow; Hilt (опційно) |
@@ -49,7 +49,7 @@ primary    #6366F1        onPrimary #FFFFFF
 
 ### 1.3 Кольори зон тиску (СПІЛЬНІ з вебом — не змінювати)
 | Зона | Dark fg | Dark bg-chip | Light fg | Light bg-chip |
-|---|---|---|---|---|
+|:---|:---|:---|:---|:---|
 | optimal | `#22C55E` | `#22C55E` @ 12% | `#16A34A` | `#DCFCE7` |
 | normal | `#84CC16` (текст великих чисел `#A3E635`) | `#84CC16` @ 12% | `#65A30D` | `#ECFCCB` |
 | stage1 | `#F97316` (chip text `#FB923C`) | `#F97316` @ 12% | `#C2410C` | `#FED7AA` |
@@ -64,7 +64,7 @@ primary    #6366F1        onPrimary #FFFFFF
 
 Шкала (Compose `Typography` + локальні стилі):
 | Роль | Шрифт | Розмір / вага |
-|---|---|---|
+|:---|:---|:---|
 | Великий показник (hero) | DM Mono | 56sp / 500, letter-spacing −2 |
 | Показник у деталі | DM Mono | 66sp / 500 |
 | Поле значення (форма) | DM Mono | 33sp / 500 |

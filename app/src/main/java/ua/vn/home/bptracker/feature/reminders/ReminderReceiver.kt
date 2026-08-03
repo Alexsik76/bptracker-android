@@ -35,10 +35,10 @@ class ReminderReceiver : BroadcastReceiver() {
 
                 val today = LocalDate.now().toString()
                 val schedule = ServiceLocator.todayScheduleUseCase.getTodayOnce(today)
-                val slot = schedule.slots.find { it.slot.name == period }
+                val slot = schedule.slots.find { (it.slot.name == period) }
                 
-                if (slot != null && !slot.taken && slot.meds.isNotEmpty()) {
-                    val medNames = slot.meds.map { med ->
+                if (slot != null && (!slot.taken) && slot.meds.isNotEmpty()) {
+                    val medNames = slot.meds.asSequence().map { med ->
                         val unitStr = when (med.doseUnit) {
                             DoseUnit.Tablet -> context.getString(R.string.med_enum_unit_tablet)
                             DoseUnit.Mg -> context.getString(R.string.med_enum_unit_mg)
@@ -50,7 +50,7 @@ class ReminderReceiver : BroadcastReceiver() {
                         }
                         val dose = listOf(med.doseAmount, unitStr).filter { it.isNotEmpty() }.joinToString(" ")
                         "${med.medicine} ($dose)"
-                    }
+                    }.toList()
                     ServiceLocator.notificationHelper.createNotificationChannel()
                     ServiceLocator.notificationHelper.showReminderNotification(period, medNames)
                 }
@@ -60,7 +60,7 @@ class ReminderReceiver : BroadcastReceiver() {
                         if (ServiceLocator.settingsStore.remindersEnabled.first()) {
                             ServiceLocator.reminderScheduler.rescheduleAll()
                         }
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         // Ensure finish() is called even if rescheduling fails
                     }
                 }
