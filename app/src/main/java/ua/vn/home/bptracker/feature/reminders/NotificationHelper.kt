@@ -16,6 +16,8 @@ class NotificationHelper(private val context: Context) {
         const val ACTION_TAKEN = "ua.vn.home.bptracker.ACTION_TAKEN"
         const val EXTRA_PERIOD = "extra_period"
         const val NOTIFICATION_ID_BASE = 1000
+        private const val CONTENT_REQUEST_CODE_OFFSET = 10000
+        private const val ACTION_REQUEST_CODE_OFFSET = 20000
     }
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -34,16 +36,21 @@ class NotificationHelper(private val context: Context) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            period.hashCode() + CONTENT_REQUEST_CODE_OFFSET,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
 
         val takenIntent = Intent(context, ReminderActionReceiver::class.java).apply {
             action = ACTION_TAKEN
             putExtra(EXTRA_PERIOD, period)
         }
         val takenPendingIntent = PendingIntent.getBroadcast(
-            context, 
-            period.hashCode(), 
-            takenIntent, 
+            context,
+            period.hashCode() + ACTION_REQUEST_CODE_OFFSET,
+            takenIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 

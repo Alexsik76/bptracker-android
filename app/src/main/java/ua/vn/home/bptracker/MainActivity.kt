@@ -173,9 +173,8 @@ class MainActivity : ComponentActivity() {
 
                     val res = passkeyResult
                     if (res != null) {
-                        val message = stringResource(res)
                         LaunchedEffect(res) {
-                            snackbarHostState.showSnackbar(message)
+                            snackbarHostState.showSnackbar(res)
                             authVm.consumePasskeyResult()
                         }
                     }
@@ -420,6 +419,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 MeasurementHistoryScreen(
                     state = homeState,
                     onRefresh = { homeVm.refresh(isManual = true) },
+                    onBackfill = homeVm::backfillHistory,
                     onMeasurementClick = { m ->
                         selectedMeasurement = m
                         navController.navigate("measurement_detail")

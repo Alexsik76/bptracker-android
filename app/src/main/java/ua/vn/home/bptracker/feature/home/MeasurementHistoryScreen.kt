@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -24,9 +25,11 @@ import ua.vn.home.bptracker.ui.theme.*
 fun MeasurementHistoryScreen(
     state: ListUiState<HomePayload>,
     onRefresh: () -> Unit,
+    onBackfill: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit,
     onBack: () -> Unit,
 ) {
+    LaunchedEffect(Unit) { onBackfill() }
     Scaffold(
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
         topBar = {

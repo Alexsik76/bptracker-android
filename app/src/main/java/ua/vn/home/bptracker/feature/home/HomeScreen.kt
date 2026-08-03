@@ -176,14 +176,11 @@ fun RecentReadingsSection(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(vertical = MaterialTheme.spacing.small)) {
-                        val now = OffsetDateTime.now()
-                        val filtered = recent
-                            .filter { TimeUtils.parseToLocal(it.recordedAt).isAfter(now.minusHours(24)) }
-                            .take(4)
+                        val filtered = recent.take(5)
 
                         if (filtered.isEmpty()) {
                             Text(
-                                text = "No readings in the last 24h",
+                                text = stringResource(R.string.dashboard_no_measurements),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier

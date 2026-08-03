@@ -2,12 +2,14 @@ package ua.vn.home.bptracker.feature.login
 
 import android.app.Activity
 import android.net.Uri
+import android.util.Log
 import androidx.credentials.*
 import androidx.credentials.exceptions.CreateCredentialCancellationException
 import androidx.credentials.exceptions.CreateCredentialException
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
+import androidx.credentials.exceptions.publickeycredential.CreatePublicKeyCredentialDomException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import retrofit2.HttpException
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.MOCK_MODE
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -45,8 +48,8 @@ class AuthViewModel : ViewModel() {
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
-    private val _passkeyResult = MutableStateFlow<Int?>(null) // String res ID
-    val passkeyResult: StateFlow<Int?> = _passkeyResult.asStateFlow()
+    private val _passkeyResult = MutableStateFlow<String?>(null)
+    val passkeyResult: StateFlow<String?> = _passkeyResult.asStateFlow()
 
     // Single-use: a magic-link token must never be confirmed twice, even if the
     // activity is recreated and re-delivers the same intent.
@@ -154,13 +157,26 @@ class AuthViewModel : ViewModel() {
                 val registrationElement = Json.parseToJsonElement(credential.registrationResponseJson)
                 
                 sessionApi.registerVerify(registrationElement)
-                _passkeyResult.value = R.string.auth_passkey_registered
-            } catch (_: CreateCredentialCancellationException) {
+                _passkeyResult.value = activity.getString(R.string.auth_passkey_registered)
+            } catch (e: CreateCredentialCancellationException) {
+                Log.e("PasskeyReg", "Registration cancelled", e)
                 // User canceled, no feedback needed
-            } catch (_: CreateCredentialException) {
-                _passkeyResult.value = R.string.auth_passkey_failed
-            } catch (_: Exception) {
-                _passkeyResult.value = R.string.auth_passkey_failed
+            } catch (e: CreateCredentialException) {
+                val msg = "Passkey: ${e.type} | ${e.errorMessage}"
+                Log.e("PasskeyReg", "Credential creation failed: $msg", e)
+                if (e is CreatePublicKeyCredentialDomException) {
+                    Log.e("PasskeyReg", "DOM Error: ${e.domError}", e)
+                }
+                _passkeyResult.value = msg
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string() ?: ""
+                val msg = "HTTP ${e.code()} | $errorBody"
+                Log.e("PasskeyReg", "Network error during registration: $msg", e)
+                _passkeyResult.value = msg
+            } catch (e: Exception) {
+                val msg = "Registration failed: ${e.javaClass.simpleName} | ${e.message}"
+                Log.e("PasskeyReg", "Unexpected error during registration", e)
+                _passkeyResult.value = msg
             }
         }
     }

@@ -74,6 +74,7 @@ class ReminderScheduler(private val context: Context) {
                 pendingIntent
             )
         } else {
+            Log.w("ReminderScheduler", "Exact alarms not permitted, falling back to inexact scheduling for $period")
             alarmManager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,

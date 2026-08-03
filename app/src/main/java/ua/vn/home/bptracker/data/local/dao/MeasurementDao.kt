@@ -25,8 +25,8 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements WHERE syncState != '${SyncState.SYNCED}'")
     suspend fun getPending(): List<MeasurementEntity>
 
-    @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}'")
-    suspend fun deleteSynced()
+    @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND recordedAt >= :windowStart AND id NOT IN (:remoteIds)")
+    suspend fun deleteAbsentSynced(windowStart: String, remoteIds: List<String>)
 
     @Query("UPDATE measurements SET syncState = '${SyncState.PENDING_DELETE}' WHERE id = :id")
     suspend fun markPendingDelete(id: String)

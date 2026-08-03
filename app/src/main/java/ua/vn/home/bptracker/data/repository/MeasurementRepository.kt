@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
@@ -24,6 +26,7 @@ import java.util.UUID
 
 interface MeasurementRepository {
     suspend fun getMeasurements(days: Int): List<MeasurementDto>
+    suspend fun backfillHistory()
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
@@ -37,20 +40,29 @@ open class RealMeasurementRepository(
 ) : MeasurementRepository {
     
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val syncMutex = Mutex()
 
     override fun observeMeasurements(): Flow<List<MeasurementDto>> {
         return dao.getAllFlow().map { entities -> entities.map { it.toDto() } }
     }
+
+    override suspend fun backfillHistory() {
+        getMeasurements(3650)
+    }
+
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
-        return try {
-            val remote = api.getMeasurements(days)
-            db.withTransaction {
-                dao.deleteSynced()
-                dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+        return syncMutex.withLock {
+            try {
+                val remote = api.getMeasurements(days)
+                val windowStart = OffsetDateTime.now().minusDays(days.toLong()).toString()
+                db.withTransaction {
+                    dao.deleteAbsentSynced(windowStart, remote.map { it.id })
+                    dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+                }
+                dao.getAll().map { it.toDto() }
+            } catch (e: Exception) {
+                dao.getAll().map { it.toDto() }
             }
-            dao.getAll().map { it.toDto() }
-        } catch (e: Exception) {
-            dao.getAll().map { it.toDto() }
         }
     }
 
@@ -63,14 +75,16 @@ open class RealMeasurementRepository(
         
         // 2. Launch background sync
         repositoryScope.launch {
-            try {
-                val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
-                db.withTransaction {
-                    dao.deleteById(id)
-                    dao.insert(created.toEntity(SyncState.SYNCED))
+            syncMutex.withLock {
+                try {
+                    val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
+                    db.withTransaction {
+                        dao.deleteById(id)
+                        dao.insert(created.toEntity(SyncState.SYNCED))
+                    }
+                } catch (e: Exception) {
+                    Log.e("MeasRepo", "Failed to sync created measurement: ${e.message}")
                 }
-            } catch (e: Exception) {
-                Log.e("MeasRepo", "Failed to sync created measurement: ${e.message}")
             }
         }
         
@@ -146,6 +160,8 @@ class MockMeasurementRepository : MeasurementRepository {
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
         return _stream.value
     }
+
+    override suspend fun backfillHistory() {}
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
         val newReading = MeasurementDto(

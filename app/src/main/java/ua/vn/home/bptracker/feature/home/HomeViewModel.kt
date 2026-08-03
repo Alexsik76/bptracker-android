@@ -71,6 +71,12 @@ class HomeViewModel : ViewModel() {
         refresh(isManual = false)
     }
 
+    fun backfillHistory() {
+        viewModelScope.launch {
+            repository.backfillHistory()
+        }
+    }
+
     fun refresh(isManual: Boolean = false) {
         viewModelScope.launch {
             try {
