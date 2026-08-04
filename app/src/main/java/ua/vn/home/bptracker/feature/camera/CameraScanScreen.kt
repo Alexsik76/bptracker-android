@@ -41,6 +41,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.scale
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.ui.theme.spacing
 
 @Composable
 fun CameraScanScreen(
@@ -158,7 +159,8 @@ fun CameraScanScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 48.dp),
+                    .navigationBarsPadding()
+                    .padding(bottom = MaterialTheme.spacing.large),
                 verticalArrangement = Arrangement.Bottom,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

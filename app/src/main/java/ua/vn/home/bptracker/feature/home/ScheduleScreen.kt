@@ -176,11 +176,19 @@ fun ScheduleContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(MaterialTheme.spacing.screenPadding),
+        contentPadding = PaddingValues(
+            start = MaterialTheme.spacing.screenPadding,
+            top = MaterialTheme.spacing.screenPadding,
+            end = MaterialTheme.spacing.screenPadding,
+            bottom = MaterialTheme.spacing.large
+        ),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         items(schedule.slots) { slot ->
             SlotCard(slot, onClick = { onSlotClick(slot) })
+        }
+        item {
+            Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars))
         }
     }
 }

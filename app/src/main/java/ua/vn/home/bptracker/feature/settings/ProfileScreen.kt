@@ -115,6 +115,9 @@ fun ProfileScreen(
                         Text(stringResource(R.string.profile_save))
                     }
                 }
+
+                Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+                Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
             }
         }
     }

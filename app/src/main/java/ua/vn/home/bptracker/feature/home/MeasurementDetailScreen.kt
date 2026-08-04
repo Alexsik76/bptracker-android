@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.utils.TimeUtils
+import ua.vn.home.bptracker.ui.theme.spacing
 import ua.vn.home.bptracker.ui.components.*
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -142,6 +143,9 @@ fun MeasurementDetailScreen(
             if (state.deleting) {
                 CircularProgressIndicator()
             }
+
+            Spacer(modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars))
+            Spacer(modifier = Modifier.height(MaterialTheme.spacing.large))
         }
     }
 }
