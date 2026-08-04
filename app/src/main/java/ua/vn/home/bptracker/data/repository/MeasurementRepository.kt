@@ -24,6 +24,9 @@ import ua.vn.home.bptracker.data.local.entity.toEntity
 import java.time.OffsetDateTime
 import java.util.UUID
 
+const val SYNC_WINDOW_DAYS = 14      // routine dashboard refresh
+private const val BACKFILL_WINDOW_DAYS = 365 // backend maximum, see ROADMAP; temporary ceiling imposed by the backend contract and that date-range + pagination replaces it.
+
 interface MeasurementRepository {
     suspend fun getMeasurements(days: Int): List<MeasurementDto>
     suspend fun backfillHistory()
@@ -47,7 +50,7 @@ open class RealMeasurementRepository(
     }
 
     override suspend fun backfillHistory() {
-        getMeasurements(3650)
+        getMeasurements(BACKFILL_WINDOW_DAYS)
     }
 
     override suspend fun getMeasurements(days: Int): List<MeasurementDto> {

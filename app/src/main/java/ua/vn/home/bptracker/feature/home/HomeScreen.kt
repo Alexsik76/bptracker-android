@@ -189,7 +189,7 @@ fun RecentReadingsSection(
                             )
                         } else {
                             filtered.forEachIndexed { index, m ->
-                                MeasurementRow(m, endPadding = if (index == 0) 36.dp else 0.dp)
+                                MeasurementRow(m)
                                 if (index < (filtered.size - 1)) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(horizontal = MaterialTheme.spacing.cardPadding),
@@ -225,7 +225,7 @@ fun RecentReadingsSection(
 }
 
 @Composable
-fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 0.dp, onClick: (() -> Unit)? = null) {
+fun MeasurementRow(m: MeasurementDto, onClick: (() -> Unit)? = null) {
     val zone = BpZone.classify(m.sys, m.dia)
     val dt = TimeUtils.parseToLocal(m.recordedAt)
     val now = OffsetDateTime.now()
@@ -249,7 +249,7 @@ fun MeasurementRow(m: MeasurementDto, endPadding: androidx.compose.ui.unit.Dp = 
                 start = MaterialTheme.spacing.cardPadding,
                 top = MaterialTheme.spacing.listSpacing,
                 bottom = MaterialTheme.spacing.listSpacing,
-                end = MaterialTheme.spacing.cardPadding + endPadding
+                end = MaterialTheme.spacing.cardPadding
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {

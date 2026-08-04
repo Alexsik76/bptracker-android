@@ -14,6 +14,7 @@ import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.repository.SYNC_WINDOW_DAYS
 import java.time.OffsetDateTime
 
 data class HomePayload(
@@ -83,7 +84,7 @@ class HomeViewModel : ViewModel() {
                 if (isManual) _isRefreshing.value = true
                 _refreshError.value = null
                 repository.syncPending()
-                repository.getMeasurements(days = 14)
+                repository.getMeasurements(days = SYNC_WINDOW_DAYS)
             } catch (e: Exception) {
                 _refreshError.value = e.message ?: "Unknown error"
             } finally {
@@ -115,7 +116,7 @@ class HomeViewModel : ViewModel() {
                     HomePayload(
                         latest = latest,
                         zone = BpZone.classify(latest.sys, latest.dia),
-                        recent = allList.take(50),
+                        recent = allList,
                         avgSys = 0, avgDia = 0, avgPulse = 0, inRangePercent = 0, sysChange = 0, diaChange = 0
                     )
                 )
@@ -147,7 +148,7 @@ class HomeViewModel : ViewModel() {
                 HomePayload(
                     latest = latest,
                     zone = zone,
-                    recent = allList.take(50),
+                    recent = allList,
                     avgSys = avgSys,
                     avgDia = avgDia,
                     avgPulse = avgPulse,
