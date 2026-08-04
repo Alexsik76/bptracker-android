@@ -136,7 +136,8 @@
     <string name="settings_ocr_improve">Improve OCR model</string>
     <string name="settings_ocr_improve_hint">Send monitor photos anonymously</string>
     <string name="settings_reminders">Medication reminders</string>
-    <string name="settings_reminders_no_template">Please set up a schedule in the web app first.</string>
+    <string name="settings_reminders_no_template">Reminder times are not set up yet — open the reminder settings to configure them; check your connection if you have already set them up.</string>
+    <string name="reminders_not_scheduled_warning">Reminders are enabled but could not be scheduled — open the reminder settings while online</string>
     <string name="settings_group_help">Help</string>
     <string name="settings_bp_scale">ESC BP Scale →</string>
     <string name="settings_export_csv">Export CSV to email</string>

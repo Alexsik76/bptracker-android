@@ -18,6 +18,7 @@ class SettingsStore(private val context: Context) {
     private val langKey = stringPreferencesKey("app_lang")
     private val ocrImproveKey = booleanPreferencesKey("ocr_improvement")
     private val remindersKey = booleanPreferencesKey("reminders_enabled")
+    private val reminderScheduleFailedKey = booleanPreferencesKey("reminder_schedule_failed")
 
     val theme: Flow<AppTheme> = context.settingsDataStore.data.map { prefs ->
         try {
@@ -43,6 +44,10 @@ class SettingsStore(private val context: Context) {
         prefs[remindersKey] ?: false
     }
 
+    val reminderScheduleFailed: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[reminderScheduleFailedKey] ?: false
+    }
+
     suspend fun setTheme(theme: AppTheme) {
         context.settingsDataStore.edit { it[themeKey] = theme.name }
     }
@@ -57,5 +62,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setRemindersEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[remindersKey] = enabled }
+    }
+
+    suspend fun setReminderScheduleFailed(failed: Boolean) {
+        context.settingsDataStore.edit { it[reminderScheduleFailedKey] = failed }
     }
 }

@@ -2,6 +2,7 @@ package ua.vn.home.bptracker
 
 import android.Manifest
 import android.content.Intent
+import android.util.Log
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -77,6 +78,7 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             if (ServiceLocator.settingsStore.remindersEnabled.first()) {
+                Log.i("ReminderDiag", "call=MainActivity.onCreate thread=${Thread.currentThread().name}")
                 ServiceLocator.reminderScheduler.rescheduleAll()
             }
         }
@@ -358,6 +360,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 val settingsVm: SettingsViewModel = viewModel()
                 val settingsState by settingsVm.state.collectAsState()
                 val exportOperation by settingsVm.exportOperation.collectAsState()
+                val reminderScheduleFailed by settingsVm.reminderScheduleFailed.collectAsState()
                 val exportPeriod by settingsVm.exportPeriod.collectAsState()
                 var showExportSheet by remember { mutableStateOf(false) }
                 val activity = LocalActivity.current
@@ -365,6 +368,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 SettingsScreen(
                     state = settingsState,
                     exportOperation = exportOperation,
+                    reminderScheduleFailed = reminderScheduleFailed,
                     onThemeSelect = settingsVm::setTheme,
                     onLanguageSelect = settingsVm::setLanguage,
                     onOcrImprovementToggle = settingsVm::setOcrImprovement,

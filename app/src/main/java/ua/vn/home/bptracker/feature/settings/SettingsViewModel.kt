@@ -2,6 +2,7 @@ package ua.vn.home.bptracker.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.BuildConfig
@@ -33,6 +34,9 @@ class SettingsViewModel : ViewModel() {
     private val _exportPeriod = MutableStateFlow(ExportPeriod.THREE)
     val exportPeriod: StateFlow<ExportPeriod> = _exportPeriod.asStateFlow()
 
+    val reminderScheduleFailed: StateFlow<Boolean> = settingsStore.reminderScheduleFailed
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val state: StateFlow<SettingsState> = combine(
         settingsStore.theme,
         settingsStore.language,
@@ -56,7 +60,7 @@ class SettingsViewModel : ViewModel() {
 
     fun refresh() {
         viewModelScope.launch {
-            val config = ServiceLocator.reminderConfigRepository.getCachedConfig()
+            val config = ServiceLocator.reminderConfigRepository.resolveConfig()
             _templateState.value = (if (config != null) "active" else null) to state.value.remindersActive
         }
     }
@@ -78,6 +82,7 @@ class SettingsViewModel : ViewModel() {
             settingsStore.setRemindersEnabled(enabled)
             if (enabled) {
                 ServiceLocator.notificationHelper.createNotificationChannel()
+                Log.i("ReminderDiag", "call=SettingsViewModel.setRemindersEnabled thread=${Thread.currentThread().name}")
                 ServiceLocator.reminderScheduler.rescheduleAll()
             } else {
                 ServiceLocator.reminderScheduler.cancelAllReminders()

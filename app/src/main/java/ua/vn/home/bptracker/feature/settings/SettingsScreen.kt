@@ -38,6 +38,7 @@ import ua.vn.home.bptracker.ui.theme.*
 fun SettingsScreen(
     state: SettingsState,
     exportOperation: ExportResult?,
+    reminderScheduleFailed: Boolean,
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
@@ -164,42 +165,53 @@ fun SettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = MaterialTheme.spacing.medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.bodyLarge)
-                        if (state.remindersActive == null) {
-                            Text(
-                                stringResource(R.string.settings_reminders_no_template),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = state.remindersActive == true,
-                        onCheckedChange = { enabled ->
-                            if (enabled && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)) {
-                                val status = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.POST_NOTIFICATIONS,
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = MaterialTheme.spacing.medium),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_reminders), style = MaterialTheme.typography.bodyLarge)
+                            if (state.templateId == null) {
+                                Text(
+                                    stringResource(R.string.settings_reminders_no_template),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                                if (status != PackageManager.PERMISSION_GRANTED) {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                } else {
-                                    onRemindersToggle(true)
-                                }
-                            } else {
-                                onRemindersToggle(enabled)
                             }
-                        },
-                        enabled = state.templateId != null,
-                    )
+                        }
+                        Switch(
+                            checked = state.remindersActive == true,
+                            onCheckedChange = { enabled ->
+                                if (enabled && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)) {
+                                    val status = ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.POST_NOTIFICATIONS,
+                                    )
+                                    if (status != PackageManager.PERMISSION_GRANTED) {
+                                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    } else {
+                                        onRemindersToggle(true)
+                                    }
+                                } else {
+                                    onRemindersToggle(enabled)
+                                }
+                            },
+                            enabled = state.templateId != null,
+                        )
+                    }
+
+                    if (reminderScheduleFailed && state.remindersActive == true) {
+                        Text(
+                            text = stringResource(R.string.reminders_not_scheduled_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = MaterialTheme.spacing.medium)
+                        )
+                    }
                 }
             }
 

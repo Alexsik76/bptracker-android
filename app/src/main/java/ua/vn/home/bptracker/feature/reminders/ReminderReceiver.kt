@@ -3,6 +3,7 @@ package ua.vn.home.bptracker.feature.reminders
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import ua.vn.home.bptracker.R
@@ -12,6 +13,10 @@ import java.time.LocalDate
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        val periodFromIntent = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
+        Log.i("ReminderDiag", "receiver fired action=$action extra_period=$periodFromIntent")
+
         val pendingResult = goAsync()
         
         CoroutineScope(Dispatchers.IO).launch {
@@ -22,16 +27,24 @@ class ReminderReceiver : BroadcastReceiver() {
                 if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
                     shouldRescheduleInFinally = false
                     if (enabled) {
+                        Log.i("ReminderDiag", "call=ReminderReceiver.boot thread=${Thread.currentThread().name}")
                         ServiceLocator.reminderScheduler.rescheduleAll()
+                    } else {
+                        Log.i("ReminderDiag", "early exit ReminderReceiver.boot: reminders disabled")
                     }
                     return@launch
                 }
 
                 if (!enabled) {
+                    Log.i("ReminderDiag", "early exit ReminderReceiver: reminders disabled")
                     return@launch
                 }
 
-                val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD) ?: return@launch
+                val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
+                if (period == null) {
+                    Log.i("ReminderDiag", "early exit ReminderReceiver: period extra missing")
+                    return@launch
+                }
 
                 val today = LocalDate.now().toString()
                 val schedule = ServiceLocator.todayScheduleUseCase.getTodayOnce(today)
@@ -53,11 +66,15 @@ class ReminderReceiver : BroadcastReceiver() {
                     }.toList()
                     ServiceLocator.notificationHelper.createNotificationChannel()
                     ServiceLocator.notificationHelper.showReminderNotification(period, medNames)
+                    Log.i("ReminderDiag", "notification posted for period=$period")
+                } else {
+                    Log.i("ReminderDiag", "no notification for period=$period: slot=${if (slot == null) "MISSING" else if (slot.taken) "TAKEN" else "EMPTY"}")
                 }
             } finally {
                 if (shouldRescheduleInFinally) {
                     try {
                         if (ServiceLocator.settingsStore.remindersEnabled.first()) {
+                            Log.i("ReminderDiag", "call=ReminderReceiver.finally thread=${Thread.currentThread().name}")
                             ServiceLocator.reminderScheduler.rescheduleAll()
                         }
                     } catch (_: Exception) {

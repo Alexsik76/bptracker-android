@@ -11,17 +11,49 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import java.util.concurrent.atomic.AtomicInteger
 
 class ReminderScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val invocationCounter = AtomicInteger(0)
 
     suspend fun rescheduleAll() {
-        val config = ServiceLocator.reminderConfigRepository.getCachedConfig() ?: return
+        val count = invocationCounter.incrementAndGet()
+        val threadName = Thread.currentThread().name
+        Log.i("ReminderDiag", "rescheduleAll entry [count=$count] thread=$threadName")
+
+        val repository = ServiceLocator.reminderConfigRepository
+        val settingsStore = ServiceLocator.settingsStore
+
+        val cached = repository.getCachedConfig()
+        val config = repository.resolveConfig()
+        
+        val source = when {
+            cached != null -> "cache"
+            config != null -> "network"
+            else -> "none"
+        }
+
+        Log.i("ReminderDiag", "config resolved [count=$count] source=$source: ${if (config == null) "NULL" else "M=${config.morningTime}, D=${config.dayTime}, E=${config.eveningTime}"}")
+
+        if (config == null) {
+            Log.e("ReminderDiag", "rescheduleAll failure [count=$count]: no alarms will be scheduled")
+            settingsStore.setReminderScheduleFailed(true)
+            return
+        }
+
+        settingsStore.setReminderScheduleFailed(false)
+
+        Log.i("ReminderDiag", "rescheduleAll before cancelAll [count=$count]")
         cancelAllReminders()
+        Log.i("ReminderDiag", "rescheduleAll after cancelAll [count=$count]")
+
         scheduleAlarm("Morning", config.morningTime)
         scheduleAlarm("Day", config.dayTime)
         scheduleAlarm("Evening", config.eveningTime)
+
+        Log.i("ReminderDiag", "rescheduleAll exit [count=$count]")
     }
 
     fun cancelAllReminders() {
@@ -67,21 +99,22 @@ class ReminderScheduler(private val context: Context) {
 
         val triggerAtMillis = alarmTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        if (canScheduleExactAlarms()) {
+        val isExact = canScheduleExactAlarms()
+        if (isExact) {
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
                 pendingIntent
             )
         } else {
-            Log.w("ReminderScheduler", "Exact alarms not permitted, falling back to inexact scheduling for $period")
+            Log.w("ReminderDiag", "Exact alarms not permitted, falling back to inexact scheduling for $period")
             alarmManager.setAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerAtMillis,
                 pendingIntent
             )
         }
-        Log.d("ReminderScheduler", "Scheduled alarm for $period at $alarmTime")
+        Log.i("ReminderDiag", "Scheduled alarm for $period at $alarmTime (triggerAtMillis=$triggerAtMillis, exact=$isExact)")
     }
 
     private fun canScheduleExactAlarms(): Boolean {

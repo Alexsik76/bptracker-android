@@ -15,6 +15,7 @@ interface ReminderConfigRepository {
     suspend fun getConfig(): ReminderConfigDto?
     suspend fun saveConfig(config: ReminderConfigDto): ReminderConfigDto
     suspend fun getCachedConfig(): ReminderConfigDto?
+    suspend fun resolveConfig(): ReminderConfigDto?
     fun observeConfig(): Flow<ReminderConfigDto?>
 }
 
@@ -44,6 +45,16 @@ class RealReminderConfigRepository(
         return dao.getConfig()?.toDto()
     }
 
+    override suspend fun resolveConfig(): ReminderConfigDto? {
+        val cached = getCachedConfig()
+        if (cached != null) return cached
+        return try {
+            getConfig()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override fun observeConfig(): Flow<ReminderConfigDto?> {
         return dao.observeConfig().map { it?.toDto() }
     }
@@ -69,6 +80,8 @@ class MockReminderConfigRepository : ReminderConfigRepository {
     }
 
     override suspend fun getCachedConfig(): ReminderConfigDto? = mockConfig
+
+    override suspend fun resolveConfig(): ReminderConfigDto? = mockConfig
 
     override fun observeConfig(): Flow<ReminderConfigDto?> = _stream.asStateFlow()
 }

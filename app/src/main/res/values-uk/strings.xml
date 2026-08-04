@@ -136,7 +136,8 @@
     <string name="settings_ocr_improve">Покращення моделі OCR</string>
     <string name="settings_ocr_improve_hint">Надсилати фото дисплея анонімно</string>
     <string name="settings_reminders">Нагадування про прийом ліків</string>
-    <string name="settings_reminders_no_template">Будь ласка, спочатку налаштуйте розклад у веб-додатку.</string>
+    <string name="settings_reminders_no_template">Час нагадувань ще не встановлено — відкрийте налаштування нагадувань, щоб налаштувати їх; перевірте підключення, якщо ви їх уже встановили.</string>
+    <string name="reminders_not_scheduled_warning">Нагадування увімкнено, але не вдалося їх запланувати — відкрийте налаштування нагадувань, перебуваючи в мережі</string>
     <string name="settings_group_help">Довідка</string>
     <string name="settings_bp_scale">Шкала тиску ESC →</string>
     <string name="settings_group_account">Акаунт</string>

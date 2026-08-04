@@ -2,6 +2,7 @@ package ua.vn.home.bptracker.feature.reminders
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -102,6 +103,7 @@ class ReminderConfigViewModel : ViewModel() {
                     )
                 )
                 if (ServiceLocator.settingsStore.remindersEnabled.first()) {
+                    Log.i("ReminderDiag", "call=ReminderConfigViewModel thread=${Thread.currentThread().name}")
                     ServiceLocator.reminderScheduler.rescheduleAll()
                 }
                 _state.value = _state.value.copy(saveOperation = OperationUiState.Success)

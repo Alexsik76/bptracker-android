@@ -1,8 +1,10 @@
 package ua.vn.home.bptracker
 
 import android.app.Application
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.feature.reminders.NotificationHelper
@@ -21,7 +23,10 @@ class BpTrackerApp : Application() {
             ServiceLocator.ocrEngine.warmUp()
             
             // Schedule reminders
-            ReminderScheduler(this@BpTrackerApp).rescheduleAll()
+            if (ServiceLocator.settingsStore.remindersEnabled.first()) {
+                Log.i("ReminderDiag", "call=BpTrackerApp.onCreate thread=${Thread.currentThread().name}")
+                ServiceLocator.reminderScheduler.rescheduleAll()
+            }
         }
     }
 }
