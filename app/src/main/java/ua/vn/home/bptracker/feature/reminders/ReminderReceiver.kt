@@ -53,6 +53,8 @@ class ReminderReceiver : BroadcastReceiver() {
                 if (config == null) {
                     Log.e("ReminderDiag", "ReminderReceiver failure: could not resolve config")
                     ServiceLocator.settingsStore.setReminderScheduleFailed(true)
+                    ServiceLocator.reminderScheduler.scheduleAlarmAt(period, LocalDateTime.now().plusHours(1))
+                    Log.i("ReminderDiag", "ReminderReceiver: scheduled retry for period=$period in 1 hour")
                     return@launch
                 }
 
@@ -106,18 +108,20 @@ class ReminderReceiver : BroadcastReceiver() {
                     ServiceLocator.reminderScheduler.scheduleAlarmAt(period, baseTime.plusDays(1))
                     Log.i("ReminderDiag", "period=$period repeat skipped (config limit), scheduled for tomorrow")
                 } else {
-                    val interval = durationMinutes.toLong() / maxReminders
                     var nextMoment: LocalDateTime? = null
                     
                     for (k in 1..maxReminders) {
-                        val candidate = baseTime.plusMinutes(k * interval)
+                        val candidate = baseTime.plusMinutes((durationMinutes.toLong() * k) / maxReminders)
                         if (candidate.isAfter(now.plusSeconds(5))) {
                             nextMoment = candidate
                             break
                         }
                     }
 
-                    val currentK = (ChronoUnit.MINUTES.between(baseTime, now).toDouble() / interval).roundToInt()
+                    val durationPassed = ChronoUnit.MINUTES.between(baseTime, now)
+                    val currentK = if (durationPassed <= 0) 0 else {
+                        ((durationPassed.toDouble() * maxReminders) / durationMinutes).roundToInt()
+                    }
                     val currentLabel = if (currentK <= 0) "primary notification" else "reminder $currentK"
 
                     if (nextMoment != null) {

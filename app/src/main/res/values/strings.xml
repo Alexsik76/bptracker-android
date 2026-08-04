@@ -74,9 +74,9 @@
     <string name="schedule_edit_empty">No active medication template found. Please set up your plan in the web application.</string>
     <string name="schedule_edit_periods">Daily Periods</string>
     <string name="schedule_edit_general">General Settings</string>
-    <string name="schedule_edit_duration">Confirmation Window</string>
+    <string name="schedule_edit_duration">Remind for (minutes)</string>
     <string name="schedule_edit_minutes">minutes</string>
-    <string name="schedule_edit_max_reminders">Reminder limit</string>
+    <string name="schedule_edit_max_reminders">Number of repeat reminders</string>
     <string name="schedule_edit_per_period">per period</string>
 
     <!-- Reminder Config -->

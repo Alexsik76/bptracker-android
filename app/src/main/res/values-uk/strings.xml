@@ -74,9 +74,9 @@
     <string name="schedule_edit_empty">Не знайдено активного шаблону ліків. Будь ласка, налаштуйте свій план у веб-додатку.</string>
     <string name="schedule_edit_periods">Періоди прийому</string>
     <string name="schedule_edit_general">Загальні налаштування</string>
-    <string name="schedule_edit_duration">Вікно підтвердження</string>
+    <string name="schedule_edit_duration">Нагадувати протягом (хвилин)</string>
     <string name="schedule_edit_minutes">хвилин</string>
-    <string name="schedule_edit_max_reminders">Ліміт нагадувань</string>
+    <string name="schedule_edit_max_reminders">Кількість повторних нагадувань</string>
     <string name="schedule_edit_per_period">на період</string>
 
     <!-- Reminder Config -->
