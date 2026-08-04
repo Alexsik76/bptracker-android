@@ -82,6 +82,10 @@ class ReminderScheduler(private val context: Context) {
             alarmTime = alarmTime.plusDays(1)
         }
 
+        scheduleAlarmAt(period, alarmTime)
+    }
+
+    fun scheduleAlarmAt(period: String, at: LocalDateTime) {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra(NotificationHelper.EXTRA_PERIOD, period)
         }
@@ -92,7 +96,7 @@ class ReminderScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val triggerAtMillis = alarmTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val triggerAtMillis = at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
         val isExact = canScheduleExactAlarms()
         if (isExact) {
@@ -109,7 +113,7 @@ class ReminderScheduler(private val context: Context) {
                 pendingIntent
             )
         }
-        Log.i("ReminderDiag", "Scheduled alarm for $period at $alarmTime (triggerAtMillis=$triggerAtMillis, exact=$isExact)")
+        Log.i("ReminderDiag", "Scheduled alarm for $period at $at (triggerAtMillis=$triggerAtMillis, exact=$isExact)")
     }
 
     private fun canScheduleExactAlarms(): Boolean {

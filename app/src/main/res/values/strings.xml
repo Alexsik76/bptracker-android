@@ -86,6 +86,10 @@
     <string name="rem_config_evening">Evening reminders start</string>
     <string name="rem_config_max">Maximum reminders per slot</string>
     <string name="rem_config_duration">Confirmation window (minutes)</string>
+    <string name="rem_config_max_label">Number of repeat reminders</string>
+    <string name="rem_config_max_helper">How many times to remind if you haven\'t confirmed intake</string>
+    <string name="rem_config_duration_label">Remind for (minutes)</string>
+    <string name="rem_config_duration_helper">How long after the scheduled time to remind about missed meds</string>
     <string name="rem_config_save_success">Settings saved</string>
 
     <!-- Periods -->

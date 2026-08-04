@@ -86,6 +86,10 @@
     <string name="rem_config_evening">Початок вечірніх нагадувань</string>
     <string name="rem_config_max">Макс. нагадувань на слот</string>
     <string name="rem_config_duration">Вікно підтвердження (хвилин)</string>
+    <string name="rem_config_max_label">Кількість повторних нагадувань</string>
+    <string name="rem_config_max_helper">Скільки разів нагадати, якщо ви не підтвердили прийом</string>
+    <string name="rem_config_duration_label">Нагадувати протягом (хвилин)</string>
+    <string name="rem_config_duration_helper">Скільки часу після призначеного нагадувати про неприйняті ліки</string>
     <string name="rem_config_save_success">Налаштування збережено</string>
 
     <!-- Periods -->

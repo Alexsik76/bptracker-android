@@ -112,23 +112,39 @@ fun ReminderConfigScreen(
                 onClick = { activePickerSlot = "evening" }
             )
 
-            OutlinedTextField(
-                value = state.maxReminders,
-                onValueChange = onMaxRemindersChange,
-                label = { Text(stringResource(R.string.rem_config_max)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium
-            )
+            Column {
+                OutlinedTextField(
+                    value = state.maxReminders,
+                    onValueChange = onMaxRemindersChange,
+                    label = { Text(stringResource(R.string.rem_config_max_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
+                Text(
+                    text = stringResource(R.string.rem_config_max_helper),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
+            }
 
-            OutlinedTextField(
-                value = state.durationMinutes,
-                onValueChange = onDurationChange,
-                label = { Text(stringResource(R.string.rem_config_duration)) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium
-            )
+            Column {
+                OutlinedTextField(
+                    value = state.durationMinutes,
+                    onValueChange = onDurationChange,
+                    label = { Text(stringResource(R.string.rem_config_duration_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
+                Text(
+                    text = stringResource(R.string.rem_config_duration_helper),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
+            }
 
             if (state.saveOperation is OperationUiState.Error) {
                 Text(
