@@ -25,7 +25,9 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 const val SYNC_WINDOW_DAYS = 14      // routine dashboard refresh
-private const val BACKFILL_WINDOW_DAYS = 365 // backend maximum, see ROADMAP; temporary ceiling imposed by the backend contract and that date-range + pagination replaces it.
+// Backend caps `days` at 365. Temporary ceiling — to be replaced by date-range
+// filtering with pagination (see ROADMAP).
+private const val BACKFILL_WINDOW_DAYS = 365
 
 interface MeasurementRepository {
     suspend fun getMeasurements(days: Int): List<MeasurementDto>

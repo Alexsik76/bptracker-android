@@ -33,3 +33,8 @@ This document lists deferred client-side tasks for the BP Tracker Android applic
 **What**: Replace verbose helper lines beneath repeat settings on the reminder configuration screen with "?" icons that open help text.
 **Why deferred**: Current layout is functional; pending real-world feedback on verbosity.
 **Trigger**: A decision after using the current layout on a device.
+
+## 7. Measurement retrieval — date range and pagination (Cross-repo: Client + Backend)
+**What**: Replace the `days` query parameter on GET /measurements with explicit date_from / date_to filtering plus pagination, and add period presets in the history screen (week, month, three months, since last prescription, all).
+**Why deferred**: The backend caps `days` at 365 (Query(ge=1, le=365)), so the client currently backfills with days=365. This works today — the dataset spans April 2026 onward, roughly 700 records per year — but breaks once history exceeds one year, and returning everything in a single unpaginated response does not scale.
+**Trigger**: Before the dataset approaches one year of history, or the next time the history screen is worked on. Requires a backend change first, then the client.
