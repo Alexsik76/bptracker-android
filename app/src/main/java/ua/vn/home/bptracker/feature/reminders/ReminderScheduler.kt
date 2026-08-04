@@ -26,14 +26,9 @@ class ReminderScheduler(private val context: Context) {
         val repository = ServiceLocator.reminderConfigRepository
         val settingsStore = ServiceLocator.settingsStore
 
-        val cached = repository.getCachedConfig()
-        val config = repository.resolveConfig()
-        
-        val source = when {
-            cached != null -> "cache"
-            config != null -> "network"
-            else -> "none"
-        }
+        val resolved = repository.resolveConfig()
+        val config = resolved.config
+        val source = resolved.source.name.lowercase()
 
         Log.i("ReminderDiag", "config resolved [count=$count] source=$source: ${if (config == null) "NULL" else "M=${config.morningTime}, D=${config.dayTime}, E=${config.eveningTime}"}")
 

@@ -60,8 +60,8 @@ class SettingsViewModel : ViewModel() {
 
     fun refresh() {
         viewModelScope.launch {
-            val config = ServiceLocator.reminderConfigRepository.resolveConfig()
-            _templateState.value = (if (config != null) "active" else null) to state.value.remindersActive
+            val resolved = ServiceLocator.reminderConfigRepository.resolveConfig()
+            _templateState.value = (if (resolved.config != null) "active" else null) to state.value.remindersActive
         }
     }
 

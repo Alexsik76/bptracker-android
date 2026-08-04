@@ -43,7 +43,7 @@ class TodayScheduleUseCase(
             active.flatMap { prescriptionRepository.getItems(it.id).first() }
         }
         val intakes = intakeReportRepository.observeForDate(date).first()
-        val config = reminderConfigRepository.getCachedConfig()
+        val config = reminderConfigRepository.resolveConfig().config
         return buildTodaySchedule(date, config, activeItems, intakes)
     }
 
