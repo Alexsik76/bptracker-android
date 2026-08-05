@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -17,8 +19,9 @@ class ReminderScheduler(private val context: Context) {
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val invocationCounter = AtomicInteger(0)
+    private val mutex = Mutex()
 
-    suspend fun rescheduleAll() {
+    suspend fun rescheduleAll() = mutex.withLock {
         val count = invocationCounter.incrementAndGet()
         val threadName = Thread.currentThread().name
         Log.i("ReminderDiag", "rescheduleAll entry [count=$count] thread=$threadName")
@@ -35,7 +38,7 @@ class ReminderScheduler(private val context: Context) {
         if (config == null) {
             Log.e("ReminderDiag", "rescheduleAll failure [count=$count]: no alarms will be scheduled")
             settingsStore.setReminderScheduleFailed(true)
-            return
+            return@withLock
         }
 
         settingsStore.setReminderScheduleFailed(false)
