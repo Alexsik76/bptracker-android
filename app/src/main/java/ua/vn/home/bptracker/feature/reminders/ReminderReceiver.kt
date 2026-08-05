@@ -27,12 +27,12 @@ class ReminderReceiver : BroadcastReceiver() {
             try {
                 val enabled = ServiceLocator.settingsStore.remindersEnabled.first()
                 
-                if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+                if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
                     if (enabled) {
-                        Log.i("ReminderDiag", "call=ReminderReceiver.boot thread=${Thread.currentThread().name}")
+                        Log.i("ReminderDiag", "call=ReminderReceiver.restore action=$action thread=${Thread.currentThread().name}")
                         ServiceLocator.reminderScheduler.rescheduleAll()
                     } else {
-                        Log.i("ReminderDiag", "early exit ReminderReceiver.boot: reminders disabled")
+                        Log.i("ReminderDiag", "early exit ReminderReceiver.restore: reminders disabled for action=$action")
                     }
                     return@launch
                 }
