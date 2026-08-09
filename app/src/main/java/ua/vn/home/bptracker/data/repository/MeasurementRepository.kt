@@ -35,7 +35,7 @@ data class MeasurementPage(
 interface MeasurementRepository {
     suspend fun syncRecent(): List<MeasurementDto>
     suspend fun loadPage(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?, offset: Int): MeasurementPage
-    suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?)
+    suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?): Int
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
@@ -99,11 +99,12 @@ open class RealMeasurementRepository(
         }
     }
 
-    override suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?) {
-        syncMutex.withLock {
+    override suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?): Int {
+        return syncMutex.withLock {
             val remoteIds = mutableListOf<String>()
             var offset = 0
             var total = Int.MAX_VALUE
+            var collectedCount = 0
             
             while (offset < total) {
                 val page = api.getMeasurements(
@@ -115,6 +116,7 @@ open class RealMeasurementRepository(
                 
                 total = page.total
                 remoteIds.addAll(page.items.map { it.id })
+                collectedCount += page.items.size
                 
                 db.withTransaction {
                     dao.insertAll(page.items.map { it.toEntity(SyncState.SYNCED) })
@@ -123,10 +125,16 @@ open class RealMeasurementRepository(
                 if (page.items.isEmpty()) break
                 offset += page.items.size
             }
+
+            if (collectedCount != total) {
+                Log.w("MeasRepo", "reconcile incomplete: collected=$collectedCount total=$total, skipping delete")
+                return@withLock total
+            }
             
             db.withTransaction {
                 dao.deleteAbsentSyncedInRange(dateFrom?.toString(), dateTo?.toString(), remoteIds)
             }
+            total
         }
     }
 
@@ -233,8 +241,9 @@ class MockMeasurementRepository : MeasurementRepository {
         return MeasurementPage(mockList.toList(), mockList.size)
     }
 
-    override suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?) {
+    override suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?): Int {
         // Mock reconciliation does nothing extra
+        return mockList.size
     }
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {

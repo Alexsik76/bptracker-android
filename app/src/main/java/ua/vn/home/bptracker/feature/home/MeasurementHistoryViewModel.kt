@@ -111,8 +111,8 @@ class MeasurementHistoryViewModel : ViewModel() {
                 _error.value = null
                 val prescriptionStart = _prescriptionStartDate.value
                 val dateFrom = _period.value.getDateFrom(prescriptionStart)
-                repository.reconcilePeriod(dateFrom, null)
-                _totalCount.value = 0 
+                val total = repository.reconcilePeriod(dateFrom, null)
+                _totalCount.value = total
             } catch (e: Exception) {
                 _error.value = e.message ?: "Reconciliation failed"
             } finally {
