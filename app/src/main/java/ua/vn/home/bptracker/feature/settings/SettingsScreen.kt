@@ -53,7 +53,6 @@ fun SettingsScreen(
     onConsumeExportResult: () -> Unit,
     onHelpClick: () -> Unit,
     onBack: () -> Unit,
-    onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -64,10 +63,6 @@ fun SettingsScreen(
         if (isGranted) {
             onRemindersToggle(true)
         }
-    }
-
-    LaunchedEffect(Unit) {
-        onRefresh()
     }
 
     LaunchedEffect(exportOperation) {

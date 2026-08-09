@@ -25,6 +25,8 @@ class BpTrackerApp : Application() {
             // Schedule reminders
             if (ServiceLocator.settingsStore.remindersEnabled.first()) {
                 Log.i("ReminderDiag", "call=BpTrackerApp.onCreate thread=${Thread.currentThread().name}")
+                Log.i("ReminderDiag", "startup health check (pre-repair)")
+                ServiceLocator.reminderScheduler.checkHealth()
                 ServiceLocator.reminderScheduler.rescheduleAll()
             }
         }

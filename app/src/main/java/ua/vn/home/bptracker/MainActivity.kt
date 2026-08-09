@@ -381,7 +381,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onConsumeExportResult = settingsVm::consumeExportResult,
                     onHelpClick = { navController.navigate("bp_scale") },
                     onBack = { navController.popBackStack() },
-                    onRefresh = settingsVm::refresh
                 )
 
                 if (showExportSheet) {
