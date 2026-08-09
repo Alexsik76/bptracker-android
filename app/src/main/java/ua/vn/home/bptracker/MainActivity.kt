@@ -357,6 +357,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 val settingsState by settingsVm.state.collectAsState()
                 val exportOperation by settingsVm.exportOperation.collectAsState()
                 val reminderScheduleFailed by settingsVm.reminderScheduleFailed.collectAsState()
+                val reminderHealth by settingsVm.reminderHealth.collectAsState()
                 val exportPeriod by settingsVm.exportPeriod.collectAsState()
                 var showExportSheet by remember { mutableStateOf(false) }
                 val activity = LocalActivity.current
@@ -365,10 +366,12 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     state = settingsState,
                     exportOperation = exportOperation,
                     reminderScheduleFailed = reminderScheduleFailed,
+                    reminderHealth = reminderHealth,
                     onThemeSelect = settingsVm::setTheme,
                     onLanguageSelect = settingsVm::setLanguage,
                     onOcrImprovementToggle = settingsVm::setOcrImprovement,
                     onRemindersToggle = settingsVm::setRemindersEnabled,
+                    onRepairReminders = settingsVm::repairReminders,
                     onLogout = onLogout,
                     onProfileClick = { navController.navigate("profile") },
                     onAddPasskey = {

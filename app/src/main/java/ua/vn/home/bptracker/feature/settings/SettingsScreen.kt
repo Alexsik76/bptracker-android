@@ -28,6 +28,7 @@ import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.data.repository.ExportResult
+import ua.vn.home.bptracker.feature.reminders.ReminderHealth
 import ua.vn.home.bptracker.ui.components.ListGroupCard
 import ua.vn.home.bptracker.ui.components.SegmentedControl
 import ua.vn.home.bptracker.ui.components.SettingRow
@@ -39,10 +40,12 @@ fun SettingsScreen(
     state: SettingsState,
     exportOperation: ExportResult?,
     reminderScheduleFailed: Boolean,
+    reminderHealth: ReminderHealth?,
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
+    onRepairReminders: () -> Unit,
     onLogout: () -> Unit,
     onProfileClick: () -> Unit,
     onAddPasskey: () -> Unit,
@@ -211,6 +214,30 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(bottom = MaterialTheme.spacing.medium)
                         )
+                    }
+
+                    if (reminderHealth?.isHealthy == false && state.remindersActive == true) {
+                        Row(
+                            modifier = Modifier.padding(bottom = MaterialTheme.spacing.medium),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.reminders_health_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(
+                                onClick = onRepairReminders,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.reminders_health_action),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                        }
                     }
                 }
             }

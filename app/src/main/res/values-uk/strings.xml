@@ -149,6 +149,8 @@
     <string name="settings_reminders">Нагадування про прийом ліків</string>
     <string name="settings_reminders_no_template">Розклад нагадувань ще не налаштовано — відкрийте налаштування нагадувань, щоб налаштувати їх; перевірте підключення, якщо ви їх уже встановили.</string>
     <string name="reminders_not_scheduled_warning">Нагадування увімкнено, але не вдалося їх запланувати — відкрийте налаштування нагадувань, перебуваючи в мережі</string>
+    <string name="reminders_health_warning">Нагадування можуть не спрацювати — натисніть для відновлення</string>
+    <string name="reminders_health_action">Відновити</string>
     <string name="settings_group_help">Довідка</string>
     <string name="settings_bp_scale">Шкала тиску ESC →</string>
     <string name="settings_group_account">Акаунт</string>

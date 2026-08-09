@@ -10,6 +10,7 @@ import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.repository.ExportResult
+import ua.vn.home.bptracker.feature.reminders.ReminderHealth
 import java.time.ZoneId
 
 data class SettingsState(
@@ -30,6 +31,9 @@ class SettingsViewModel : ViewModel() {
     private val _templateState = MutableStateFlow<Pair<String?, Boolean?>>(null to false)
     private val _exportOperation = MutableStateFlow<ExportResult?>(null)
     val exportOperation: StateFlow<ExportResult?> = _exportOperation.asStateFlow()
+
+    private val _reminderHealth = MutableStateFlow<ReminderHealth?>(null)
+    val reminderHealth: StateFlow<ReminderHealth?> = _reminderHealth.asStateFlow()
 
     private val _exportPeriod = MutableStateFlow(ExportPeriod.THREE)
     val exportPeriod: StateFlow<ExportPeriod> = _exportPeriod.asStateFlow()
@@ -62,6 +66,14 @@ class SettingsViewModel : ViewModel() {
         viewModelScope.launch {
             val resolved = ServiceLocator.reminderConfigRepository.resolveConfig()
             _templateState.value = (if (resolved.config != null) "active" else null) to state.value.remindersActive
+            _reminderHealth.value = ServiceLocator.reminderScheduler.checkHealth()
+        }
+    }
+
+    fun repairReminders() {
+        viewModelScope.launch {
+            ServiceLocator.reminderScheduler.rescheduleAll()
+            _reminderHealth.value = ServiceLocator.reminderScheduler.checkHealth()
         }
     }
 
