@@ -242,10 +242,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             composable("home") {
                 val homeState by homeVm.state.collectAsState()
 
-                LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-                    homeVm.refresh()
-                }
-
                 HomeScreen(
                     state = homeState,
                     onRefresh = { homeVm.refresh(isManual = true) },
