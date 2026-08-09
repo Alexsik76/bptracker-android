@@ -421,7 +421,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     state = historyState,
                     onRefresh = historyVm::refresh,
                     onPeriodSelect = historyVm::setPeriod,
-                    onLoadMore = historyVm::loadMore,
                     onMeasurementClick = { m ->
                         selectedMeasurement = m
                         navController.navigate("measurement_detail")

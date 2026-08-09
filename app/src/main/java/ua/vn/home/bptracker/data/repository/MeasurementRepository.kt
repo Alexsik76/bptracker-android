@@ -35,6 +35,7 @@ data class MeasurementPage(
 interface MeasurementRepository {
     suspend fun syncRecent(): List<MeasurementDto>
     suspend fun loadPage(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?, offset: Int): MeasurementPage
+    suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?)
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
@@ -95,6 +96,37 @@ open class RealMeasurementRepository(
                 items = remote.items,
                 total = remote.total
             )
+        }
+    }
+
+    override suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?) {
+        syncMutex.withLock {
+            val remoteIds = mutableListOf<String>()
+            var offset = 0
+            var total = Int.MAX_VALUE
+            
+            while (offset < total) {
+                val page = api.getMeasurements(
+                    dateFrom = dateFrom?.toString(),
+                    dateTo = dateTo?.toString(),
+                    limit = 50,
+                    offset = offset
+                )
+                
+                total = page.total
+                remoteIds.addAll(page.items.map { it.id })
+                
+                db.withTransaction {
+                    dao.insertAll(page.items.map { it.toEntity(SyncState.SYNCED) })
+                }
+                
+                if (page.items.isEmpty()) break
+                offset += page.items.size
+            }
+            
+            db.withTransaction {
+                dao.deleteAbsentSyncedInRange(dateFrom?.toString(), dateTo?.toString(), remoteIds)
+            }
         }
     }
 
@@ -199,6 +231,10 @@ class MockMeasurementRepository : MeasurementRepository {
         offset: Int
     ): MeasurementPage {
         return MeasurementPage(mockList.toList(), mockList.size)
+    }
+
+    override suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?) {
+        // Mock reconciliation does nothing extra
     }
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {

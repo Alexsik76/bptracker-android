@@ -28,6 +28,9 @@ interface MeasurementDao {
     @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND recordedAt >= :windowStart AND id NOT IN (:remoteIds)")
     suspend fun deleteAbsentSynced(windowStart: String, remoteIds: List<String>)
 
+    @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND (:dateFrom IS NULL OR recordedAt >= :dateFrom) AND (:dateTo IS NULL OR recordedAt < :dateTo) AND id NOT IN (:remoteIds)")
+    suspend fun deleteAbsentSyncedInRange(dateFrom: String?, dateTo: String?, remoteIds: List<String>)
+
     @Query("UPDATE measurements SET syncState = '${SyncState.PENDING_DELETE}' WHERE id = :id")
     suspend fun markPendingDelete(id: String)
 }

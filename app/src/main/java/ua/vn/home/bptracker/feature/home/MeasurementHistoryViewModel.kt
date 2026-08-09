@@ -2,6 +2,7 @@ package ua.vn.home.bptracker.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -17,7 +18,8 @@ data class HistoryState(
     val hasMore: Boolean = false,
     val totalCount: Int = 0,
     val error: String? = null,
-    val isRefreshing: Boolean = false
+    val isRefreshing: Boolean = false,
+    val isFilling: Boolean = false
 )
 
 class MeasurementHistoryViewModel : ViewModel() {
@@ -26,12 +28,13 @@ class MeasurementHistoryViewModel : ViewModel() {
     private val prescriptionRepo = ServiceLocator.prescriptionRepository
 
     private val _period = MutableStateFlow(MeasurementPeriod.MONTH)
-    private val _offset = MutableStateFlow(0)
-    private val _fetchedCount = MutableStateFlow(0)
-    private val _isLoadingMore = MutableStateFlow(false)
     private val _isRefreshing = MutableStateFlow(false)
+    private val _isFilling = MutableStateFlow(false)
     private val _totalCount = MutableStateFlow(0)
     private val _error = MutableStateFlow<String?>(null)
+
+    private var fillJob: Job? = null
+    private var fetchedForCurrentPeriod = 0
 
     private val _prescriptionStartDate = prescriptionRepo.getPrescriptions()
         .map { list ->
@@ -43,42 +46,42 @@ class MeasurementHistoryViewModel : ViewModel() {
 
     private val _internalState = combine(
         _period,
-        _isLoadingMore,
         _totalCount,
         _error,
-        _isRefreshing
-    ) { period, loadingMore, total, error, refreshing ->
-        InternalState(period, loadingMore, total, error, refreshing)
+        _isRefreshing,
+        _isFilling
+    ) { period, total, error, refreshing, filling ->
+        InternalState(period, total, error, refreshing, filling)
     }
 
     private data class InternalState(
         val period: MeasurementPeriod,
-        val loadingMore: Boolean,
         val total: Int,
         val error: String?,
-        val refreshing: Boolean
+        val refreshing: Boolean,
+        val filling: Boolean
     )
 
     val state: StateFlow<ListUiState<HistoryState>> = combine(
         repository.observeMeasurements(),
         _internalState,
-        _prescriptionStartDate,
-        _fetchedCount
-    ) { measurements, internal, prescriptionStart, fetchedCount ->
+        _prescriptionStartDate
+    ) { measurements, internal, prescriptionStart ->
         val filtered = filterByPeriod(measurements, internal.period, prescriptionStart)
         val historyState = HistoryState(
             measurements = filtered,
             period = internal.period,
-            isLoadingMore = internal.loadingMore,
-            hasMore = fetchedCount < internal.total,
+            isLoadingMore = false, // Paging removed
+            hasMore = filtered.size < internal.total,
             totalCount = internal.total,
             error = internal.error,
-            isRefreshing = internal.refreshing
+            isRefreshing = internal.refreshing,
+            isFilling = internal.filling
         )
         
         if (internal.error != null && filtered.isEmpty()) {
             ListUiState.Error(internal.error)
-        } else if (filtered.isEmpty() && !internal.refreshing) {
+        } else if (filtered.isEmpty() && !internal.refreshing && !internal.filling) {
             ListUiState.Empty
         } else {
             ListUiState.Content(historyState, isRefreshing = internal.refreshing)
@@ -91,59 +94,59 @@ class MeasurementHistoryViewModel : ViewModel() {
     )
 
     init {
-        load(reset = true)
+        startFillLoop()
     }
 
     fun setPeriod(period: MeasurementPeriod) {
         if (_period.value == period) return
         _period.value = period
-        load(reset = true)
+        startFillLoop()
     }
 
     fun refresh() {
-        load(reset = true)
-    }
-
-    fun loadMore() {
-        val currentState = (state.value as? ListUiState.Content)?.data ?: return
-        if (currentState.isLoadingMore || !currentState.hasMore) return
-        load(reset = false)
-    }
-
-    private fun load(reset: Boolean) {
+        fillJob?.cancel()
         viewModelScope.launch {
             try {
-                if (reset) {
-                    _offset.value = 0
-                    _fetchedCount.value = 0
-                    _isRefreshing.value = true
-                } else {
-                    _isLoadingMore.value = true
-                }
+                _isRefreshing.value = true
                 _error.value = null
+                val prescriptionStart = _prescriptionStartDate.value
+                val dateFrom = _period.value.getDateFrom(prescriptionStart)
+                repository.reconcilePeriod(dateFrom, null)
+                _totalCount.value = 0 
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Reconciliation failed"
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
+    private fun startFillLoop() {
+        fillJob?.cancel()
+        fetchedForCurrentPeriod = 0
+        fillJob = viewModelScope.launch {
+            try {
+                _isFilling.value = true
+                _error.value = null
+                _totalCount.value = Int.MAX_VALUE 
 
                 val prescriptionStart = _prescriptionStartDate.value
                 val dateFrom = _period.value.getDateFrom(prescriptionStart)
-                
-                val page = repository.loadPage(
-                    dateFrom = dateFrom,
-                    dateTo = null,
-                    offset = _offset.value
-                )
 
-                _totalCount.value = page.total
-                if (reset) {
-                    _offset.value = page.items.size
-                    _fetchedCount.value = page.items.size
-                } else {
-                    _offset.value += page.items.size
-                    _fetchedCount.value += page.items.size
+                while (fetchedForCurrentPeriod < _totalCount.value) {
+                    val page = repository.loadPage(
+                        dateFrom = dateFrom,
+                        dateTo = null,
+                        offset = fetchedForCurrentPeriod
+                    )
+                    _totalCount.value = page.total
+                    fetchedForCurrentPeriod += page.items.size
+                    if (page.items.isEmpty()) break
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to load history"
+                _error.value = e.message ?: "Background sync failed"
             } finally {
-                _isRefreshing.value = false
-                _isLoadingMore.value = false
+                _isFilling.value = false
             }
         }
     }

@@ -29,25 +29,10 @@ fun MeasurementHistoryScreen(
     state: ListUiState<HistoryState>,
     onRefresh: () -> Unit,
     onPeriodSelect: (MeasurementPeriod) -> Unit,
-    onLoadMore: () -> Unit,
     onMeasurementClick: (MeasurementDto) -> Unit,
     onBack: () -> Unit,
 ) {
     val listState = rememberLazyListState()
-
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val lastVisibleItemIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            val totalItemsCount = listState.layoutInfo.totalItemsCount
-            lastVisibleItemIndex >= totalItemsCount - 5 && totalItemsCount > 0
-        }
-    }
-
-    LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
-            onLoadMore()
-        }
-    }
 
     Scaffold(
         modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars),
@@ -125,7 +110,7 @@ fun MeasurementHistoryScreen(
                             )
                         }
 
-                        if (data.isLoadingMore) {
+                        if (data.isFilling) {
                             item {
                                 Box(
                                     modifier = Modifier
