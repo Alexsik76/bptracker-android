@@ -96,6 +96,11 @@ class ReminderScheduler(private val context: Context) {
         val threadName = Thread.currentThread().name
         Log.i("ReminderDiag", "rescheduleAll entry [count=$count] thread=$threadName")
 
+        if (count == 1) {
+            Log.i("ReminderDiag", "startup health check (pre-repair)")
+            checkHealth()
+        }
+
         val repository = ServiceLocator.reminderConfigRepository
         val settingsStore = ServiceLocator.settingsStore
 
