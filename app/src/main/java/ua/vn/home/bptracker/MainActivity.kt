@@ -418,12 +418,14 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             }
 
             composable("history") {
-                val homeState by homeVm.state.collectAsState()
+                val historyVm: MeasurementHistoryViewModel = viewModel()
+                val historyState by historyVm.state.collectAsState()
 
                 MeasurementHistoryScreen(
-                    state = homeState,
-                    onRefresh = { homeVm.refresh(isManual = true) },
-                    onBackfill = homeVm::backfillHistory,
+                    state = historyState,
+                    onRefresh = historyVm::refresh,
+                    onPeriodSelect = historyVm::setPeriod,
+                    onLoadMore = historyVm::loadMore,
                     onMeasurementClick = { m ->
                         selectedMeasurement = m
                         navController.navigate("measurement_detail")

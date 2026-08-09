@@ -12,6 +12,14 @@ data class MeasurementDto(
 )
 
 @Serializable
+data class MeasurementPageDto(
+    val items: List<MeasurementDto>,
+    val total: Int,
+    val limit: Int,
+    val offset: Int
+)
+
+@Serializable
 data class CreateMeasurementRequest(
     val sys: Int,
     val dia: Int,

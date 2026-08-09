@@ -97,6 +97,13 @@
     <string name="period_day">День</string>
     <string name="period_evening">Вечір</string>
 
+    <!-- Period Presets -->
+    <string name="period_week">Тиждень</string>
+    <string name="period_month">Місяць</string>
+    <string name="period_three_months">Три місяці</string>
+    <string name="period_since_prescription">З останнього призначення</string>
+    <string name="period_all">Усі</string>
+
     <!-- Measurement Entry -->
     <string name="entry_title">Новий замір</string>
     <string name="entry_sys">Систолічний</string>

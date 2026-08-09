@@ -16,6 +16,7 @@ import retrofit2.HttpException
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.dto.MeasurementPageDto
 import ua.vn.home.bptracker.data.local.BpDatabase
 import ua.vn.home.bptracker.data.local.dao.MeasurementDao
 import ua.vn.home.bptracker.data.local.entity.SyncState
@@ -25,13 +26,15 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 const val SYNC_WINDOW_DAYS = 14      // routine dashboard refresh
-// Backend caps `days` at 365. Temporary ceiling — to be replaced by date-range
-// filtering with pagination (see ROADMAP).
-private const val BACKFILL_WINDOW_DAYS = 365
+
+data class MeasurementPage(
+    val items: List<MeasurementDto>,
+    val total: Int
+)
 
 interface MeasurementRepository {
-    suspend fun getMeasurements(days: Int): List<MeasurementDto>
-    suspend fun backfillHistory()
+    suspend fun syncRecent(): List<MeasurementDto>
+    suspend fun loadPage(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?, offset: Int): MeasurementPage
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
@@ -51,22 +54,51 @@ open class RealMeasurementRepository(
         return dao.getAllFlow().map { entities -> entities.map { it.toDto() } }
     }
 
-    override suspend fun backfillHistory() {
-        getMeasurements(BACKFILL_WINDOW_DAYS)
-    }
-
-    override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
+    override suspend fun syncRecent(): List<MeasurementDto> {
         return syncMutex.withLock {
             try {
-                val remote = api.getMeasurements(days)
-                val windowStart = OffsetDateTime.now().minusDays(days.toLong()).toString()
+                val windowStartDt = OffsetDateTime.now().minusDays(SYNC_WINDOW_DAYS.toLong())
+                val remote = api.getMeasurements(
+                    dateFrom = windowStartDt.toString(),
+                    limit = 500
+                ).items
+                
                 db.withTransaction {
-                    dao.deleteAbsentSynced(windowStart, remote.map { it.id })
+                    dao.deleteAbsentSynced(windowStartDt.toString(), remote.map { it.id })
                     dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
                 }
                 dao.getAll().map { it.toDto() }
             } catch (_: Exception) {
                 dao.getAll().map { it.toDto() }
+            }
+        }
+    }
+
+    override suspend fun loadPage(
+        dateFrom: OffsetDateTime?,
+        dateTo: OffsetDateTime?,
+        offset: Int
+    ): MeasurementPage {
+        return syncMutex.withLock {
+            try {
+                val remote = api.getMeasurements(
+                    dateFrom = dateFrom?.toString(),
+                    dateTo = dateTo?.toString(),
+                    limit = 50,
+                    offset = offset
+                )
+                
+                dao.insertAll(remote.items.map { it.toEntity(SyncState.SYNCED) })
+                
+                MeasurementPage(
+                    items = remote.items,
+                    total = remote.total
+                )
+            } catch (e: Exception) {
+                // Return partial state from cache or just empty with 0 total if network fails
+                // The history screen reads from observeMeasurements() for the list, 
+                // loadPage is just to trigger sync and get 'total'.
+                MeasurementPage(emptyList(), 0)
             }
         }
     }
@@ -162,11 +194,17 @@ class MockMeasurementRepository : MeasurementRepository {
 
     private val _stream = MutableStateFlow(mockList.toList())
 
-    override suspend fun getMeasurements(days: Int): List<MeasurementDto> {
+    override suspend fun syncRecent(): List<MeasurementDto> {
         return _stream.value
     }
 
-    override suspend fun backfillHistory() {}
+    override suspend fun loadPage(
+        dateFrom: OffsetDateTime?,
+        dateTo: OffsetDateTime?,
+        offset: Int
+    ): MeasurementPage {
+        return MeasurementPage(mockList.toList(), mockList.size)
+    }
 
     override suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto {
         val newReading = MeasurementDto(

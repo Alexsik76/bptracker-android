@@ -97,6 +97,13 @@
     <string name="period_day">Day</string>
     <string name="period_evening">Evening</string>
 
+    <!-- Period Presets -->
+    <string name="period_week">Week</string>
+    <string name="period_month">Month</string>
+    <string name="period_three_months">Three months</string>
+    <string name="period_since_prescription">Since last prescription</string>
+    <string name="period_all">All</string>
+
     <!-- Measurement Entry -->
     <string name="entry_title">New measurement</string>
     <string name="entry_sys">Systolic</string>

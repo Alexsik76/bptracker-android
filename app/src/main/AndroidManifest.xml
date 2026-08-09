@@ -38,7 +38,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https"
-                      android:host="bptracker.home.vn.ua"
+                      android:host="api2-bptracker.home.vn.ua"
                       android:path="/login" />
             </intent-filter>
         </activity>
