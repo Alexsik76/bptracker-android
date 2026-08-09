@@ -27,6 +27,7 @@ class MeasurementHistoryViewModel : ViewModel() {
 
     private val _period = MutableStateFlow(MeasurementPeriod.MONTH)
     private val _offset = MutableStateFlow(0)
+    private val _fetchedCount = MutableStateFlow(0)
     private val _isLoadingMore = MutableStateFlow(false)
     private val _isRefreshing = MutableStateFlow(false)
     private val _totalCount = MutableStateFlow(0)
@@ -61,14 +62,15 @@ class MeasurementHistoryViewModel : ViewModel() {
     val state: StateFlow<ListUiState<HistoryState>> = combine(
         repository.observeMeasurements(),
         _internalState,
-        _prescriptionStartDate
-    ) { measurements, internal, prescriptionStart ->
+        _prescriptionStartDate,
+        _fetchedCount
+    ) { measurements, internal, prescriptionStart, fetchedCount ->
         val filtered = filterByPeriod(measurements, internal.period, prescriptionStart)
         val historyState = HistoryState(
             measurements = filtered,
             period = internal.period,
             isLoadingMore = internal.loadingMore,
-            hasMore = filtered.size < internal.total,
+            hasMore = fetchedCount < internal.total,
             totalCount = internal.total,
             error = internal.error,
             isRefreshing = internal.refreshing
@@ -113,6 +115,7 @@ class MeasurementHistoryViewModel : ViewModel() {
             try {
                 if (reset) {
                     _offset.value = 0
+                    _fetchedCount.value = 0
                     _isRefreshing.value = true
                 } else {
                     _isLoadingMore.value = true
@@ -131,8 +134,10 @@ class MeasurementHistoryViewModel : ViewModel() {
                 _totalCount.value = page.total
                 if (reset) {
                     _offset.value = page.items.size
+                    _fetchedCount.value = page.items.size
                 } else {
                     _offset.value += page.items.size
+                    _fetchedCount.value += page.items.size
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Failed to load history"
@@ -150,7 +155,7 @@ class MeasurementHistoryViewModel : ViewModel() {
     ): List<MeasurementDto> {
         val dateFrom = period.getDateFrom(prescriptionStart) ?: return list
         return list.filter { 
-            TimeUtils.parseToLocal(it.recordedAt).isAfter(dateFrom) 
+            !TimeUtils.parseToLocal(it.recordedAt).isBefore(dateFrom) 
         }.sortedByDescending { it.recordedAt }
     }
 }

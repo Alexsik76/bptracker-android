@@ -80,26 +80,21 @@ open class RealMeasurementRepository(
         offset: Int
     ): MeasurementPage {
         return syncMutex.withLock {
-            try {
-                val remote = api.getMeasurements(
-                    dateFrom = dateFrom?.toString(),
-                    dateTo = dateTo?.toString(),
-                    limit = 50,
-                    offset = offset
-                )
-                
+            val remote = api.getMeasurements(
+                dateFrom = dateFrom?.toString(),
+                dateTo = dateTo?.toString(),
+                limit = 50,
+                offset = offset
+            )
+            
+            db.withTransaction {
                 dao.insertAll(remote.items.map { it.toEntity(SyncState.SYNCED) })
-                
-                MeasurementPage(
-                    items = remote.items,
-                    total = remote.total
-                )
-            } catch (e: Exception) {
-                // Return partial state from cache or just empty with 0 total if network fails
-                // The history screen reads from observeMeasurements() for the list, 
-                // loadPage is just to trigger sync and get 'total'.
-                MeasurementPage(emptyList(), 0)
             }
+            
+            MeasurementPage(
+                items = remote.items,
+                total = remote.total
+            )
         }
     }
 
