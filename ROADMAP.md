@@ -36,5 +36,5 @@ This document lists deferred client-side tasks for the BP Tracker Android applic
 
 ## 7. Measurement retrieval — date range and pagination (Cross-repo: Client + Backend)
 **What**: Replace the `days` query parameter on GET /measurements with explicit date_from / date_to filtering plus pagination, and add period presets in the history screen (week, month, three months, since last prescription, all).
-**Why deferred**: The backend caps `days` at 365 (Query(ge=1, le=365)), so the client currently backfills with days=365. This works today — the dataset spans April 2026 onward, roughly 700 records per year — but breaks once history exceeds one year, and returning everything in a single unpaginated response does not scale.
-**Trigger**: Before the dataset approaches one year of history, or the next time the history screen is worked on. Requires a backend change first, then the client.
+**Status**: Partially implemented. `MeasurementRepository` now supports `offset` and `limit` for paginated retrieval, and `reconcilePeriod` performs a full paginated walk with data integrity checks.
+**Next steps**: Backend change to support explicit `date_from`/`date_to` and `offset`/`limit` (currently client uses them but backend may still cap `days`). Add UI period presets in the history screen.

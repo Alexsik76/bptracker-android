@@ -35,6 +35,12 @@ data class MeasurementPage(
 interface MeasurementRepository {
     suspend fun syncRecent(): List<MeasurementDto>
     suspend fun loadPage(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?, offset: Int): MeasurementPage
+    /**
+     * Performs a full synchronization for a specific period.
+     * Fetches all remote records in pages and reconciles them with the local database.
+     * Deletes local records that are absent on the server ONLY if the walk was complete.
+     * @return The total number of records reported by the server.
+     */
     suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?): Int
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)

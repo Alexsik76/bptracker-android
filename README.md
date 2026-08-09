@@ -8,7 +8,7 @@ Development is currently happening in the `dev` branch.
 
 ### 📊 Blood Pressure Control
 - **Quick Entry:** Manual form or scanning the tonometer screen with your camera.
-- **Optimistic UI:** Instant saving of measurements to the local database with background sync.
+- **Optimistic UI:** Instant saving of measurements to the local database with robust background synchronization and data integrity checks.
 - **Local OCR:** Recognition of SYS/DIA/Pulse values directly on the device using **ONNX Runtime**.
 - **History and Details:** View recent measurements, classified by zones (Optimal, Normal, Stage 1/2) according to ESC/ESH guidelines.
 - **Export:** Send measurement history as a CSV file via email.
