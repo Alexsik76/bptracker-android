@@ -48,6 +48,12 @@ class SettingsStore(private val context: Context) {
         prefs[reminderScheduleFailedKey] ?: false
     }
 
+    private val healthConnectKey = booleanPreferencesKey("health_connect_enabled")
+
+    val healthConnectEnabled: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[healthConnectKey] ?: false
+    }
+
     suspend fun setTheme(theme: AppTheme) {
         context.settingsDataStore.edit { it[themeKey] = theme.name }
     }
@@ -66,5 +72,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setReminderScheduleFailed(failed: Boolean) {
         context.settingsDataStore.edit { it[reminderScheduleFailedKey] = failed }
+    }
+
+    suspend fun setHealthConnectEnabled(enabled: Boolean) {
+        context.settingsDataStore.edit { it[healthConnectKey] = enabled }
     }
 }

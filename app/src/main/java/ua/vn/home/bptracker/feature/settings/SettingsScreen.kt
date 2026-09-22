@@ -24,9 +24,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.health.connect.client.PermissionController
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.config.AppTheme
+import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.repository.ExportResult
 import ua.vn.home.bptracker.feature.reminders.ReminderHealth
 import ua.vn.home.bptracker.ui.components.ListGroupCard
@@ -45,6 +47,7 @@ fun SettingsScreen(
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
+    onHealthConnectToggle: (Boolean) -> Unit = {},
     onRepairReminders: () -> Unit,
     onLogout: () -> Unit,
     onProfileClick: () -> Unit,
@@ -62,6 +65,17 @@ fun SettingsScreen(
     ) { isGranted ->
         if (isGranted) {
             onRemindersToggle(true)
+        }
+    }
+
+    val healthConnectPermissionLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        val required = ServiceLocator.healthConnectManager.requiredPermissions
+        if (granted.containsAll(required)) {
+            onHealthConnectToggle(true)
+        } else {
+            onHealthConnectToggle(false)
         }
     }
 
@@ -159,6 +173,39 @@ fun SettingsScreen(
                         checked = state.ocrImprovement,
                         onCheckedChange = onOcrImprovementToggle
                     )
+                }
+
+                if (state.healthConnectAvailable) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = MaterialTheme.spacing.medium),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_health_connect), style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                stringResource(R.string.settings_health_connect_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = state.healthConnectEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    healthConnectPermissionLauncher.launch(
+                                        ServiceLocator.healthConnectManager.requiredPermissions
+                                    )
+                                } else {
+                                    onHealthConnectToggle(false)
+                                }
+                            }
+                        )
+                    }
                 }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))

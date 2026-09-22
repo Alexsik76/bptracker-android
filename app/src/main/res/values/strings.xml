@@ -2,6 +2,11 @@
     <string name="app_name">BP Tracker</string>
 
     <!-- Common -->
+    <string name="settings_health_connect">Export to Health Connect</string>
+    <string name="settings_health_connect_subtitle">Automatically export blood pressure readings to Health Connect</string>
+    <string name="health_connect_rationale_title">Health Connect Permission</string>
+    <string name="health_connect_rationale_description">BP Tracker uses this permission to write your blood pressure and pulse readings to Health Connect. We only export measurements and never read your personal data from Health Connect.</string>
+    <string name="health_connect_rationale_button">Got it</string>
     <string name="common_save">Save</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_delete">Delete</string>

@@ -14,9 +14,12 @@ import ua.vn.home.bptracker.data.repository.*
 import ua.vn.home.bptracker.feature.ocr.MockOcrEngine
 import ua.vn.home.bptracker.feature.ocr.OcrEngine
 import ua.vn.home.bptracker.feature.ocr.OnnxOcrEngine
+import ua.vn.home.bptracker.feature.reminders.ConfirmIntakeUseCase
 import ua.vn.home.bptracker.feature.reminders.NotificationHelper
 import ua.vn.home.bptracker.feature.reminders.ReminderScheduler
 import ua.vn.home.bptracker.feature.reminders.TodayScheduleUseCase
+
+import ua.vn.home.bptracker.data.healthconnect.HealthConnectManager
 
 @SuppressLint("StaticFieldLeak")
 object ServiceLocator {
@@ -38,7 +41,11 @@ object ServiceLocator {
         TokenAuthenticator(tokenStore, authApi)
     }
 
-    private val database by lazy { BpDatabase.build(applicationContext) }
+    val database: BpDatabase by lazy { BpDatabase.build(applicationContext) }
+
+    val healthConnectManager: HealthConnectManager by lazy {
+        HealthConnectManager(applicationContext)
+    }
 
     val authApi: AuthApi by lazy { plainRetrofit.create() }
     val sessionApi: SessionApi by lazy { authedRetrofit.create() }
@@ -54,7 +61,13 @@ object ServiceLocator {
 
     val measurementRepository: MeasurementRepository by lazy {
         if (MOCK_MODE) MockMeasurementRepository()
-        else RealMeasurementRepository(database, measurementApi, database.measurementDao())
+        else RealMeasurementRepository(
+            database,
+            measurementApi,
+            database.measurementDao(),
+            database.healthConnectExportDao(),
+            settingsStore
+        )
     }
 
     val prescriptionRepository: PrescriptionRepository by lazy {
@@ -85,6 +98,10 @@ object ServiceLocator {
 
     val todayScheduleUseCase: TodayScheduleUseCase by lazy {
         TodayScheduleUseCase(prescriptionRepository, reminderConfigRepository, intakeReportRepository)
+    }
+
+    val confirmIntakeUseCase: ConfirmIntakeUseCase by lazy {
+        ConfirmIntakeUseCase(intakeReportRepository, notificationHelper)
     }
 
     val reminderScheduler: ReminderScheduler by lazy {

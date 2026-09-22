@@ -11,6 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
+import ua.vn.home.bptracker.feature.reminders.ConfirmIntakeUseCase
 import ua.vn.home.bptracker.feature.reminders.TodaySchedule
 
 class ScheduleViewModelTest {
@@ -21,10 +22,12 @@ class ScheduleViewModelTest {
         val useCase = mockk<ua.vn.home.bptracker.feature.reminders.TodayScheduleUseCase>(relaxed = true)
         val intakeRepo = mockk<ua.vn.home.bptracker.data.repository.IntakeReportRepository>(relaxed = true)
         val prescriptionRepo = mockk<ua.vn.home.bptracker.data.repository.PrescriptionRepository>(relaxed = true)
+        val confirmUseCase = mockk<ConfirmIntakeUseCase>(relaxed = true)
         
         every { ServiceLocator.todayScheduleUseCase } returns useCase
         every { ServiceLocator.intakeReportRepository } returns intakeRepo
         every { ServiceLocator.prescriptionRepository } returns prescriptionRepo
+        every { ServiceLocator.confirmIntakeUseCase } returns confirmUseCase
         
         val emptySchedule = TodaySchedule(false, "2026-07-20", emptyList())
         every { useCase.observeToday(any()) } returns flowOf(emptySchedule)

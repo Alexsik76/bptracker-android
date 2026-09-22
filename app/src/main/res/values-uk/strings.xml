@@ -2,6 +2,11 @@
     <string name="app_name">BP Tracker</string>
 
     <!-- Common -->
+    <string name="settings_health_connect">Передавати в Health Connect</string>
+    <string name="settings_health_connect_subtitle">Автоматичний експорт вимірів до Health Connect</string>
+    <string name="health_connect_rationale_title">Дозвіл для Health Connect</string>
+    <string name="health_connect_rationale_description">Додаток BP Tracker використовуватиме доступ для збереження ваших вимірів артеріального тиску та пульсу в Health Connect. Ми лише записуємо дані та ніколи не читаємо ваші особисті записи з Health Connect.</string>
+    <string name="health_connect_rationale_button">Зрозуміло</string>
     <string name="common_save">Зберегти</string>
     <string name="common_cancel">Скасувати</string>
     <string name="common_delete">Видалити</string>

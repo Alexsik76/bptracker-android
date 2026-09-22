@@ -110,8 +110,8 @@ class RealIntakeReportRepository(
                     }
                 }
             } catch (e: HttpException) {
-                if (e.code() in 400..499) {
-                    Log.w("IntakeRepo", "Permanent sync failure for ${entity.date}_${entity.period}: ${e.code()}")
+                Log.w("IntakeRepo", "Sync failure for ${entity.date}_${entity.period}: ${e.code()}")
+                if (entity.syncState == SyncState.PENDING_DELETE && e.code() in 400..499) {
                     dao.delete(entity.date, entity.period)
                 }
             } catch (e: Exception) {
@@ -149,10 +149,7 @@ class RealIntakeReportRepository(
                 )
             )
         } catch (e: HttpException) {
-            if (e.code() in 400..499) {
-                Log.w("IntakeRepo", "Permanent failure on confirm: ${e.code()}")
-                dao.delete(date, period.name)
-            }
+            Log.w("IntakeRepo", "HttpException on confirm: ${e.code()}")
         } catch (e: Exception) {
             // Leave as PENDING_UPSERT for worker
         }

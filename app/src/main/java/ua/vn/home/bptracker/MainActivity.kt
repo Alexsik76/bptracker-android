@@ -371,6 +371,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onLanguageSelect = settingsVm::setLanguage,
                     onOcrImprovementToggle = settingsVm::setOcrImprovement,
                     onRemindersToggle = settingsVm::setRemindersEnabled,
+                    onHealthConnectToggle = settingsVm::setHealthConnectEnabled,
                     onRepairReminders = settingsVm::repairReminders,
                     onLogout = onLogout,
                     onProfileClick = { navController.navigate("profile") },

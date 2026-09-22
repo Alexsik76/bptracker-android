@@ -18,7 +18,7 @@ android {
     }
 
     namespace = "ua.vn.home.bptracker"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "ua.vn.home.bptracker"
@@ -102,6 +102,8 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.health.connect)
+    implementation(libs.androidx.work.runtime)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

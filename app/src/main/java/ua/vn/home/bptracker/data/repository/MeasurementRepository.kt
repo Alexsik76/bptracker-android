@@ -8,17 +8,23 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import retrofit2.HttpException
+import ua.vn.home.bptracker.core.config.SettingsStore
+import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.CreateMeasurementRequest
 import ua.vn.home.bptracker.data.dto.MeasurementDto
-import ua.vn.home.bptracker.data.dto.MeasurementPageDto
+import ua.vn.home.bptracker.data.healthconnect.HealthConnectExportWorker
 import ua.vn.home.bptracker.data.local.BpDatabase
+import ua.vn.home.bptracker.data.local.dao.HealthConnectExportDao
 import ua.vn.home.bptracker.data.local.dao.MeasurementDao
+import ua.vn.home.bptracker.data.local.entity.HealthConnectExportEntity
+import ua.vn.home.bptracker.data.local.entity.HealthConnectExportState
 import ua.vn.home.bptracker.data.local.entity.SyncState
 import ua.vn.home.bptracker.data.local.entity.toDto
 import ua.vn.home.bptracker.data.local.entity.toEntity
@@ -45,6 +51,7 @@ interface MeasurementRepository {
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
+    suspend fun enqueueAllSyncedForExport()
     fun observeMeasurements(): Flow<List<MeasurementDto>>
 }
 
@@ -52,10 +59,55 @@ open class RealMeasurementRepository(
     private val db: BpDatabase,
     private val api: MeasurementApi,
     private val dao: MeasurementDao,
+    private val exportDao: HealthConnectExportDao? = null,
+    private val settingsStore: SettingsStore? = null,
 ) : MeasurementRepository {
     
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val syncMutex = Mutex()
+
+    private suspend fun enqueueExportForSynced(ids: List<String>) {
+        if (exportDao == null || settingsStore == null || ids.isEmpty()) return
+        if (settingsStore.healthConnectEnabled.first()) {
+            val entities = ids.map {
+                HealthConnectExportEntity(it, HealthConnectExportState.PENDING_UPSERT)
+            }
+            exportDao.insertIgnoreAll(entities)
+            triggerWorker()
+        }
+    }
+
+    private suspend fun enqueueDeleteForRecords(ids: List<String>) {
+        if (exportDao == null || ids.isEmpty()) return
+        for (id in ids) {
+            if (exportDao.getById(id) != null) {
+                exportDao.insertOrUpdate(
+                    HealthConnectExportEntity(id, HealthConnectExportState.PENDING_DELETE)
+                )
+            }
+        }
+        triggerWorker()
+    }
+
+    private fun triggerWorker() {
+        try {
+            HealthConnectExportWorker.enqueueWork(ServiceLocator.applicationContext)
+        } catch (_: Exception) {
+            // Ignored if ServiceLocator context is uninitialized in unit test environment
+        }
+    }
+
+    override suspend fun enqueueAllSyncedForExport() {
+        if (exportDao == null) return
+        val synced = dao.getAllSynced()
+        if (synced.isNotEmpty()) {
+            val entities = synced.map {
+                HealthConnectExportEntity(it.id, HealthConnectExportState.PENDING_UPSERT)
+            }
+            exportDao.insertOrUpdateAll(entities)
+            triggerWorker()
+        }
+    }
 
     override fun observeMeasurements(): Flow<List<MeasurementDto>> {
         return dao.getAllFlow().map { entities -> entities.map { it.toDto() } }
@@ -71,8 +123,11 @@ open class RealMeasurementRepository(
                 ).items
                 
                 db.withTransaction {
+                    val deletedIds = dao.getAbsentSyncedIds(windowStartDt.toString(), remote.map { it.id })
                     dao.deleteAbsentSynced(windowStartDt.toString(), remote.map { it.id })
+                    enqueueDeleteForRecords(deletedIds)
                     dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+                    enqueueExportForSynced(remote.map { it.id })
                 }
                 dao.getAll().map { it.toDto() }
             } catch (_: Exception) {
@@ -96,6 +151,7 @@ open class RealMeasurementRepository(
             
             db.withTransaction {
                 dao.insertAll(remote.items.map { it.toEntity(SyncState.SYNCED) })
+                enqueueExportForSynced(remote.items.map { it.id })
             }
             
             MeasurementPage(
@@ -126,6 +182,7 @@ open class RealMeasurementRepository(
                 
                 db.withTransaction {
                     dao.insertAll(page.items.map { it.toEntity(SyncState.SYNCED) })
+                    enqueueExportForSynced(page.items.map { it.id })
                 }
                 
                 if (page.items.isEmpty()) break
@@ -138,7 +195,9 @@ open class RealMeasurementRepository(
             }
             
             db.withTransaction {
+                val deletedIds = dao.getAbsentSyncedIdsInRange(dateFrom?.toString(), dateTo?.toString(), remoteIds)
                 dao.deleteAbsentSyncedInRange(dateFrom?.toString(), dateTo?.toString(), remoteIds)
+                enqueueDeleteForRecords(deletedIds)
             }
             total
         }
@@ -159,6 +218,7 @@ open class RealMeasurementRepository(
                     db.withTransaction {
                         dao.deleteById(id)
                         dao.insert(created.toEntity(SyncState.SYNCED))
+                        enqueueExportForSynced(listOf(created.id))
                     }
                 } catch (_: Exception) {
                     Log.e("MeasRepo", "Failed to sync created measurement")
@@ -179,12 +239,14 @@ open class RealMeasurementRepository(
             return
         }
 
+        enqueueDeleteForRecords(listOf(id))
+
         try {
             api.deleteMeasurement(id)
             dao.deleteById(id)
         } catch (e: HttpException) {
-            if (e.code() in (400..499)) {
-                // 404 or other 4xx means we should just drop it locally
+            Log.w("MeasRepo", "Delete failed for $id: ${e.code()}")
+            if (e.code() == 404) {
                 dao.deleteById(id)
             } else {
                 dao.markPendingDelete(id)
@@ -205,15 +267,18 @@ open class RealMeasurementRepository(
                         )
                         dao.deleteById(entity.id)
                         dao.insert(result.toEntity(SyncState.SYNCED))
+                        enqueueExportForSynced(listOf(result.id))
                     }
                     SyncState.PENDING_DELETE -> {
+                        enqueueDeleteForRecords(listOf(entity.id))
                         api.deleteMeasurement(entity.id)
                         dao.deleteById(entity.id)
                     }
                 }
             } catch (e: HttpException) {
-                if (e.code() in (400..499)) {
-                    Log.w("MeasRepo", "Permanent sync failure for ${entity.id}: ${e.code()}")
+                Log.w("MeasRepo", "Sync failure for ${entity.id}: ${e.code()}")
+                if (entity.syncState == SyncState.PENDING_DELETE && e.code() == 404) {
+                    enqueueDeleteForRecords(listOf(entity.id))
                     dao.deleteById(entity.id)
                 }
             } catch (_: Exception) {
@@ -271,6 +336,8 @@ class MockMeasurementRepository : MeasurementRepository {
     }
 
     override suspend fun syncPending() {}
+
+    override suspend fun enqueueAllSyncedForExport() {}
 
     override fun observeMeasurements(): Flow<List<MeasurementDto>> = _stream.asStateFlow()
 }

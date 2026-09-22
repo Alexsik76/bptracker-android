@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.DoseUnit
+import ua.vn.home.bptracker.data.dto.WhenSlot
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -97,7 +98,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 }.toList()
 
                 ServiceLocator.notificationHelper.createNotificationChannel()
-                ServiceLocator.notificationHelper.showReminderNotification(period, medNames)
+                ServiceLocator.notificationHelper.showReminderNotification(LocalDate.now(), WhenSlot.valueOf(period), medNames)
                 Log.i("ReminderDiag", "notification posted for period=$period")
 
                 // Decide next alarm

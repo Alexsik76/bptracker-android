@@ -25,8 +25,20 @@ interface MeasurementDao {
     @Query("SELECT * FROM measurements WHERE syncState != '${SyncState.SYNCED}'")
     suspend fun getPending(): List<MeasurementEntity>
 
+    @Query("SELECT * FROM measurements WHERE id = :id")
+    suspend fun getById(id: String): MeasurementEntity?
+
+    @Query("SELECT * FROM measurements WHERE syncState = '${SyncState.SYNCED}' ORDER BY recordedAt DESC")
+    suspend fun getAllSynced(): List<MeasurementEntity>
+
+    @Query("SELECT id FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND recordedAt >= :windowStart AND id NOT IN (:remoteIds)")
+    suspend fun getAbsentSyncedIds(windowStart: String, remoteIds: List<String>): List<String>
+
     @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND recordedAt >= :windowStart AND id NOT IN (:remoteIds)")
     suspend fun deleteAbsentSynced(windowStart: String, remoteIds: List<String>)
+
+    @Query("SELECT id FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND (:dateFrom IS NULL OR recordedAt >= :dateFrom) AND (:dateTo IS NULL OR recordedAt < :dateTo) AND id NOT IN (:remoteIds)")
+    suspend fun getAbsentSyncedIdsInRange(dateFrom: String?, dateTo: String?, remoteIds: List<String>): List<String>
 
     @Query("DELETE FROM measurements WHERE syncState = '${SyncState.SYNCED}' AND (:dateFrom IS NULL OR recordedAt >= :dateFrom) AND (:dateTo IS NULL OR recordedAt < :dateTo) AND id NOT IN (:remoteIds)")
     suspend fun deleteAbsentSyncedInRange(dateFrom: String?, dateTo: String?, remoteIds: List<String>)
