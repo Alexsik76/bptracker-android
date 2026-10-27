@@ -1,15 +1,9 @@
- *.iml
+*.iml
 .gradle
 /local.properties
 keystore.properties
 *.jks
 *.keystore
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
 .DS_Store
 /build
 /captures
@@ -17,6 +11,4 @@ keystore.properties
 .cxx
 local.properties
 .artifacts/
-/.idea/codeStyles/codeStyleConfig.xml
-/.idea/codeStyles/Project.xml
-/.idea/bptracker-android.iml
+.idea/
