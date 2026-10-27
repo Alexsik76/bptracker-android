@@ -264,6 +264,30 @@ class RealMeasurementRepositoryTest {
     }
 
     @Test
+    fun `the PENDING_CREATE row id is sent in CreateMeasurementRequest`() = runBlocking {
+        val clientId = UUID.randomUUID().toString()
+        val recordedAt = "2026-07-18T15:30:00Z"
+        storage[clientId] = MeasurementEntity(clientId, recordedAt, 125, 82, 70, SyncState.PENDING_CREATE)
+
+        val serverDto = MeasurementDto("server_id_new", recordedAt, 125, 82, 70)
+        coEvery { api.createMeasurement(any()) } returns serverDto
+
+        repository.syncPending()
+
+        coVerify(exactly = 1) {
+            api.createMeasurement(
+                match { request ->
+                    request.id == clientId &&
+                        request.sys == 125 &&
+                        request.dia == 82 &&
+                        request.pulse == 70 &&
+                        request.recordedAt == recordedAt
+                }
+            )
+        }
+    }
+
+    @Test
     fun `syncRecent does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
         val delId = "server_del_1"
         storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
