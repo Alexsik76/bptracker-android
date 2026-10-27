@@ -23,7 +23,8 @@ data class MeasurementPageDto(
 data class CreateMeasurementRequest(
     val sys: Int,
     val dia: Int,
-    val pulse: Int
+    val pulse: Int,
+    val recordedAt: String? = null
 )
 
 @Serializable

@@ -19,6 +19,16 @@ interface MeasurementDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(measurements: List<MeasurementEntity>)
 
+    @Transaction
+    suspend fun upsertSynced(measurements: List<MeasurementEntity>) {
+        if (measurements.isEmpty()) return
+        val nonSyncedIds = getPending().map { it.id }.toSet()
+        val toInsert = measurements.filter { it.id !in nonSyncedIds }
+        if (toInsert.isNotEmpty()) {
+            insertAll(toInsert)
+        }
+    }
+
     @Query("DELETE FROM measurements WHERE id = :id")
     suspend fun deleteById(id: String)
 

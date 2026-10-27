@@ -2,6 +2,11 @@ package ua.vn.home.bptracker.data.repository
 
 import androidx.room.withTransaction
 import io.mockk.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
@@ -36,6 +41,7 @@ class RealMeasurementRepositoryTest {
     @Before
     fun setup() {
         storage.clear()
+        every { settingsStore.healthConnectEnabled } returns flowOf(false)
         
         // Mock DAO to use local storage map
         coEvery { dao.getAll() } answers { storage.values.filter { it.syncState != SyncState.PENDING_DELETE } }
@@ -46,6 +52,13 @@ class RealMeasurementRepositoryTest {
         coEvery { dao.insertAll(any()) } answers {
             val list = it.invocation.args[0] as List<MeasurementEntity>
             list.forEach { entity -> storage[entity.id] = entity }
+        }
+        coEvery { dao.upsertSynced(any()) } answers {
+            val list = it.invocation.args[0] as List<MeasurementEntity>
+            val nonSyncedIds = storage.values.filter { entity -> entity.syncState != SyncState.SYNCED }.map { entity -> entity.id }.toSet()
+            list.filter { entity -> entity.id !in nonSyncedIds }.forEach { entity ->
+                storage[entity.id] = entity
+            }
         }
         coEvery { dao.deleteById(any()) } answers { storage.remove(it.invocation.args[0] as String) }
         coEvery { dao.getPending() } answers { storage.values.filter { it.syncState != SyncState.SYNCED } }
@@ -225,5 +238,131 @@ class RealMeasurementRepositoryTest {
         repository.deleteMeasurement("server_id")
 
         assertEquals(SyncState.PENDING_DELETE, storage["server_id"]?.syncState)
+    }
+
+    @Test
+    fun `recordedAt of a PENDING_CREATE row is sent in CreateMeasurementRequest`() = runBlocking {
+        val clientId = UUID.randomUUID().toString()
+        val recordedAt = "2026-07-18T15:30:00Z"
+        storage[clientId] = MeasurementEntity(clientId, recordedAt, 125, 82, 70, SyncState.PENDING_CREATE)
+
+        val serverDto = MeasurementDto("server_id_new", recordedAt, 125, 82, 70)
+        coEvery { api.createMeasurement(any()) } returns serverDto
+
+        repository.syncPending()
+
+        coVerify(exactly = 1) {
+            api.createMeasurement(
+                match { request ->
+                    request.sys == 125 &&
+                        request.dia == 82 &&
+                        request.pulse == 70 &&
+                        request.recordedAt == recordedAt
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `syncRecent does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
+        val delId = "server_del_1"
+        storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
+
+        coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
+            items = listOf(MeasurementDto(delId, "2026-07-18T12:00:00Z", 120, 80, 70)),
+            total = 1,
+            limit = 500,
+            offset = 0
+        )
+
+        repository.syncRecent()
+
+        assertEquals(SyncState.PENDING_DELETE, storage[delId]?.syncState)
+    }
+
+    @Test
+    fun `loadPage does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
+        val delId = "server_del_2"
+        storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
+
+        coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
+            items = listOf(MeasurementDto(delId, "2026-07-18T12:00:00Z", 120, 80, 70)),
+            total = 1,
+            limit = 50,
+            offset = 0
+        )
+
+        repository.loadPage(null, null, 0)
+
+        assertEquals(SyncState.PENDING_DELETE, storage[delId]?.syncState)
+    }
+
+    @Test
+    fun `reconcilePeriod does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
+        val delId = "server_del_3"
+        storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
+
+        coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
+            items = listOf(MeasurementDto(delId, "2026-07-18T12:00:00Z", 120, 80, 70)),
+            total = 1,
+            limit = 50,
+            offset = 0
+        )
+
+        repository.reconcilePeriod(null, null)
+
+        assertEquals(SyncState.PENDING_DELETE, storage[delId]?.syncState)
+    }
+
+    @Test
+    fun `concurrent createMeasurement and syncPending call api createMeasurement exactly once`() = runBlocking {
+        val serverDto = MeasurementDto("server_id_new", "2026-07-18T12:00:00Z", 130, 85, 75)
+        val started = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+
+        coEvery { api.createMeasurement(any()) } coAnswers {
+            started.complete(Unit)
+            release.await()
+            serverDto
+        }
+
+        // Calling createMeasurement saves PENDING_CREATE locally and launches background syncPending
+        repository.createMeasurement(130, 85, 75)
+
+        // Wait until background syncPending calls api.createMeasurement under syncMutex
+        started.await()
+
+        // Concurrently invoke syncPending; it must serialize behind syncMutex
+        val concurrentSync = launch(Dispatchers.IO) {
+            repository.syncPending()
+        }
+
+        // Allow the first sync call to finish
+        release.complete(Unit)
+        concurrentSync.join()
+
+        // Verify api.createMeasurement was called only once
+        coVerify(exactly = 1) { api.createMeasurement(any()) }
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `syncRecent rethrows CancellationException`() = runBlocking {
+        coEvery { api.getMeasurements(any(), any(), any(), any()) } throws CancellationException("cancelled")
+        repository.syncRecent()
+        Unit
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `deleteMeasurement rethrows CancellationException`() = runBlocking {
+        storage["server_id"] = MeasurementEntity("server_id", "now", 130, 85, 75, SyncState.SYNCED)
+        coEvery { api.deleteMeasurement("server_id") } throws CancellationException("cancelled")
+        repository.deleteMeasurement("server_id")
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `syncPending rethrows CancellationException`() = runBlocking {
+        storage["client_id"] = MeasurementEntity("client_id", "now", 130, 85, 75, SyncState.PENDING_CREATE)
+        coEvery { api.createMeasurement(any()) } throws CancellationException("cancelled")
+        repository.syncPending()
     }
 }
