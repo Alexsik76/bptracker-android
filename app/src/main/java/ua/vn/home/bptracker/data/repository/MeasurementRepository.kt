@@ -2,6 +2,7 @@ package ua.vn.home.bptracker.data.repository
 
 import android.util.Log
 import androidx.room.withTransaction
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -126,10 +127,12 @@ open class RealMeasurementRepository(
                     val deletedIds = dao.getAbsentSyncedIds(windowStartDt.toString(), remote.map { it.id })
                     dao.deleteAbsentSynced(windowStartDt.toString(), remote.map { it.id })
                     enqueueDeleteForRecords(deletedIds)
-                    dao.insertAll(remote.map { it.toEntity(SyncState.SYNCED) })
+                    dao.upsertSynced(remote.map { it.toEntity(SyncState.SYNCED) })
                     enqueueExportForSynced(remote.map { it.id })
                 }
                 dao.getAll().map { it.toDto() }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
                 dao.getAll().map { it.toDto() }
             }
@@ -150,7 +153,7 @@ open class RealMeasurementRepository(
             )
             
             db.withTransaction {
-                dao.insertAll(remote.items.map { it.toEntity(SyncState.SYNCED) })
+                dao.upsertSynced(remote.items.map { it.toEntity(SyncState.SYNCED) })
                 enqueueExportForSynced(remote.items.map { it.id })
             }
             
@@ -181,7 +184,7 @@ open class RealMeasurementRepository(
                 collectedCount += page.items.size
                 
                 db.withTransaction {
-                    dao.insertAll(page.items.map { it.toEntity(SyncState.SYNCED) })
+                    dao.upsertSynced(page.items.map { it.toEntity(SyncState.SYNCED) })
                     enqueueExportForSynced(page.items.map { it.id })
                 }
                 
@@ -212,17 +215,12 @@ open class RealMeasurementRepository(
         
         // 2. Launch background sync
         repositoryScope.launch {
-            syncMutex.withLock {
-                try {
-                    val created = api.createMeasurement(CreateMeasurementRequest(sys, dia, pulse))
-                    db.withTransaction {
-                        dao.deleteById(id)
-                        dao.insert(created.toEntity(SyncState.SYNCED))
-                        enqueueExportForSynced(listOf(created.id))
-                    }
-                } catch (_: Exception) {
-                    Log.e("MeasRepo", "Failed to sync created measurement")
-                }
+            try {
+                syncPending()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("MeasRepo", "Failed to sync created measurement", e)
             }
         }
         
@@ -244,6 +242,8 @@ open class RealMeasurementRepository(
         try {
             api.deleteMeasurement(id)
             dao.deleteById(id)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: HttpException) {
             Log.w("MeasRepo", "Delete failed for $id: ${e.code()}")
             if (e.code() == 404) {
@@ -257,32 +257,43 @@ open class RealMeasurementRepository(
     }
 
     override suspend fun syncPending() {
-        val pending = dao.getPending()
-        pending.forEach { entity ->
-            try {
-                when (entity.syncState) {
-                    SyncState.PENDING_CREATE -> {
-                        val result = api.createMeasurement(
-                            CreateMeasurementRequest(entity.sys, entity.dia, entity.pulse),
-                        )
-                        dao.deleteById(entity.id)
-                        dao.insert(result.toEntity(SyncState.SYNCED))
-                        enqueueExportForSynced(listOf(result.id))
+        syncMutex.withLock {
+            val pending = dao.getPending()
+            pending.forEach { entity ->
+                try {
+                    when (entity.syncState) {
+                        SyncState.PENDING_CREATE -> {
+                            val result = api.createMeasurement(
+                                CreateMeasurementRequest(
+                                    sys = entity.sys,
+                                    dia = entity.dia,
+                                    pulse = entity.pulse,
+                                    recordedAt = entity.recordedAt
+                                )
+                            )
+                            db.withTransaction {
+                                dao.deleteById(entity.id)
+                                dao.insert(result.toEntity(SyncState.SYNCED))
+                                enqueueExportForSynced(listOf(result.id))
+                            }
+                        }
+                        SyncState.PENDING_DELETE -> {
+                            enqueueDeleteForRecords(listOf(entity.id))
+                            api.deleteMeasurement(entity.id)
+                            dao.deleteById(entity.id)
+                        }
                     }
-                    SyncState.PENDING_DELETE -> {
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: HttpException) {
+                    Log.w("MeasRepo", "Sync failure for ${entity.id}: ${e.code()}")
+                    if (entity.syncState == SyncState.PENDING_DELETE && e.code() == 404) {
                         enqueueDeleteForRecords(listOf(entity.id))
-                        api.deleteMeasurement(entity.id)
                         dao.deleteById(entity.id)
                     }
+                } catch (_: Exception) {
+                    // Keep pending for next run
                 }
-            } catch (e: HttpException) {
-                Log.w("MeasRepo", "Sync failure for ${entity.id}: ${e.code()}")
-                if (entity.syncState == SyncState.PENDING_DELETE && e.code() == 404) {
-                    enqueueDeleteForRecords(listOf(entity.id))
-                    dao.deleteById(entity.id)
-                }
-            } catch (_: Exception) {
-                // Keep pending for next run
             }
         }
     }
