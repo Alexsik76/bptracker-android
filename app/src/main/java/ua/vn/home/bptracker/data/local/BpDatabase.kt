@@ -35,7 +35,7 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         HealthConnectExportEntity::class
     ],
     version = 7,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class BpDatabase : RoomDatabase() {
     abstract fun measurementDao(): MeasurementDao
@@ -51,7 +51,7 @@ abstract class BpDatabase : RoomDatabase() {
         fun build(context: Context): BpDatabase {
             return Room.databaseBuilder(context, BpDatabase::class.java, DB_NAME)
                 .addMigrations(MIGRATION_6_7)
-                .fallbackToDestructiveMigration(dropAllTables = true)
+                .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1, 2, 3, 4, 5)
                 .build()
         }
     }
