@@ -265,6 +265,7 @@ open class RealMeasurementRepository(
                         SyncState.PENDING_CREATE -> {
                             val result = api.createMeasurement(
                                 CreateMeasurementRequest(
+                                    id = entity.id,
                                     sys = entity.sys,
                                     dia = entity.dia,
                                     pulse = entity.pulse,

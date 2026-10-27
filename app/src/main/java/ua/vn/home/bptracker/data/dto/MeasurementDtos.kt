@@ -24,7 +24,8 @@ data class CreateMeasurementRequest(
     val sys: Int,
     val dia: Int,
     val pulse: Int,
-    val recordedAt: String? = null
+    val recordedAt: String? = null,
+    val id: String? = null
 )
 
 @Serializable
