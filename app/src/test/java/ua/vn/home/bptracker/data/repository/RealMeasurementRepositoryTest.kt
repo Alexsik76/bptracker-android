@@ -15,17 +15,17 @@ import org.junit.Before
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
+import ua.vn.home.bptracker.core.config.SettingsStore
+import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.api.MeasurementApi
 import ua.vn.home.bptracker.data.dto.MeasurementDto
 import ua.vn.home.bptracker.data.dto.MeasurementPageDto
 import ua.vn.home.bptracker.data.local.BpDatabase
+import ua.vn.home.bptracker.data.local.dao.HealthConnectExportDao
 import ua.vn.home.bptracker.data.local.dao.MeasurementDao
 import ua.vn.home.bptracker.data.local.entity.MeasurementEntity
 import ua.vn.home.bptracker.data.local.entity.SyncState
 import java.util.UUID
-
-import ua.vn.home.bptracker.core.config.SettingsStore
-import ua.vn.home.bptracker.data.local.dao.HealthConnectExportDao
 
 class RealMeasurementRepositoryTest {
 
@@ -50,10 +50,12 @@ class RealMeasurementRepositoryTest {
             storage[entity.id] = entity 
         }
         coEvery { dao.insertAll(any()) } answers {
+            @Suppress("UNCHECKED_CAST")
             val list = it.invocation.args[0] as List<MeasurementEntity>
             list.forEach { entity -> storage[entity.id] = entity }
         }
         coEvery { dao.upsertSynced(any()) } answers {
+            @Suppress("UNCHECKED_CAST")
             val list = it.invocation.args[0] as List<MeasurementEntity>
             val nonSyncedIds = storage.values.filter { entity -> entity.syncState != SyncState.SYNCED }.map { entity -> entity.id }.toSet()
             list.filter { entity -> entity.id !in nonSyncedIds }.forEach { entity ->
@@ -61,50 +63,27 @@ class RealMeasurementRepositoryTest {
             }
         }
         coEvery { dao.deleteById(any()) } answers { storage.remove(it.invocation.args[0] as String) }
+        coEvery { dao.deleteByIds(any()) } answers {
+            val ids = (it.invocation.args[0] as List<*>).filterIsInstance<String>()
+            ids.forEach { id -> storage.remove(id) }
+        }
         coEvery { dao.getPending() } answers { storage.values.filter { it.syncState != SyncState.SYNCED } }
-        coEvery { dao.getAbsentSyncedIds(any(), any()) } answers {
-            val windowStart = it.invocation.args[0] as String
-            val remoteIds = (it.invocation.args[1] as List<*>).filterIsInstance<String>().toSet()
+        coEvery { dao.getSyncedIds(any()) } answers {
+            val windowStart = it.invocation.args[0] as Long
             storage.values.filter { entity ->
                 entity.syncState == SyncState.SYNCED &&
-                    entity.recordedAt >= windowStart &&
-                    !remoteIds.contains(entity.id)
+                    entity.recordedAtMs >= windowStart
             }.map { it.id }
         }
-        coEvery { dao.deleteAbsentSynced(any(), any()) } answers {
-            val windowStart = it.invocation.args[0] as String
-            val remoteIds = (it.invocation.args[1] as List<*>).filterIsInstance<String>().toSet()
-            storage.entries.removeIf { entry ->
-                val entity = entry.value
-                entity.syncState == SyncState.SYNCED &&
-                    entity.recordedAt >= windowStart &&
-                    !remoteIds.contains(entity.id)
-            }
-        }
-        coEvery { dao.getAbsentSyncedIdsInRange(any(), any(), any()) } answers {
-            val dateFrom = it.invocation.args[0] as? String
-            val dateTo = it.invocation.args[1] as? String
-            val remoteIds = (it.invocation.args[2] as List<*>).filterIsInstance<String>().toSet()
+        coEvery { dao.getSyncedIdsInRange(any(), any()) } answers {
+            val dateFrom = it.invocation.args[0] as? Long
+            val dateTo = it.invocation.args[1] as? Long
             storage.values.filter { entity ->
-                val matchFrom = dateFrom == null || entity.recordedAt >= dateFrom
-                val matchTo = dateTo == null || entity.recordedAt < dateTo
+                val matchFrom = dateFrom == null || entity.recordedAtMs >= dateFrom
+                val matchTo = dateTo == null || entity.recordedAtMs < dateTo
                 entity.syncState == SyncState.SYNCED &&
-                    matchFrom && matchTo &&
-                    !remoteIds.contains(entity.id)
+                    matchFrom && matchTo
             }.map { it.id }
-        }
-        coEvery { dao.deleteAbsentSyncedInRange(any(), any(), any()) } answers {
-            val dateFrom = it.invocation.args[0] as? String
-            val dateTo = it.invocation.args[1] as? String
-            val remoteIds = (it.invocation.args[2] as List<*>).filterIsInstance<String>().toSet()
-            storage.entries.removeIf { entry ->
-                val entity = entry.value
-                val matchFrom = dateFrom == null || entity.recordedAt >= dateFrom
-                val matchTo = dateTo == null || entity.recordedAt < dateTo
-                entity.syncState == SyncState.SYNCED &&
-                    matchFrom && matchTo &&
-                    !remoteIds.contains(entity.id)
-            }
         }
         coEvery { dao.markPendingDelete(any()) } answers {
             val id = it.invocation.args[0] as String
@@ -123,7 +102,7 @@ class RealMeasurementRepositoryTest {
 
     @Test
     fun `createMeasurement creates PENDING_CREATE row and launches sync`() = runBlocking {
-        val serverDto = MeasurementDto("server_id", "now", 130, 85, 75)
+        val serverDto = MeasurementDto("server_id", "2026-07-18T12:00:00Z", 130, 85, 75)
         coEvery { api.createMeasurement(any()) } returns serverDto
 
         val result = repository.createMeasurement(130, 85, 75)
@@ -138,7 +117,8 @@ class RealMeasurementRepositoryTest {
     fun `syncPending uploads PENDING_CREATE and replaces with SYNCED server row`() = runBlocking {
         // 1. Create offline row
         val clientId = UUID.randomUUID().toString()
-        storage[clientId] = MeasurementEntity(clientId, "2026-07-18T12:00:00Z", 130, 85, 75, SyncState.PENDING_CREATE)
+        val instant = TimeUtils.parseInstantOrNull("2026-07-18T12:00:00Z")!!
+        storage[clientId] = MeasurementEntity(clientId, instant.toEpochMilli(), 130, 85, 75, SyncState.PENDING_CREATE)
         
         val serverDto = MeasurementDto("server_id_new", "2026-07-18T12:00:00Z", 130, 85, 75)
         coEvery { api.createMeasurement(any()) } returns serverDto
@@ -156,7 +136,8 @@ class RealMeasurementRepositoryTest {
     @Test
     fun `syncRecent does not remove PENDING_CREATE rows`() = runBlocking {
         // 1. Create offline row
-        storage["client_id"] = MeasurementEntity("client_id", "2026-07-18T12:00:00Z", 130, 85, 75, SyncState.PENDING_CREATE)
+        val instant = TimeUtils.parseInstantOrNull("2026-07-18T12:00:00Z")!!
+        storage["client_id"] = MeasurementEntity("client_id", instant.toEpochMilli(), 130, 85, 75, SyncState.PENDING_CREATE)
         
         // 2. Refresh from server (which returns server_id_1)
         coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
@@ -182,7 +163,8 @@ class RealMeasurementRepositoryTest {
     @Test
     fun `syncRecent hides PENDING_DELETE rows`() = runBlocking {
         // 1. Prepare synced row then fail to delete (marks pending)
-        storage["server_id_old"] = MeasurementEntity("server_id_old", "2026-07-18T08:00:00Z", 120, 80, 70, SyncState.SYNCED)
+        val instant = TimeUtils.parseInstantOrNull("2026-07-18T08:00:00Z")!!
+        storage["server_id_old"] = MeasurementEntity("server_id_old", instant.toEpochMilli(), 120, 80, 70, SyncState.SYNCED)
         
         coEvery { api.deleteMeasurement(any()) } throws Exception("network error")
         coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
@@ -202,8 +184,8 @@ class RealMeasurementRepositoryTest {
 
     @Test
     fun `syncPending on PENDING_CREATE with 400 or 401 keeps the row`() = runBlocking {
-        storage["id_400"] = MeasurementEntity("id_400", "now", 130, 85, 75, SyncState.PENDING_CREATE)
-        storage["id_401"] = MeasurementEntity("id_401", "now", 140, 90, 80, SyncState.PENDING_CREATE)
+        storage["id_400"] = MeasurementEntity("id_400", 1000L, 130, 85, 75, SyncState.PENDING_CREATE)
+        storage["id_401"] = MeasurementEntity("id_401", 2000L, 140, 90, 80, SyncState.PENDING_CREATE)
 
         coEvery { api.createMeasurement(any()) } throws
             HttpException(Response.error<Any>(400, "".toResponseBody())) andThenThrows
@@ -217,8 +199,8 @@ class RealMeasurementRepositoryTest {
 
     @Test
     fun `syncPending on PENDING_DELETE with 404 removes row and with 401 keeps row`() = runBlocking {
-        storage["del_404"] = MeasurementEntity("del_404", "now", 130, 85, 75, SyncState.PENDING_DELETE)
-        storage["del_401"] = MeasurementEntity("del_401", "now", 140, 90, 80, SyncState.PENDING_DELETE)
+        storage["del_404"] = MeasurementEntity("del_404", 1000L, 130, 85, 75, SyncState.PENDING_DELETE)
+        storage["del_401"] = MeasurementEntity("del_401", 2000L, 140, 90, 80, SyncState.PENDING_DELETE)
 
         coEvery { api.deleteMeasurement("del_404") } throws HttpException(Response.error<Any>(404, "".toResponseBody()))
         coEvery { api.deleteMeasurement("del_401") } throws HttpException(Response.error<Any>(401, "".toResponseBody()))
@@ -231,7 +213,7 @@ class RealMeasurementRepositoryTest {
 
     @Test
     fun `deleteMeasurement with 401 marks the row PENDING_DELETE`() = runBlocking {
-        storage["server_id"] = MeasurementEntity("server_id", "now", 130, 85, 75, SyncState.SYNCED)
+        storage["server_id"] = MeasurementEntity("server_id", 1000L, 130, 85, 75, SyncState.SYNCED)
 
         coEvery { api.deleteMeasurement("server_id") } throws HttpException(Response.error<Any>(401, "".toResponseBody()))
 
@@ -244,7 +226,8 @@ class RealMeasurementRepositoryTest {
     fun `recordedAt of a PENDING_CREATE row is sent in CreateMeasurementRequest`() = runBlocking {
         val clientId = UUID.randomUUID().toString()
         val recordedAt = "2026-07-18T15:30:00Z"
-        storage[clientId] = MeasurementEntity(clientId, recordedAt, 125, 82, 70, SyncState.PENDING_CREATE)
+        val instant = TimeUtils.parseInstantOrNull(recordedAt)!!
+        storage[clientId] = MeasurementEntity(clientId, instant.toEpochMilli(), 125, 82, 70, SyncState.PENDING_CREATE)
 
         val serverDto = MeasurementDto("server_id_new", recordedAt, 125, 82, 70)
         coEvery { api.createMeasurement(any()) } returns serverDto
@@ -257,7 +240,8 @@ class RealMeasurementRepositoryTest {
                     request.sys == 125 &&
                         request.dia == 82 &&
                         request.pulse == 70 &&
-                        request.recordedAt == recordedAt
+                        request.recordedAt != null &&
+                        TimeUtils.parseInstantOrNull(request.recordedAt!!) == instant
                 }
             )
         }
@@ -267,7 +251,8 @@ class RealMeasurementRepositoryTest {
     fun `the PENDING_CREATE row id is sent in CreateMeasurementRequest`() = runBlocking {
         val clientId = UUID.randomUUID().toString()
         val recordedAt = "2026-07-18T15:30:00Z"
-        storage[clientId] = MeasurementEntity(clientId, recordedAt, 125, 82, 70, SyncState.PENDING_CREATE)
+        val instant = TimeUtils.parseInstantOrNull(recordedAt)!!
+        storage[clientId] = MeasurementEntity(clientId, instant.toEpochMilli(), 125, 82, 70, SyncState.PENDING_CREATE)
 
         val serverDto = MeasurementDto("server_id_new", recordedAt, 125, 82, 70)
         coEvery { api.createMeasurement(any()) } returns serverDto
@@ -281,7 +266,8 @@ class RealMeasurementRepositoryTest {
                         request.sys == 125 &&
                         request.dia == 82 &&
                         request.pulse == 70 &&
-                        request.recordedAt == recordedAt
+                        request.recordedAt != null &&
+                        TimeUtils.parseInstantOrNull(request.recordedAt!!) == instant
                 }
             )
         }
@@ -290,7 +276,8 @@ class RealMeasurementRepositoryTest {
     @Test
     fun `syncRecent does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
         val delId = "server_del_1"
-        storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
+        val instant = TimeUtils.parseInstantOrNull("2026-07-18T12:00:00Z")!!
+        storage[delId] = MeasurementEntity(delId, instant.toEpochMilli(), 120, 80, 70, SyncState.PENDING_DELETE)
 
         coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
             items = listOf(MeasurementDto(delId, "2026-07-18T12:00:00Z", 120, 80, 70)),
@@ -307,7 +294,8 @@ class RealMeasurementRepositoryTest {
     @Test
     fun `loadPage does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
         val delId = "server_del_2"
-        storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
+        val instant = TimeUtils.parseInstantOrNull("2026-07-18T12:00:00Z")!!
+        storage[delId] = MeasurementEntity(delId, instant.toEpochMilli(), 120, 80, 70, SyncState.PENDING_DELETE)
 
         coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
             items = listOf(MeasurementDto(delId, "2026-07-18T12:00:00Z", 120, 80, 70)),
@@ -324,7 +312,8 @@ class RealMeasurementRepositoryTest {
     @Test
     fun `reconcilePeriod does not overwrite a PENDING_DELETE row returned by the server`() = runBlocking {
         val delId = "server_del_3"
-        storage[delId] = MeasurementEntity(delId, "2026-07-18T12:00:00Z", 120, 80, 70, SyncState.PENDING_DELETE)
+        val instant = TimeUtils.parseInstantOrNull("2026-07-18T12:00:00Z")!!
+        storage[delId] = MeasurementEntity(delId, instant.toEpochMilli(), 120, 80, 70, SyncState.PENDING_DELETE)
 
         coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
             items = listOf(MeasurementDto(delId, "2026-07-18T12:00:00Z", 120, 80, 70)),
@@ -336,6 +325,52 @@ class RealMeasurementRepositoryTest {
         repository.reconcilePeriod(null, null)
 
         assertEquals(SyncState.PENDING_DELETE, storage[delId]?.syncState)
+    }
+
+    @Test
+    fun `reconcilePeriod deletes absent IDs in chunks of at most 500`() = runBlocking {
+        // Prepare 505 absent synced items in storage
+        val absentIds = (1..505).map { "absent_$it" }
+        absentIds.forEach { id ->
+            storage[id] = MeasurementEntity(id, 1000L, 120, 80, 70, SyncState.SYNCED)
+        }
+
+        coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
+            items = emptyList(),
+            total = 0,
+            limit = 50,
+            offset = 0
+        )
+
+        repository.reconcilePeriod(null, null)
+
+        // 505 items should be deleted in chunks: first 500, then 5
+        coVerify(exactly = 1) { dao.deleteByIds(match { it.size == 500 }) }
+        coVerify(exactly = 1) { dao.deleteByIds(match { it.size == 5 }) }
+        assertEquals(0, storage.size)
+    }
+
+    @Test
+    fun `syncRecent deletes absent synced rows within window`() = runBlocking {
+        val windowStartDt = java.time.OffsetDateTime.now().minusDays(SYNC_WINDOW_DAYS.toLong())
+        val inWindowMs = windowStartDt.plusDays(1).toInstant().toEpochMilli()
+        val beforeWindowMs = windowStartDt.minusDays(1).toInstant().toEpochMilli()
+
+        storage["in_window_absent"] = MeasurementEntity("in_window_absent", inWindowMs, 120, 80, 70, SyncState.SYNCED)
+        storage["before_window_absent"] = MeasurementEntity("before_window_absent", beforeWindowMs, 120, 80, 70, SyncState.SYNCED)
+
+        coEvery { api.getMeasurements(any(), any(), any(), any()) } returns MeasurementPageDto(
+            items = emptyList(),
+            total = 0,
+            limit = 500,
+            offset = 0
+        )
+
+        repository.syncRecent()
+
+        assertNull(storage["in_window_absent"])
+        // Out of window should remain because it was not in the sync window range
+        assertEquals(SyncState.SYNCED, storage["before_window_absent"]?.syncState)
     }
 
     @Test
@@ -378,14 +413,14 @@ class RealMeasurementRepositoryTest {
 
     @Test(expected = CancellationException::class)
     fun `deleteMeasurement rethrows CancellationException`() = runBlocking {
-        storage["server_id"] = MeasurementEntity("server_id", "now", 130, 85, 75, SyncState.SYNCED)
+        storage["server_id"] = MeasurementEntity("server_id", 1000L, 130, 85, 75, SyncState.SYNCED)
         coEvery { api.deleteMeasurement("server_id") } throws CancellationException("cancelled")
         repository.deleteMeasurement("server_id")
     }
 
     @Test(expected = CancellationException::class)
     fun `syncPending rethrows CancellationException`() = runBlocking {
-        storage["client_id"] = MeasurementEntity("client_id", "now", 130, 85, 75, SyncState.PENDING_CREATE)
+        storage["client_id"] = MeasurementEntity("client_id", 1000L, 130, 85, 75, SyncState.PENDING_CREATE)
         coEvery { api.createMeasurement(any()) } throws CancellationException("cancelled")
         repository.syncPending()
     }

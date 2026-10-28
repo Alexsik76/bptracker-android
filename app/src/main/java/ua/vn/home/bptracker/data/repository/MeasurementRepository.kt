@@ -118,15 +118,22 @@ open class RealMeasurementRepository(
         return syncMutex.withLock {
             try {
                 val windowStartDt = OffsetDateTime.now().minusDays(SYNC_WINDOW_DAYS.toLong())
+                val windowStartMs = windowStartDt.toInstant().toEpochMilli()
                 val remote = api.getMeasurements(
                     dateFrom = windowStartDt.toString(),
                     limit = 500
                 ).items
                 
                 db.withTransaction {
-                    val deletedIds = dao.getAbsentSyncedIds(windowStartDt.toString(), remote.map { it.id })
-                    dao.deleteAbsentSynced(windowStartDt.toString(), remote.map { it.id })
-                    enqueueDeleteForRecords(deletedIds)
+                    val remoteIds = remote.map { it.id }.toSet()
+                    val syncedIds = dao.getSyncedIds(windowStartMs)
+                    val absentIds = syncedIds.filter { it !in remoteIds }
+                    if (absentIds.isNotEmpty()) {
+                        absentIds.chunked(500).forEach { chunk ->
+                            dao.deleteByIds(chunk)
+                        }
+                    }
+                    enqueueDeleteForRecords(absentIds)
                     dao.upsertSynced(remote.map { it.toEntity(SyncState.SYNCED) })
                     enqueueExportForSynced(remote.map { it.id })
                 }
@@ -197,10 +204,19 @@ open class RealMeasurementRepository(
                 return@withLock total
             }
             
+            val dateFromMs = dateFrom?.toInstant()?.toEpochMilli()
+            val dateToMs = dateTo?.toInstant()?.toEpochMilli()
+            val remoteIdSet = remoteIds.toSet()
+
             db.withTransaction {
-                val deletedIds = dao.getAbsentSyncedIdsInRange(dateFrom?.toString(), dateTo?.toString(), remoteIds)
-                dao.deleteAbsentSyncedInRange(dateFrom?.toString(), dateTo?.toString(), remoteIds)
-                enqueueDeleteForRecords(deletedIds)
+                val syncedIds = dao.getSyncedIdsInRange(dateFromMs, dateToMs)
+                val absentIds = syncedIds.filter { it !in remoteIdSet }
+                if (absentIds.isNotEmpty()) {
+                    absentIds.chunked(500).forEach { chunk ->
+                        dao.deleteByIds(chunk)
+                    }
+                }
+                enqueueDeleteForRecords(absentIds)
             }
             total
         }
@@ -269,7 +285,7 @@ open class RealMeasurementRepository(
                                     sys = entity.sys,
                                     dia = entity.dia,
                                     pulse = entity.pulse,
-                                    recordedAt = entity.recordedAt
+                                    recordedAt = entity.toDto().recordedAt
                                 )
                             )
                             db.withTransaction {

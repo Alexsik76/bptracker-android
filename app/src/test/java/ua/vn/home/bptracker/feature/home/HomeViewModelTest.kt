@@ -31,6 +31,21 @@ class HomeViewModelTest {
         val content = (result as ListUiState.Content).data
         assertEquals("b", content.latest.id)
     }
+
+    @Test
+    fun `computeHomeState handles legacy format and parses correctly`() {
+        val legacy = MeasurementDto("legacy", "2026-04-22 08:22:25.118 +0300", 125, 82, 72)
+        val iso = MeasurementDto("iso", "2026-04-22T08:20:00.000+03:00", 118, 78, 68)
+
+        val result = HomeViewModel.computeHomeState(listOf(iso, legacy))
+
+        assertTrue(result is ListUiState.Content)
+        val content = (result as ListUiState.Content).data
+        assertEquals("legacy", content.latest.id)
+        assertEquals(2, content.recent.size)
+        assertEquals("legacy", content.recent[0].id)
+        assertEquals("iso", content.recent[1].id)
+    }
     
     @Test
     fun `computeHomeState calculates averages correctly`() {

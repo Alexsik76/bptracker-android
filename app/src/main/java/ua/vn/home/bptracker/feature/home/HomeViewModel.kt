@@ -2,10 +2,12 @@ package ua.vn.home.bptracker.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,6 +50,7 @@ class HomeViewModel : ViewModel() {
 
     val state: StateFlow<ListUiState<HomePayload>> = repository.observeMeasurements()
         .map { list -> computeHomeState(list) }
+        .flowOn(Dispatchers.Default)
         .combine(_refreshError) { uiState, error ->
             if (error != null && uiState is ListUiState.Empty) {
                 ListUiState.Error(error)
@@ -93,18 +96,18 @@ class HomeViewModel : ViewModel() {
                 return ListUiState.Empty
             }
 
-            val allList = measurements.sortedByDescending { TimeUtils.parseToLocal(it.recordedAt) }
+            val parsed = measurements.map { it to TimeUtils.parseToLocal(it.recordedAt) }
+            val sorted = parsed.sortedByDescending { it.second }
+            val allList = sorted.map { it.first }
             
             val now = OffsetDateTime.now()
-            val thisWeek = allList.filter { 
-                TimeUtils.parseToLocal(it.recordedAt).isAfter(now.minusDays(7)) 
-            }
-            val lastWeek = allList.filter {
-                val dt = TimeUtils.parseToLocal(it.recordedAt)
-                dt.isAfter(now.minusDays(14)) && dt.isBefore(now.minusDays(7))
-            }
+            val weekAgo = now.minusDays(7)
+            val twoWeeksAgo = now.minusDays(14)
 
-            if (thisWeek.isEmpty()) {
+            val thisWeekParsed = sorted.filter { it.second.isAfter(weekAgo) }
+            val lastWeekParsed = sorted.filter { it.second.isAfter(twoWeeksAgo) && it.second.isBefore(weekAgo) }
+
+            if (thisWeekParsed.isEmpty()) {
                 val latest = allList.first()
                 return ListUiState.Content(
                     HomePayload(
@@ -116,9 +119,10 @@ class HomeViewModel : ViewModel() {
                 )
             }
 
-            val latest = thisWeek.first()
+            val latest = thisWeekParsed.first().first
             val zone = BpZone.classify(latest.sys, latest.dia)
 
+            val thisWeek = thisWeekParsed.map { it.first }
             val avgSys = thisWeek.map { it.sys }.average().toInt()
             val avgDia = thisWeek.map { it.dia }.average().toInt()
             val avgPulse = thisWeek.map { it.pulse }.average().toInt()
@@ -131,7 +135,8 @@ class HomeViewModel : ViewModel() {
 
             var sysChange = 0
             var diaChange = 0
-            if (lastWeek.isNotEmpty()) {
+            if (lastWeekParsed.isNotEmpty()) {
+                val lastWeek = lastWeekParsed.map { it.first }
                 val prevAvgSys = lastWeek.map { it.sys }.average().toInt()
                 val prevAvgDia = lastWeek.map { it.dia }.average().toInt()
                 sysChange = avgSys - prevAvgSys
