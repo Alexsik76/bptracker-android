@@ -61,10 +61,23 @@
 
     <!-- Schedule -->
     <string name="schedule_title">Schedule</string>
+    <string name="schedule_today">Today</string>
     <string name="schedule_coming_soon">Reminders — coming soon</string>
     <string name="schedule_empty">No medications scheduled for today</string>
     <string name="schedule_empty_hint">You will see your medication plan here once it is synced from the server.</string>
     <string name="schedule_taken">Taken</string>
+    <string name="schedule_status_completed">completed</string>
+    <string name="schedule_status_pending">pending</string>
+    <string name="schedule_taken_at_prefix">Taken at </string>
+    <string name="schedule_not_taken">Not taken</string>
+    <string name="schedule_action_take">Take</string>
+    <string name="schedule_deviation_on_time">on time</string>
+    <string name="schedule_deviation_minute_short">min</string>
+    <string name="schedule_deviation_hour_short">h</string>
+    <plurals name="schedule_intakes_count">
+        <item quantity="one">of %d intake</item>
+        <item quantity="other">of %d intakes</item>
+    </plurals>
     <string name="schedule_missed">Missed</string>
     <string name="schedule_pending">Pending</string>
     <string name="schedule_confirm_btn">Taken</string>

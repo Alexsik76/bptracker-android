@@ -61,10 +61,25 @@
 
     <!-- Schedule -->
     <string name="schedule_title">Розклад</string>
+    <string name="schedule_today">Сьогодні</string>
     <string name="schedule_coming_soon">Нагадування з’являться згодом</string>
     <string name="schedule_empty">На сьогодні немає запланованих ліків</string>
     <string name="schedule_empty_hint">Ви побачите свій план лікування тут після синхронізації з сервером.</string>
     <string name="schedule_taken">Прийнято</string>
+    <string name="schedule_status_completed">виконано</string>
+    <string name="schedule_status_pending">очікує</string>
+    <string name="schedule_taken_at_prefix">Прийнято о </string>
+    <string name="schedule_not_taken">Не прийнято</string>
+    <string name="schedule_action_take">Прийняти</string>
+    <string name="schedule_deviation_on_time">вчасно</string>
+    <string name="schedule_deviation_minute_short">хв</string>
+    <string name="schedule_deviation_hour_short">год</string>
+    <plurals name="schedule_intakes_count">
+        <item quantity="one">з %d прийому</item>
+        <item quantity="few">з %d прийомів</item>
+        <item quantity="many">з %d прийомів</item>
+        <item quantity="other">з %d прийому</item>
+    </plurals>
     <string name="schedule_missed">Пропущено</string>
     <string name="schedule_pending">Очікує</string>
     <string name="schedule_confirm_btn">Прийняв</string>
