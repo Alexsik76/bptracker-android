@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.core.utils
 
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -7,34 +8,38 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 object TimeUtils {
+    private val LEGACY_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS Z")
+    private val LOCAL_SPACE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm[:ss][.SSS]")
+
+    fun parseInstantOrNull(s: String): Instant? {
+        if (s.isBlank()) return null
+        val input = s.trim()
+
+        // 1. Try ISO-8601 with offset or Z
+        try {
+            return OffsetDateTime.parse(input).toInstant()
+        } catch (_: Exception) {}
+
+        // 2. Try legacy server format "yyyy-MM-dd HH:mm:ss.SSS Z"
+        try {
+            return ZonedDateTime.parse(input, LEGACY_FORMATTER).toInstant()
+        } catch (_: Exception) {}
+
+        // 3. Try offset-less local date-time (ISO format)
+        try {
+            return LocalDateTime.parse(input).atZone(ZoneId.systemDefault()).toInstant()
+        } catch (_: Exception) {}
+
+        // 4. Try offset-less local date-time (space-separated)
+        try {
+            return LocalDateTime.parse(input, LOCAL_SPACE_FORMATTER).atZone(ZoneId.systemDefault()).toInstant()
+        } catch (_: Exception) {}
+
+        return null
+    }
+
     fun parseToLocal(recordedAt: String): OffsetDateTime {
-        if (recordedAt.isBlank()) return OffsetDateTime.now()
-        
-        val input = recordedAt.trim()
-        
-        return try {
-            // Precise match for: "2026-04-22 08:22:25.118 +0300"
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS Z")
-            ZonedDateTime.parse(input, formatter)
-                .withZoneSameInstant(ZoneId.systemDefault())
-                .toOffsetDateTime()
-        } catch (_: Exception) {
-            try {
-                // Fallback for ISO format: "2024-05-20T20:54:57.655+03:00"
-                OffsetDateTime.parse(input)
-                    .atZoneSameInstant(ZoneId.systemDefault())
-                    .toOffsetDateTime()
-            } catch (_: Exception) {
-                try {
-                    // Fallback for space-separated ISO without full offset: "2024-05-20 20:54:57"
-                    val sanitized = input.replace(" ", "T")
-                    LocalDateTime.parse(sanitized)
-                        .atZone(ZoneId.systemDefault())
-                        .toOffsetDateTime()
-                } catch (_: Exception) {
-                    OffsetDateTime.now()
-                }
-            }
-        }
+        val instant = parseInstantOrNull(recordedAt) ?: return OffsetDateTime.now()
+        return instant.atZone(ZoneId.systemDefault()).toOffsetDateTime()
     }
 }

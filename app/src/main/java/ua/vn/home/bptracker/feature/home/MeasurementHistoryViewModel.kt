@@ -9,6 +9,7 @@ import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import java.time.Instant
 import java.time.OffsetDateTime
 
 data class HistoryState(
@@ -156,9 +157,14 @@ class MeasurementHistoryViewModel : ViewModel() {
         period: MeasurementPeriod,
         prescriptionStart: OffsetDateTime?
     ): List<MeasurementDto> {
-        val dateFrom = period.getDateFrom(prescriptionStart) ?: return list
-        return list.filter { 
-            !TimeUtils.parseToLocal(it.recordedAt).isBefore(dateFrom) 
-        }.sortedByDescending { it.recordedAt }
+        val dateFrom = period.getDateFrom(prescriptionStart)
+        val parsed = list.map { it to (TimeUtils.parseInstantOrNull(it.recordedAt) ?: Instant.MIN) }
+        val filtered = if (dateFrom != null) {
+            val dateFromInstant = dateFrom.toInstant()
+            parsed.filter { !it.second.isBefore(dateFromInstant) }
+        } else {
+            parsed
+        }
+        return filtered.sortedByDescending { it.second }.map { it.first }
     }
 }

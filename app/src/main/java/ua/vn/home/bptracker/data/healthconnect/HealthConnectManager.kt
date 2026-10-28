@@ -9,7 +9,7 @@ import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.units.Pressure
 import ua.vn.home.bptracker.data.local.entity.MeasurementEntity
-import java.time.OffsetDateTime
+import java.time.Instant
 import java.time.ZoneId
 
 // Increment whenever the record mapping or transformation logic changes to overwrite previously exported entries.
@@ -41,9 +41,9 @@ class HealthConnectManager(private val context: Context) {
         val client = getClient() ?: throw IllegalStateException("HealthConnect client unavailable")
         if (!hasPermissions()) throw IllegalStateException("HealthConnect permissions not granted")
 
-        val instant = OffsetDateTime.parse(measurement.recordedAt).toInstant()
+        val instant = Instant.ofEpochMilli(measurement.recordedAtMs)
         val zoneOffset = ZoneId.systemDefault().rules.getOffset(instant)
-        val version = instant.toEpochMilli() + EXPORT_REVISION
+        val version = measurement.recordedAtMs + EXPORT_REVISION
 
         val bpMetadata = Metadata.manualEntry(
             clientRecordId = "bp-${measurement.id}",
