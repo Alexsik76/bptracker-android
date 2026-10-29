@@ -20,18 +20,26 @@ class ScheduleDeviationTest {
     }
 
     @Test
-    fun `returns vchasno within plus or minus 5 minutes`() {
+    fun `returns vchasno within plus or minus 15 minutes`() {
+        assertEquals(
+            "вчасно",
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T08:15:00")
+        )
+        assertEquals(
+            "вчасно",
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T08:10:00")
+        )
         assertEquals(
             "вчасно",
             calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T08:05:00")
         )
         assertEquals(
             "вчасно",
-            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T08:03:00")
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:45:00")
         )
         assertEquals(
             "вчасно",
-            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:55:00")
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:50:00")
         )
         assertEquals(
             "вчасно",
@@ -40,10 +48,10 @@ class ScheduleDeviationTest {
     }
 
     @Test
-    fun `returns signed positive minutes when late by more than 5 minutes`() {
+    fun `returns signed positive minutes when late by more than 15 minutes`() {
         assertEquals(
-            "+6 хв",
-            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T08:06:00")
+            "+16 хв",
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T08:16:00")
         )
         assertEquals(
             "+20 хв",
@@ -56,14 +64,14 @@ class ScheduleDeviationTest {
     }
 
     @Test
-    fun `returns signed negative minutes when early by more than 5 minutes`() {
+    fun `returns signed negative minutes when early by more than 15 minutes`() {
         assertEquals(
-            "−6 хв",
-            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:54:00")
+            "−16 хв",
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:44:00")
         )
         assertEquals(
-            "−15 хв",
-            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:45:00")
+            "−20 хв",
+            calculateScheduleDeviation(scheduleDate, slotTime, "2026-10-27T07:40:00")
         )
         assertEquals(
             "−59 хв",
@@ -119,9 +127,9 @@ class ScheduleDeviationTest {
             )
         )
         assertEquals(
-            "−15 min",
+            "−20 min",
             calculateScheduleDeviation(
-                scheduleDate, slotTime, "2026-10-27T07:45:00",
+                scheduleDate, slotTime, "2026-10-27T07:40:00",
                 onTimeLabel = "on time", minuteUnit = "min", hourUnit = "h"
             )
         )
