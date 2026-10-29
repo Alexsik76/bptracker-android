@@ -181,6 +181,9 @@
     <string name="settings_theme_light">Світла</string>
     <string name="settings_theme_dark">Темна</string>
     <string name="settings_group_language">Мова</string>
+    <string name="settings_group_camera">Камера</string>
+    <string name="settings_camera_shutter_sound">Звук затвора при автоматичному розпізнаванні</string>
+    <string name="settings_camera_shutter_sound_hint">Відтворювати клацання затвора, коли розпізнавання в русі завершилося</string>
     <string name="settings_group_privacy">Приватність</string>
     <string name="settings_ocr_improve">Покращення моделі OCR</string>
     <string name="settings_ocr_improve_hint">Надсилати фото дисплея анонімно</string>
