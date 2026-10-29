@@ -151,7 +151,9 @@
     <string name="local_ocr_server_recognize">Recognize via server</string>
     <string name="scan_review_ocr_failed">Could not recognize the values. Please enter them manually.</string>
     <string name="scan_review_save_failed">Failed to save the measurement. Please try again.</string>
-    <string name="scan_review_hint">Tap a value or pencil to correct</string>
+    <string name="scan_review_photo_cd">Open photo full screen</string>
+    <string name="scan_review_more_actions_cd">More actions</string>
+    <string name="scan_review_close_viewer_cd">Close</string>
     <string name="scan_review_edit_cd">Edit %s</string>
     <string name="scan_review_done_cd">Done</string>
     <string name="scan_review_sys" translatable="false">SYS</string>
