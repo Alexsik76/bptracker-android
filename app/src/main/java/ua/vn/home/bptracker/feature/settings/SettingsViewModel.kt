@@ -18,6 +18,7 @@ data class SettingsState(
     val theme: AppTheme = AppTheme.AUTO,
     val language: AppLanguage = AppLanguage.SYSTEM,
     val ocrImprovement: Boolean = true,
+    val liveOcrShutterSound: Boolean = true,
     val version: String = BuildConfig.VERSION_NAME,
     val remindersActive: Boolean? = null,
     val templateId: String? = null,
@@ -52,6 +53,7 @@ class SettingsViewModel : ViewModel() {
         settingsStore.ocrImprovement,
         settingsStore.remindersEnabled,
         settingsStore.healthConnectEnabled,
+        settingsStore.liveOcrShutterSound,
         _templateState
     ) { flows ->
         val theme = flows[0] as AppTheme
@@ -59,12 +61,14 @@ class SettingsViewModel : ViewModel() {
         val ocr = flows[2] as Boolean
         val reminders = flows[3] as Boolean
         val hcEnabled = flows[4] as Boolean
+        val shutterSound = flows[5] as Boolean
         @Suppress("UNCHECKED_CAST")
-        val template = flows[5] as Pair<String?, Boolean?>
+        val template = flows[6] as Pair<String?, Boolean?>
         SettingsState(
             theme = theme,
             language = lang,
             ocrImprovement = ocr,
+            liveOcrShutterSound = shutterSound,
             version = BuildConfig.VERSION_NAME,
             remindersActive = reminders,
             templateId = template.first,
@@ -128,6 +132,10 @@ class SettingsViewModel : ViewModel() {
 
     fun setOcrImprovement(enabled: Boolean) {
         viewModelScope.launch { settingsStore.setOcrImprovement(enabled) }
+    }
+
+    fun setLiveOcrShutterSound(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setLiveOcrShutterSound(enabled) }
     }
 
     fun setRemindersEnabled(enabled: Boolean) {

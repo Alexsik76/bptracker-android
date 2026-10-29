@@ -49,9 +49,14 @@ class SettingsStore(private val context: Context) {
     }
 
     private val healthConnectKey = booleanPreferencesKey("health_connect_enabled")
+    private val liveOcrShutterSoundKey = booleanPreferencesKey("live_ocr_shutter_sound")
 
     val healthConnectEnabled: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
         prefs[healthConnectKey] ?: false
+    }
+
+    val liveOcrShutterSound: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
+        prefs[liveOcrShutterSoundKey] ?: true
     }
 
     suspend fun setTheme(theme: AppTheme) {
@@ -76,5 +81,9 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setHealthConnectEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { it[healthConnectKey] = enabled }
+    }
+
+    suspend fun setLiveOcrShutterSound(enabled: Boolean) {
+        context.settingsDataStore.edit { it[liveOcrShutterSoundKey] = enabled }
     }
 }

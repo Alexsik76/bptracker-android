@@ -192,12 +192,20 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+private data class LiveOcrData(
+    val bitmap: Bitmap,
+    val sys: Int,
+    val dia: Int,
+    val pul: Int,
+)
+
 @Composable
 fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val homeVm: HomeViewModel = viewModel()
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var liveOcrData by remember { mutableStateOf<LiveOcrData?>(null) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -282,6 +290,12 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 CameraScanScreen(
                     onCapture = { bitmap ->
                         capturedBitmap = bitmap
+                        liveOcrData = null
+                        navController.navigate("ocr_review")
+                    },
+                    onLiveResult = { bitmap, sys, dia, pul ->
+                        capturedBitmap = bitmap
+                        liveOcrData = LiveOcrData(bitmap, sys, dia, pul)
                         navController.navigate("ocr_review")
                     },
                     onEnterManually = { navController.navigate("manual_entry") },
@@ -293,9 +307,22 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 val reviewVm: ScanReviewViewModel = viewModel()
                 val reviewState by reviewVm.state.collectAsState()
 
-                capturedBitmap?.let { bitmap ->
-                    LaunchedEffect(bitmap) {
-                        reviewVm.initWithImage(bitmap)
+                val currentBitmap = capturedBitmap
+
+                LaunchedEffect(currentBitmap) {
+                    if (currentBitmap != null) {
+                        val live = liveOcrData
+                        if (live != null && live.bitmap == currentBitmap) {
+                            liveOcrData = null
+                            reviewVm.initWithResult(
+                                image = currentBitmap,
+                                sys = live.sys,
+                                dia = live.dia,
+                                pul = live.pul,
+                            )
+                        } else {
+                            reviewVm.initWithImage(currentBitmap)
+                        }
                     }
                 }
 
@@ -307,11 +334,13 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onSave = reviewVm::save,
                     onRetake = {
                         reviewVm.reset()
+                        liveOcrData = null
                         navController.popBackStack()
                     },
                     onRemoteOcr = reviewVm::recognizeRemote,
                     onBack = {
                         reviewVm.reset()
+                        liveOcrData = null
                         navController.popBackStack("home", inclusive = false)
                         capturedBitmap = null
                     }
@@ -370,6 +399,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onThemeSelect = settingsVm::setTheme,
                     onLanguageSelect = settingsVm::setLanguage,
                     onOcrImprovementToggle = settingsVm::setOcrImprovement,
+                    onLiveOcrShutterSoundToggle = settingsVm::setLiveOcrShutterSound,
                     onRemindersToggle = settingsVm::setRemindersEnabled,
                     onHealthConnectToggle = settingsVm::setHealthConnectEnabled,
                     onRepairReminders = settingsVm::repairReminders,

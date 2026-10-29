@@ -49,6 +49,16 @@ class ScanReviewViewModel : ViewModel() {
     private val _state = MutableStateFlow<ScanReviewState?>(null)
     val state: StateFlow<ScanReviewState?> = _state.asStateFlow()
 
+    fun initWithResult(image: Bitmap, sys: Int, dia: Int, pul: Int) {
+        _state.value = ScanReviewState.Ready(
+            image = image,
+            sys = sys.toString(),
+            dia = dia.toString(),
+            pulse = pul.toString(),
+            recognized = true
+        )
+    }
+
     fun initWithImage(image: Bitmap) {
         _state.value = ScanReviewState.Recognizing(image)
         

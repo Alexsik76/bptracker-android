@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -45,5 +46,27 @@ class ScanReviewViewModelTest {
             assertEquals(OperationUiState.InProgress, (awaitItem() as ScanReviewState.Ready).saveOperation)
             assertEquals(OperationUiState.Success, (awaitItem() as ScanReviewState.Ready).saveOperation)
         }
+    }
+
+    @Test
+    fun `initWithResult sets Ready state with recognized true and values without running OCR`() = runTest {
+        mockkObject(ServiceLocator)
+        val repo = mockk<ua.vn.home.bptracker.data.repository.MeasurementRepository>(relaxed = true)
+        val ocr = mockk<ua.vn.home.bptracker.feature.ocr.OcrEngine>(relaxed = true)
+        every { ServiceLocator.measurementRepository } returns repo
+        every { ServiceLocator.ocrEngine } returns ocr
+
+        val viewModel = ScanReviewViewModel()
+        val bitmap = mockk<Bitmap>()
+        viewModel.initWithResult(bitmap, 130, 85, 75)
+
+        val state = viewModel.state.value as? ScanReviewState.Ready
+        assertNotNull(state)
+        assertEquals(bitmap, state?.image)
+        assertEquals("130", state?.sys)
+        assertEquals("85", state?.dia)
+        assertEquals("75", state?.pulse)
+        assertTrue(state?.recognized == true)
+        assertEquals(OperationUiState.Idle, state?.saveOperation)
     }
 }

@@ -180,6 +180,9 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_group_language">Language</string>
+    <string name="settings_group_camera">Camera</string>
+    <string name="settings_camera_shutter_sound">Shutter sound on automatic recognition</string>
+    <string name="settings_camera_shutter_sound_hint">Play a shutter click when live recognition succeeds</string>
     <string name="settings_group_privacy">Privacy</string>
     <string name="settings_ocr_improve">Improve OCR model</string>
     <string name="settings_ocr_improve_hint">Send monitor photos anonymously</string>

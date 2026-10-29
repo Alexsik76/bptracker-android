@@ -4,10 +4,13 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.media.MediaActionSound
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
@@ -29,8 +32,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +46,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.scale
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.ui.theme.spacing
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicReference
 
 private val FRAME_WIDTH = 280.dp
 private val FRAME_HEIGHT = 220.dp
@@ -52,10 +60,62 @@ fun CameraScanScreen(
     onCapture: (Bitmap) -> Unit,
     onEnterManually: () -> Unit,
     onCancel: () -> Unit,
+    onLiveResult: (Bitmap, Int, Int, Int) -> Unit = { _, _, _, _ -> },
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
+    val hapticFeedback = LocalHapticFeedback.current
+    val mediaActionSound = remember { MediaActionSound() }
+    val shutterSoundEnabled by ServiceLocator.settingsStore.liveOcrShutterSound.collectAsState(initial = true)
+    val currentShutterSoundEnabled by rememberUpdatedState(shutterSoundEnabled)
+    var voteProgress by remember { mutableIntStateOf(0) }
+    val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
+    val cameraProviderRef = remember { AtomicReference<ProcessCameraProvider?>(null) }
+
+    val imageAnalysis = remember {
+        ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setResolutionSelector(
+                ResolutionSelector.Builder()
+                    .setResolutionStrategy(
+                        ResolutionStrategy(
+                            android.util.Size(1280, 720),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                        )
+                    )
+                    .build()
+            )
+            .build()
+    }
+
+    val liveOcrAnalyzer = remember {
+        LiveOcrAnalyzer(
+            ocrEngine = ServiceLocator.ocrEngine,
+            onProgress = { minVotes ->
+                voteProgress = minVotes
+            },
+            onConsensus = { session ->
+                imageAnalysis.clearAnalyzer()
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                if (currentShutterSoundEnabled) {
+                    mediaActionSound.play(MediaActionSound.SHUTTER_CLICK)
+                }
+                onLiveResult(session.bitmap, session.sys, session.dia, session.pul)
+            }
+        )
+    }
+
+    DisposableEffect(Unit) {
+        imageAnalysis.setAnalyzer(analyzerExecutor, liveOcrAnalyzer)
+        onDispose {
+            imageAnalysis.clearAnalyzer()
+            cameraProviderRef.get()?.unbind(imageAnalysis)
+            liveOcrAnalyzer.stop()
+            analyzerExecutor.shutdown()
+            mediaActionSound.release()
+        }
+    }
     
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -91,6 +151,7 @@ fun CameraScanScreen(
                     cameraProviderFuture.addListener(
                         {
                             val cameraProvider = cameraProviderFuture.get()
+                            cameraProviderRef.set(cameraProvider)
                             val preview = Preview.Builder().build().also {
                                 it.surfaceProvider = view.surfaceProvider
                             }
@@ -100,6 +161,7 @@ fun CameraScanScreen(
                                 val useCaseGroup = UseCaseGroup.Builder()
                                     .addUseCase(preview)
                                     .addUseCase(imageCapture)
+                                    .addUseCase(imageAnalysis)
                                     .setViewPort(viewPort)
                                     .build()
 
@@ -174,7 +236,7 @@ fun CameraScanScreen(
                 Surface(
                     color = Color.Black.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = 12.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.camera_hint),
@@ -182,6 +244,23 @@ fun CameraScanScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         fontSize = 16.sp
                     )
+                }
+
+                // Progress Indicator: 3 dots filling according to minimum per-field vote count (0..3)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                ) {
+                    for (i in 1..3) {
+                        val filled = voteProgress >= i
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(if (filled) Color(0xFF66BB6A) else Color.White.copy(alpha = 0.3f))
+                        )
+                    }
                 }
 
                 // Enter Manually
@@ -215,6 +294,9 @@ fun CameraScanScreen(
                             .background(Color.White)
                             .border(4.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
                             .clickable {
+                                imageAnalysis.clearAnalyzer()
+                                cameraProviderRef.get()?.unbind(imageAnalysis)
+                                liveOcrAnalyzer.stop()
                                 capturePhoto(
                                     imageCapture = imageCapture,
                                     context = context,

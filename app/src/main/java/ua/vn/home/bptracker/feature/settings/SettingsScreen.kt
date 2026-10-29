@@ -46,6 +46,7 @@ fun SettingsScreen(
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
     onOcrImprovementToggle: (Boolean) -> Unit,
+    onLiveOcrShutterSoundToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
     onHealthConnectToggle: (Boolean) -> Unit = {},
     onRepairReminders: () -> Unit,
@@ -148,6 +149,30 @@ fun SettingsScreen(
                         options = listOf("System", "Українська", "English"),
                         selectedIndex = state.language.ordinal,
                         onSelect = { onLanguageSelect(AppLanguage.entries[it]) }
+                    )
+                }
+            }
+
+            // Camera
+            ListGroupCard(title = stringResource(R.string.settings_group_camera)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = MaterialTheme.spacing.medium),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_camera_shutter_sound), style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            stringResource(R.string.settings_camera_shutter_sound_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = state.liveOcrShutterSound,
+                        onCheckedChange = onLiveOcrShutterSoundToggle
                     )
                 }
             }
