@@ -156,6 +156,7 @@
     <string name="scan_review_close_viewer_cd">Close</string>
     <string name="scan_review_edit_cd">Edit %s</string>
     <string name="scan_review_done_cd">Done</string>
+    <string name="scan_review_backspace_cd">Backspace</string>
     <string name="scan_review_sys" translatable="false">SYS</string>
     <string name="scan_review_dia" translatable="false">DIA</string>
     <string name="scan_review_pul" translatable="false">PUL</string>
