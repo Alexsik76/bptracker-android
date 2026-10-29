@@ -43,6 +43,10 @@ import androidx.core.graphics.scale
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.ui.theme.spacing
 
+private val FRAME_WIDTH = 280.dp
+private val FRAME_HEIGHT = 220.dp
+private const val FRAME_MARGIN = 0.10f
+
 @Composable
 fun CameraScanScreen(
     onCapture: (Bitmap) -> Unit,
@@ -117,7 +121,9 @@ fun CameraScanScreen(
             }
 
             // Viewfinder with Dimmed Background
-            val viewfinderSize = with(density) { Size(280.dp.toPx(), 220.dp.toPx()) }
+            val frameWidthPx = with(density) { FRAME_WIDTH.toPx() }
+            val frameHeightPx = with(density) { FRAME_HEIGHT.toPx() }
+            val viewfinderSize = Size(frameWidthPx, frameHeightPx)
             
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val canvasWidth = size.width
@@ -150,7 +156,7 @@ fun CameraScanScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(280.dp, 220.dp)
+                        .size(FRAME_WIDTH, FRAME_HEIGHT)
                         .border(2.dp, Color.White, RoundedCornerShape(12.dp))
                 )
             }
@@ -209,7 +215,15 @@ fun CameraScanScreen(
                             .background(Color.White)
                             .border(4.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
                             .clickable {
-                                capturePhoto(imageCapture, context, onCapture)
+                                capturePhoto(
+                                    imageCapture = imageCapture,
+                                    context = context,
+                                    viewWidthPx = previewView.width.toFloat(),
+                                    viewHeightPx = previewView.height.toFloat(),
+                                    frameWidthPx = frameWidthPx,
+                                    frameHeightPx = frameHeightPx,
+                                    onCapture = onCapture,
+                                )
                             }
                     )
 
@@ -228,7 +242,11 @@ fun CameraScanScreen(
 private fun capturePhoto(
     imageCapture: ImageCapture,
     context: android.content.Context,
-    onCapture: (Bitmap) -> Unit
+    viewWidthPx: Float,
+    viewHeightPx: Float,
+    frameWidthPx: Float,
+    frameHeightPx: Float,
+    onCapture: (Bitmap) -> Unit,
 ) {
     imageCapture.takePicture(
         ContextCompat.getMainExecutor(context),
@@ -237,50 +255,87 @@ private fun capturePhoto(
                 val rotation = image.imageInfo.rotationDegrees
                 val cropRect = image.cropRect
                 val fullBitmap = image.toBitmap()
-                
-                // Crop the bitmap to the viewfinder area (ViewPort)
-                val croppedBitmap = Bitmap.createBitmap(
+                image.close()
+
+                // 1. ViewPort crop (as now)
+                val viewPortCropped = Bitmap.createBitmap(
                     fullBitmap,
                     cropRect.left,
                     cropRect.top,
                     cropRect.width(),
-                    cropRect.height()
+                    cropRect.height(),
                 )
-                
-                image.close()
+                if (viewPortCropped !== fullBitmap) {
+                    fullBitmap.recycle()
+                }
 
-                val processed = processBitmap(croppedBitmap, rotation)
-                onCapture(processed)
+                // 2. Rotate (as now)
+                val matrix = Matrix().apply {
+                    postRotate(rotation.toFloat())
+                }
+                val rotated = Bitmap.createBitmap(
+                    viewPortCropped,
+                    0,
+                    0,
+                    viewPortCropped.width,
+                    viewPortCropped.height,
+                    matrix,
+                    true,
+                )
+                if (rotated !== viewPortCropped) {
+                    viewPortCropped.recycle()
+                }
+
+                // 3. Viewfinder crop
+                val crop = viewfinderCropRect(
+                    imageWidth = rotated.width,
+                    imageHeight = rotated.height,
+                    viewWidthPx = viewWidthPx,
+                    viewHeightPx = viewHeightPx,
+                    frameWidthPx = frameWidthPx,
+                    frameHeightPx = frameHeightPx,
+                    margin = FRAME_MARGIN,
+                )
+                val viewfinderCropped = Bitmap.createBitmap(
+                    rotated,
+                    crop.left,
+                    crop.top,
+                    crop.width,
+                    crop.height,
+                )
+                if (viewfinderCropped !== rotated) {
+                    rotated.recycle()
+                }
+
+                // 4. Downscale to <= 1024 px on long edge (as now)
+                val targetSize = 1024f
+                val scale = if (viewfinderCropped.width > viewfinderCropped.height) {
+                    targetSize / viewfinderCropped.width
+                } else {
+                    targetSize / viewfinderCropped.height
+                }
+                val finalBitmap = if (scale < 1f) {
+                    val scaled = viewfinderCropped.scale(
+                        width = (viewfinderCropped.width * scale).toInt(),
+                        height = (viewfinderCropped.height * scale).toInt(),
+                        filter = true,
+                    )
+                    if (scaled !== viewfinderCropped) {
+                        viewfinderCropped.recycle()
+                    }
+                    scaled
+                } else {
+                    viewfinderCropped
+                }
+
+                Log.d("CameraScan", "Final bitmap size: ${finalBitmap.width}x${finalBitmap.height}")
+                onCapture(finalBitmap)
             }
 
             override fun onError(exception: ImageCaptureException) {
                 Log.e("CameraScan", "Capture failed", exception)
             }
         }
-    )
-}
-
-private fun processBitmap(bitmap: Bitmap, rotation: Int): Bitmap {
-    val matrix = Matrix().apply {
-        postRotate(rotation.toFloat())
-    }
-    
-    val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    
-    // Downscale to ~1024px on long edge
-    val targetSize = 1024f
-    val scale = if (rotated.width > rotated.height) {
-        targetSize / rotated.width
-    } else {
-        targetSize / rotated.height
-    }
-    
-    if (scale >= 1f) return rotated
-
-    return rotated.scale(
-        width = (rotated.width * scale).toInt(),
-        height = (rotated.height * scale).toInt(),
-        filter = true,
     )
 }
 
