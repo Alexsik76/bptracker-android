@@ -147,11 +147,16 @@
 
     <!-- Local OCR -->
     <string name="local_ocr_result_title">Recognition Result</string>
-    <string name="local_ocr_zoom">Zoom</string>
     <string name="local_ocr_retake">Retake</string>
     <string name="local_ocr_server_recognize">Recognize via server</string>
     <string name="scan_review_ocr_failed">Could not recognize the values. Please enter them manually.</string>
     <string name="scan_review_save_failed">Failed to save the measurement. Please try again.</string>
+    <string name="scan_review_hint">Tap a value or pencil to correct</string>
+    <string name="scan_review_edit_cd">Edit %s</string>
+    <string name="scan_review_done_cd">Done</string>
+    <string name="scan_review_sys" translatable="false">SYS</string>
+    <string name="scan_review_dia" translatable="false">DIA</string>
+    <string name="scan_review_pul" translatable="false">PUL</string>
 
     <!-- Measurement Detail -->
     <string name="measurement_detail_title">Reading</string>
