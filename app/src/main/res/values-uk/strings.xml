@@ -160,6 +160,7 @@
     <string name="scan_review_close_viewer_cd">Закрити</string>
     <string name="scan_review_edit_cd">Виправити %s</string>
     <string name="scan_review_done_cd">Готово</string>
+    <string name="scan_review_backspace_cd">Видалити цифру</string>
 
     <!-- Measurement Detail -->
     <string name="measurement_detail_title">Замір</string>

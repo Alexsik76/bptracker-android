@@ -1,6 +1,7 @@
 package ua.vn.home.bptracker.feature.home
 
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -8,15 +9,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Edit
@@ -27,24 +25,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
@@ -57,9 +49,21 @@ import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.ui.theme.*
 
-private enum class Field {
-    SYS, DIA, PUL
+private enum class Field(
+    val labelRes: Int,
+    val color: Color,
+    val hasUnit: Boolean,
+    val hasHeartIcon: Boolean,
+    val fontSize: TextUnit
+) {
+    SYS(R.string.scan_review_sys, ColorSys, hasUnit = true, hasHeartIcon = false, fontSize = 56.sp),
+    DIA(R.string.scan_review_dia, ColorDia, hasUnit = true, hasHeartIcon = false, fontSize = 44.sp),
+    PUL(R.string.scan_review_pul, ColorPulse, hasUnit = false, hasHeartIcon = true, fontSize = 30.sp)
 }
+
+private const val MaxEditDigits = 3
+
+private val SwipeUpThreshold = 80.dp
 
 private val TopBarTitleStyle = TextStyle(
     fontFamily = DmSans,
@@ -111,7 +115,16 @@ private val MenuItemTextStyle = TextStyle(
     fontSize = 15.sp
 )
 
-@OptIn(ExperimentalLayoutApi::class)
+private fun valueTextStyle(fontSize: TextUnit, color: Color) = TextStyle(
+    fontFamily = DmMono,
+    fontWeight = FontWeight.Medium,
+    fontSize = fontSize,
+    lineHeight = fontSize,
+    letterSpacing = (-1).sp,
+    textAlign = TextAlign.End,
+    color = color
+)
+
 @Composable
 fun ScanReviewScreen(
     state: ScanReviewState?,
@@ -127,14 +140,30 @@ fun ScanReviewScreen(
     val recognizingState = state as? ScanReviewState.Recognizing
 
     var editing by rememberSaveable { mutableStateOf<Field?>(null) }
+    var draft by rememberSaveable { mutableStateOf("") }
     var showFullscreenViewer by rememberSaveable { mutableStateOf(false) }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
 
-    val dismissEdit: () -> Unit = {
+    val startEdit: (Field, String) -> Unit = { field, current ->
+        draft = current
+        editing = field
+    }
+
+    val discardEdit: () -> Unit = {
         editing = null
-        keyboardController?.hide()
-        focusManager.clearFocus()
+    }
+
+    val confirmEdit: (Field) -> Unit = { field ->
+        when (field) {
+            Field.SYS -> onSysChange(draft)
+            Field.DIA -> onDiaChange(draft)
+            Field.PUL -> onPulseChange(draft)
+        }
+        editing = null
+    }
+
+    // Only intercept back while a value is being edited; overview back is handled by the caller
+    BackHandler(enabled = editing != null) {
+        discardEdit()
     }
 
     LaunchedEffect(readyState?.saveOperation) {
@@ -148,6 +177,25 @@ fun ScanReviewScreen(
             image = image,
             onDismiss = { showFullscreenViewer = false }
         )
+    }
+
+    val activeField = editing
+    if (activeField != null) {
+        FocusedValueEditor(
+            field = activeField,
+            draft = draft,
+            image = image,
+            onOpenViewer = { showFullscreenViewer = true },
+            onSwipeUp = discardEdit,
+            onDigit = { digit ->
+                if (draft.length < MaxEditDigits) draft += digit
+            },
+            onBackspace = {
+                draft = draft.dropLast(1)
+            },
+            onConfirm = { confirmEdit(activeField) }
+        )
+        return
     }
 
     Scaffold(
@@ -185,7 +233,6 @@ fun ScanReviewScreen(
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.background)
                         .navigationBarsPadding()
-                        .imePadding()
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -305,8 +352,7 @@ fun ScanReviewScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val configuration = LocalConfiguration.current
-            val isImeVisible = WindowInsets.isImeVisible
-            val minPhotoHeight = if (isImeVisible) 96.dp else (configuration.screenHeightDp * 0.4f).dp
+            val minPhotoHeight = (configuration.screenHeightDp * 0.4f).dp
 
             // Photo Area
             Box(
@@ -372,66 +418,160 @@ fun ScanReviewScreen(
                 ValuesCard {
                     ReadingRow(
                         field = Field.SYS,
-                        label = stringResource(R.string.scan_review_sys),
-                        labelColor = ColorSys,
-                        unit = stringResource(R.string.dashboard_units_mmHg),
-                        hasHeartIcon = false,
                         value = readyState.sys,
                         isValid = readyState.sysValid,
-                        fontSize = 56.sp,
-                        isEditing = editing == Field.SYS,
-                        onValueChange = onSysChange,
-                        onRowClick = {
-                            if (editing == Field.SYS) dismissEdit() else editing = Field.SYS
-                        },
-                        onButtonClick = {
-                            if (editing == Field.SYS) dismissEdit() else editing = Field.SYS
-                        },
-                        onDismissEdit = dismissEdit
+                        onClick = { startEdit(Field.SYS, readyState.sys) }
                     )
 
                     ReadingRow(
                         field = Field.DIA,
-                        label = stringResource(R.string.scan_review_dia),
-                        labelColor = ColorDia,
-                        unit = stringResource(R.string.dashboard_units_mmHg),
-                        hasHeartIcon = false,
                         value = readyState.dia,
                         isValid = readyState.diaValid,
-                        fontSize = 44.sp,
-                        isEditing = editing == Field.DIA,
-                        onValueChange = onDiaChange,
-                        onRowClick = {
-                            if (editing == Field.DIA) dismissEdit() else editing = Field.DIA
-                        },
-                        onButtonClick = {
-                            if (editing == Field.DIA) dismissEdit() else editing = Field.DIA
-                        },
-                        onDismissEdit = dismissEdit
+                        onClick = { startEdit(Field.DIA, readyState.dia) }
                     )
 
                     ReadingRow(
                         field = Field.PUL,
-                        label = stringResource(R.string.scan_review_pul),
-                        labelColor = ColorPulse,
-                        unit = null,
-                        hasHeartIcon = true,
                         value = readyState.pulse,
                         isValid = readyState.pulseValid,
-                        fontSize = 30.sp,
-                        isEditing = editing == Field.PUL,
-                        onValueChange = onPulseChange,
-                        onRowClick = {
-                            if (editing == Field.PUL) dismissEdit() else editing = Field.PUL
-                        },
-                        onButtonClick = {
-                            if (editing == Field.PUL) dismissEdit() else editing = Field.PUL
-                        },
-                        onDismissEdit = dismissEdit
+                        onClick = { startEdit(Field.PUL, readyState.pulse) }
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FocusedValueEditor(
+    field: Field,
+    draft: String,
+    image: Bitmap?,
+    onOpenViewer: () -> Unit,
+    onSwipeUp: () -> Unit,
+    onDigit: (Char) -> Unit,
+    onBackspace: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val swipeThresholdPx = with(LocalDensity.current) { SwipeUpThreshold.toPx() }
+    val label = stringResource(field.labelRes)
+    val unit = stringResource(R.string.dashboard_units_mmHg)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Photo and header; swipe up here discards the edit (keypad is excluded)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .pointerInput(swipeThresholdPx) {
+                    var totalDrag = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { totalDrag = 0f },
+                        onDragCancel = { totalDrag = 0f },
+                        onDragEnd = {
+                            if (totalDrag <= -swipeThresholdPx) onSwipeUp()
+                        },
+                        onVerticalDrag = { _, dragAmount -> totalDrag += dragAmount }
+                    )
+                },
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+                        RoundedCornerShape(18.dp)
+                    )
+                    .then(
+                        if (image != null) {
+                            Modifier.clickable(onClick = onOpenViewer)
+                        } else {
+                            Modifier
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (image != null) {
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = stringResource(R.string.scan_review_photo_cd),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+
+            // Header: label (always visible) on the left, draft value on the right
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = label,
+                        style = LabelTextStyle.copy(color = field.color)
+                    )
+                    if (field.hasUnit) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = unit,
+                            style = UnitTextStyle.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                            )
+                        )
+                    }
+                    if (field.hasHeartIcon) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Filled.Favorite,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = field.color
+                        )
+                    }
+                }
+
+                if (draft.isEmpty()) {
+                    Text(
+                        text = "—",
+                        style = valueTextStyle(
+                            fontSize = field.fontSize,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)
+                        )
+                    )
+                } else {
+                    Text(
+                        text = draft,
+                        style = valueTextStyle(
+                            fontSize = field.fontSize,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                }
+            }
+        }
+
+        NumericKeypad(
+            onDigit = onDigit,
+            onBackspace = onBackspace,
+            onConfirm = onConfirm,
+            modifier = Modifier.navigationBarsPadding()
+        )
     }
 }
 
@@ -579,30 +719,12 @@ private fun ValuesCard(
 @Composable
 private fun ReadingRow(
     field: Field,
-    label: String,
-    labelColor: Color,
-    unit: String?,
-    hasHeartIcon: Boolean,
     value: String,
     isValid: Boolean,
-    fontSize: TextUnit,
-    isEditing: Boolean,
-    onValueChange: (String) -> Unit,
-    onRowClick: () -> Unit,
-    onButtonClick: () -> Unit,
-    onDismissEdit: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(isEditing) {
-        if (isEditing) {
-            try {
-                focusRequester.requestFocus()
-            } catch (_: Throwable) {
-            }
-        }
-    }
+    val label = stringResource(field.labelRes)
 
     val valueColor = if (value.isNotEmpty() && !isValid) {
         MaterialTheme.colorScheme.error
@@ -610,32 +732,13 @@ private fun ReadingRow(
         MaterialTheme.colorScheme.onSurface
     }
 
-    val valueTextStyle = TextStyle(
-        fontFamily = DmMono,
-        fontWeight = FontWeight.Medium,
-        fontSize = fontSize,
-        lineHeight = fontSize,
-        letterSpacing = (-1).sp,
-        textAlign = TextAlign.End,
-        color = valueColor
-    )
-
     val rowShape = RoundedCornerShape(16.dp)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(rowShape)
-            .then(
-                if (isEditing) {
-                    Modifier
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary, rowShape)
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onRowClick)
+            .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -643,29 +746,29 @@ private fun ReadingRow(
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            if (hasHeartIcon) {
+            if (field.hasHeartIcon) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = label,
-                        style = LabelTextStyle.copy(color = labelColor)
+                        style = LabelTextStyle.copy(color = field.color)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Filled.Favorite,
                         contentDescription = null,
                         modifier = Modifier.size(12.dp),
-                        tint = labelColor
+                        tint = field.color
                     )
                 }
             } else {
                 Text(
                     text = label,
-                    style = LabelTextStyle.copy(color = labelColor)
+                    style = LabelTextStyle.copy(color = field.color)
                 )
             }
-            if (unit != null) {
+            if (field.hasUnit) {
                 Text(
-                    text = unit,
+                    text = stringResource(R.string.dashboard_units_mmHg),
                     style = UnitTextStyle.copy(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
                     )
@@ -674,43 +777,16 @@ private fun ReadingRow(
         }
 
         // Value
-        if (isEditing) {
-            BasicTextField(
-                value = value,
-                onValueChange = { input ->
-                    val digits = input.filter { it.isDigit() }
-                    if (digits.length <= 3) {
-                        onValueChange(digits)
-                    }
-                },
-                modifier = Modifier
-                    .widthIn(min = 36.dp)
-                    .focusRequester(focusRequester),
-                textStyle = valueTextStyle,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        onDismissEdit()
-                    }
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                singleLine = true
-            )
-        } else {
-            Text(
-                text = if (value.isEmpty()) "—" else value,
-                style = if (value.isEmpty()) {
-                    EmptyValueTextStyle.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)
-                    )
-                } else {
-                    valueTextStyle
-                }
-            )
-        }
+        Text(
+            text = if (value.isEmpty()) "—" else value,
+            style = if (value.isEmpty()) {
+                EmptyValueTextStyle.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)
+                )
+            } else {
+                valueTextStyle(fontSize = field.fontSize, color = valueColor)
+            }
+        )
 
         Spacer(modifier = Modifier.width(12.dp))
 
@@ -719,28 +795,16 @@ private fun ReadingRow(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(
-                    if (isEditing) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
-                )
-                .clickable(onClick = onButtonClick),
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                .clickable(onClick = onClick),
             contentAlignment = Alignment.Center
         ) {
-            if (isEditing) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = stringResource(R.string.scan_review_done_cd),
-                    modifier = Modifier.size(20.dp),
-                    tint = DarkBgPrimary
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = stringResource(R.string.scan_review_edit_cd, label),
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f)
-                )
-            }
+            Icon(
+                imageVector = Icons.Outlined.Edit,
+                contentDescription = stringResource(R.string.scan_review_edit_cd, label),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.60f)
+            )
         }
     }
 }
