@@ -62,21 +62,32 @@
     <!-- Schedule -->
     <string name="schedule_title">Schedule</string>
     <string name="schedule_today">Today</string>
+    <string name="schedule_all_done">All intakes for today completed</string>
     <string name="schedule_coming_soon">Reminders — coming soon</string>
     <string name="schedule_empty">No medications scheduled for today</string>
     <string name="schedule_empty_hint">You will see your medication plan here once it is synced from the server.</string>
     <string name="schedule_taken">Taken</string>
-    <string name="schedule_status_completed">completed</string>
-    <string name="schedule_status_pending">pending</string>
-    <string name="schedule_taken_at_prefix">Taken at </string>
-    <string name="schedule_not_taken">Not taken</string>
-    <string name="schedule_action_take">Take</string>
+    <string name="schedule_compact_taken_prefix">taken at </string>
+    <string name="schedule_compact_at_prefix">at </string>
+    <string name="schedule_compact_missed">missed</string>
+    <string name="schedule_chip_due_now">now</string>
+    <string name="schedule_chip_before_minutes">in %d min</string>
+    <string name="schedule_chip_before_hours">in %d h</string>
+    <string name="schedule_chip_late_minutes">late %d min</string>
+    <string name="schedule_chip_late_hours">late %d h</string>
+    <string name="schedule_chip_late_hours_minutes">late %1$d h %2$d min</string>
+    <string name="schedule_snackbar_confirmed">Intake confirmed</string>
+    <string name="schedule_snackbar_undo">Undo</string>
     <string name="schedule_deviation_on_time">on time</string>
     <string name="schedule_deviation_minute_short">min</string>
     <string name="schedule_deviation_hour_short">h</string>
     <plurals name="schedule_intakes_count">
         <item quantity="one">of %d intake</item>
         <item quantity="other">of %d intakes</item>
+    </plurals>
+    <plurals name="schedule_confirm_content_description">
+        <item quantity="one">Confirm intake %1$s, %2$d medication</item>
+        <item quantity="other">Confirm intake %1$s, %2$d medications</item>
     </plurals>
     <string name="schedule_missed">Missed</string>
     <string name="schedule_pending">Pending</string>
