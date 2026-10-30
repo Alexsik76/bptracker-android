@@ -7,135 +7,157 @@ import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import ua.vn.home.bptracker.R
+import ua.vn.home.bptracker.core.config.SettingsStore
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.DoseUnit
+import ua.vn.home.bptracker.data.dto.ReminderConfigDto
 import ua.vn.home.bptracker.data.dto.WhenSlot
+import ua.vn.home.bptracker.data.repository.ReminderConfigRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.temporal.ChronoUnit
-import kotlin.math.roundToInt
 
-class ReminderReceiver : BroadcastReceiver() {
+class ReminderReceiver(
+    private val schedulerOverride: ReminderScheduler? = null,
+    private val configRepoOverride: ReminderConfigRepository? = null,
+    private val todayScheduleOverride: TodayScheduleUseCase? = null,
+    private val settingsStoreOverride: SettingsStore? = null,
+    private val notificationHelperOverride: NotificationHelper? = null,
+    private val coroutineScopeOverride: CoroutineScope? = null
+) : BroadcastReceiver() {
+
+    private fun getScheduler(): ReminderScheduler = schedulerOverride ?: ServiceLocator.reminderScheduler
+    private fun getConfigRepository(): ReminderConfigRepository = configRepoOverride ?: ServiceLocator.reminderConfigRepository
+    private fun getTodayScheduleUseCase(): TodayScheduleUseCase = todayScheduleOverride ?: ServiceLocator.todayScheduleUseCase
+    private fun getSettingsStore(): SettingsStore = settingsStoreOverride ?: ServiceLocator.settingsStore
+    private fun getNotificationHelper(context: Context): NotificationHelper =
+        notificationHelperOverride ?: NotificationHelper(context)
+
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val periodFromIntent = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
         Log.i("ReminderDiag", "receiver fired action=$action extra_period=$periodFromIntent")
 
-        val pendingResult = goAsync()
-        
-        CoroutineScope(Dispatchers.IO).launch {
+        val pendingResult = try { goAsync() } catch (_: Exception) { null }
+        val scope = coroutineScopeOverride ?: CoroutineScope(Dispatchers.IO)
+
+        scope.launch {
             try {
-                val enabled = ServiceLocator.settingsStore.remindersEnabled.first()
-                
-                if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-                    if (enabled) {
-                        Log.i("ReminderDiag", "call=ReminderReceiver.restore action=$action thread=${Thread.currentThread().name}")
-                        ServiceLocator.reminderScheduler.rescheduleAll()
-                    } else {
-                        Log.i("ReminderDiag", "early exit ReminderReceiver.restore: reminders disabled for action=$action")
-                    }
-                    return@launch
-                }
-
-                if (!enabled) {
-                    Log.i("ReminderDiag", "early exit ReminderReceiver: reminders disabled")
-                    return@launch
-                }
-
-                val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
-                if (period == null) {
-                    Log.i("ReminderDiag", "early exit ReminderReceiver: period extra missing")
-                    return@launch
-                }
-
-                val resolved = ServiceLocator.reminderConfigRepository.resolveConfig()
-                val config = resolved.config
-                if (config == null) {
-                    Log.e("ReminderDiag", "ReminderReceiver failure: could not resolve config")
-                    ServiceLocator.settingsStore.setReminderScheduleFailed(true)
-                    ServiceLocator.reminderScheduler.scheduleAlarmAt(period, LocalDateTime.now().plusHours(1))
-                    Log.i("ReminderDiag", "ReminderReceiver: scheduled retry for period=$period in 1 hour")
-                    return@launch
-                }
-
-                val timeStr = when (period) {
-                    "Morning" -> config.morningTime
-                    "Day" -> config.dayTime
-                    "Evening" -> config.eveningTime
-                    else -> null
-                }
-                if (timeStr == null) {
-                    Log.e("ReminderDiag", "ReminderReceiver failure: unknown period $period")
-                    return@launch
-                }
-
-                val baseTime = LocalDateTime.of(LocalDate.now(), LocalTime.parse(timeStr))
-                val now = LocalDateTime.now()
-
-                val today = LocalDate.now().toString()
-                val schedule = ServiceLocator.todayScheduleUseCase.getTodayOnce(today)
-                val slot = schedule.slots.find { (it.slot.name == period) }
-                
-                if (slot == null || slot.taken || slot.meds.isEmpty()) {
-                    Log.i("ReminderDiag", "no notification for period=$period: slot=${if (slot == null) "MISSING" else if (slot.taken) "TAKEN" else "EMPTY"}. Scheduling tomorrow.")
-                    ServiceLocator.reminderScheduler.scheduleAlarmAt(period, baseTime.plusDays(1))
-                    return@launch
-                }
-
-                val medNames = slot.meds.asSequence().map { med ->
-                    val unitStr = when (med.doseUnit) {
-                        DoseUnit.Tablet -> context.getString(R.string.med_enum_unit_tablet)
-                        DoseUnit.Mg -> context.getString(R.string.med_enum_unit_mg)
-                        DoseUnit.Ml -> context.getString(R.string.med_enum_unit_ml)
-                        DoseUnit.Drop -> context.getString(R.string.med_enum_unit_drop)
-                        DoseUnit.Mcg -> context.getString(R.string.med_enum_unit_mcg)
-                        DoseUnit.Iu -> context.getString(R.string.med_enum_unit_iu)
-                        null -> ""
-                    }
-                    val dose = listOf(med.doseAmount, unitStr).filter { it.isNotEmpty() }.joinToString(" ")
-                    "${med.medicine} ($dose)"
-                }.toList()
-
-                ServiceLocator.notificationHelper.createNotificationChannel()
-                ServiceLocator.notificationHelper.showReminderNotification(LocalDate.now(), WhenSlot.valueOf(period), medNames)
-                Log.i("ReminderDiag", "notification posted for period=$period")
-
-                // Decide next alarm
-                val maxReminders = config.maxReminders
-                val durationMinutes = config.durationMinutes
-
-                if (maxReminders <= 0 || durationMinutes <= 0) {
-                    ServiceLocator.reminderScheduler.scheduleAlarmAt(period, baseTime.plusDays(1))
-                    Log.i("ReminderDiag", "period=$period repeat skipped (config limit), scheduled for tomorrow")
-                } else {
-                    var nextMoment: LocalDateTime? = null
-                    
-                    for (k in 1..maxReminders) {
-                        val candidate = baseTime.plusMinutes((durationMinutes.toLong() * k) / maxReminders)
-                        if (candidate.isAfter(now.plusSeconds(5))) {
-                            nextMoment = candidate
-                            break
-                        }
-                    }
-
-                    val durationPassed = ChronoUnit.MINUTES.between(baseTime, now)
-                    val currentK = if (durationPassed <= 0) 0 else {
-                        ((durationPassed.toDouble() * maxReminders) / durationMinutes).roundToInt()
-                    }
-                    val currentLabel = if (currentK <= 0) "primary notification" else "reminder $currentK"
-
-                    if (nextMoment != null) {
-                        ServiceLocator.reminderScheduler.scheduleAlarmAt(period, nextMoment)
-                        Log.i("ReminderDiag", "period=$period fired=$currentLabel, next scheduled moment: $nextMoment")
-                    } else {
-                        ServiceLocator.reminderScheduler.scheduleAlarmAt(period, baseTime.plusDays(1))
-                        Log.i("ReminderDiag", "period=$period fired=$currentLabel, window exhausted, scheduled for tomorrow")
-                    }
-                }
+                processIntent(context, intent)
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult?.finish()
+                } catch (_: Exception) {
+                }
             }
+        }
+    }
+
+    internal suspend fun processIntent(context: Context, intent: Intent) {
+        val action = intent.action
+
+        try {
+            val enabled = getSettingsStore().remindersEnabled.first()
+
+            val isRestoreAction = action == Intent.ACTION_BOOT_COMPLETED ||
+                    action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+                    action == Intent.ACTION_TIMEZONE_CHANGED ||
+                    action == Intent.ACTION_TIME_CHANGED
+
+            if (isRestoreAction) {
+                if (enabled) {
+                    Log.i("ReminderDiag", "call=ReminderReceiver.restore action=$action thread=${Thread.currentThread().name}")
+                    getScheduler().rescheduleAll()
+                } else {
+                    Log.i("ReminderDiag", "early exit ReminderReceiver.restore: reminders disabled for action=$action")
+                }
+                return
+            }
+
+            if (!enabled) {
+                Log.i("ReminderDiag", "early exit ReminderReceiver: reminders disabled")
+                return
+            }
+
+            val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
+            if (period == null) {
+                Log.i("ReminderDiag", "early exit ReminderReceiver: period extra missing")
+                return
+            }
+
+            val resolved = getConfigRepository().resolveConfig()
+            val config = resolved.config ?: getConfigRepository().getCachedConfig() ?: DEFAULT_REMINDER_CONFIG
+
+            val slot = WhenSlot.valueOf(period)
+            val now = LocalDateTime.now()
+
+            val today = now.toLocalDate().toString()
+            val schedule = getTodayScheduleUseCase().getTodayOnce(today)
+            val todaySlot = schedule.slots.find { it.slot == slot }
+
+            if (todaySlot == null || todaySlot.taken || todaySlot.meds.isEmpty()) {
+                Log.i("ReminderDiag", "no notification for period=$period: slot=${if (todaySlot == null) "MISSING" else if (todaySlot.taken) "TAKEN" else "EMPTY"}. Scheduling tomorrow.")
+                val nextMoment = computeNextReminder(slot, config, isConfirmed = true, now = now)
+                getScheduler().scheduleAlarmAt(period, nextMoment)
+                return
+            }
+
+            val medNames = todaySlot.meds.asSequence().map { med ->
+                val unitStr = when (med.doseUnit) {
+                    DoseUnit.Tablet -> context.getString(R.string.med_enum_unit_tablet)
+                    DoseUnit.Mg -> context.getString(R.string.med_enum_unit_mg)
+                    DoseUnit.Ml -> context.getString(R.string.med_enum_unit_ml)
+                    DoseUnit.Drop -> context.getString(R.string.med_enum_unit_drop)
+                    DoseUnit.Mcg -> context.getString(R.string.med_enum_unit_mcg)
+                    DoseUnit.Iu -> context.getString(R.string.med_enum_unit_iu)
+                    null -> ""
+                }
+                val dose = listOf(med.doseAmount, unitStr).filter { it.isNotEmpty() }.joinToString(" ")
+                "${med.medicine} ($dose)"
+            }.toList()
+
+            getNotificationHelper(context).createNotificationChannel()
+            getNotificationHelper(context).showReminderNotification(now.toLocalDate(), slot, medNames)
+            Log.i("ReminderDiag", "notification posted for period=$period")
+
+            val nextMoment = computeNextReminder(slot, config, isConfirmed = false, now = now)
+            getScheduler().scheduleAlarmAt(period, nextMoment)
+            Log.i("ReminderDiag", "period=$period next scheduled moment: $nextMoment")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Throwable) {
+            Log.e("ReminderDiag", "ReminderReceiver failure in processIntent", t)
+            try {
+                scheduleFallback(intent)
+            } catch (fallbackError: Throwable) {
+                Log.e("ReminderDiag", "Failed to schedule fallback alarm", fallbackError)
+            }
+        }
+    }
+
+    private suspend fun scheduleFallback(intent: Intent) {
+        val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
+        val fallbackConfig = try {
+            getConfigRepository().getCachedConfig()
+        } catch (_: Throwable) {
+            null
+        } ?: DEFAULT_REMINDER_CONFIG
+        val now = LocalDateTime.now()
+
+        if (period != null) {
+            val slot = WhenSlot.entries.find { it.name.equals(period, ignoreCase = true) }
+            val nextMoment = if (slot != null) {
+                computeNextReminder(slot, fallbackConfig, isConfirmed = false, now = now)
+            } else {
+                now.plusHours(1)
+            }
+            getScheduler().scheduleAlarmAt(period, nextMoment)
+            Log.i("ReminderDiag", "Scheduled fallback alarm for period=$period at $nextMoment")
+        } else {
+            WhenSlot.entries.forEach { slot ->
+                val nextMoment = computeNextReminder(slot, fallbackConfig, isConfirmed = false, now = now)
+                getScheduler().scheduleAlarmAt(slot.name, nextMoment)
+            }
+            Log.i("ReminderDiag", "Scheduled fallback alarms for all slots")
         }
     }
 }

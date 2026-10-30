@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import ua.vn.home.bptracker.core.di.ServiceLocator
+import ua.vn.home.bptracker.data.dto.WhenSlot
 import ua.vn.home.bptracker.data.repository.ConfigSource
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -105,16 +106,10 @@ class ReminderScheduler(private val context: Context) {
         val settingsStore = ServiceLocator.settingsStore
 
         val resolved = repository.resolveConfig()
-        val config = resolved.config
+        val config = resolved.config ?: repository.getCachedConfig() ?: DEFAULT_REMINDER_CONFIG
         val source = resolved.source.name.lowercase()
 
-        Log.i("ReminderDiag", "config resolved [count=$count] source=$source: ${if (config == null) "NULL" else "M=${config.morningTime}, D=${config.dayTime}, E=${config.eveningTime}"}")
-
-        if (config == null) {
-            Log.e("ReminderDiag", "rescheduleAll failure [count=$count]: no alarms will be scheduled")
-            settingsStore.setReminderScheduleFailed(true)
-            return@withLock
-        }
+        Log.i("ReminderDiag", "config resolved [count=$count] source=$source: M=${config.morningTime}, D=${config.dayTime}, E=${config.eveningTime}")
 
         settingsStore.setReminderScheduleFailed(false)
 
@@ -122,9 +117,28 @@ class ReminderScheduler(private val context: Context) {
         cancelAllReminders()
         Log.i("ReminderDiag", "rescheduleAll after cancelAll [count=$count]")
 
-        scheduleAlarm("Morning", config.morningTime)
-        scheduleAlarm("Day", config.dayTime)
-        scheduleAlarm("Evening", config.eveningTime)
+        val now = LocalDateTime.now()
+        val today = now.toLocalDate().toString()
+        val schedule = try {
+            ServiceLocator.todayScheduleUseCase.getTodayOnce(today)
+        } catch (e: Exception) {
+            Log.w("ReminderDiag", "Failed to get today schedule in rescheduleAll", e)
+            null
+        }
+
+        val intakeConfirmed = WhenSlot.entries.associateWith { slot ->
+            val todaySlot = schedule?.slots?.find { it.slot == slot }
+            todaySlot?.taken == true
+        }
+
+        val nextMoments = computeNextReminders(config, intakeConfirmed, now)
+
+        WhenSlot.entries.forEach { slot ->
+            val nextMoment = nextMoments[slot]
+            if (nextMoment != null) {
+                scheduleAlarmAt(slot.name, nextMoment)
+            }
+        }
 
         Log.i("ReminderDiag", "rescheduleAll exit [count=$count]")
     }
