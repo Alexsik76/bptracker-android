@@ -170,7 +170,17 @@ class MainActivity : ComponentActivity() {
                     }
 
                     LaunchedEffect(latestIntent) {
-                        authVm.handleIntent(latestIntent?.data)
+                        val currentIntent = latestIntent ?: return@LaunchedEffect
+                        if ((currentIntent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0 &&
+                            currentIntent.action == Intent.ACTION_VIEW
+                        ) {
+                            val uri = currentIntent.data
+                            if (uri != null) {
+                                authVm.handleIntent(uri)
+                                currentIntent.data = null
+                                intent?.data = null
+                            }
+                        }
                     }
 
                     val res = passkeyResult

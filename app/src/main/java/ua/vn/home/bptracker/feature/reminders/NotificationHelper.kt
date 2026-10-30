@@ -87,4 +87,8 @@ class NotificationHelper(private val context: Context) {
         val key = eventKey(date, slot)
         notificationManager.cancel(key * 4 + 0)
     }
+
+    fun cancelAll() {
+        notificationManager.cancelAll()
+    }
 }
