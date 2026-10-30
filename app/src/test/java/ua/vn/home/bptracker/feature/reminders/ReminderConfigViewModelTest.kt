@@ -49,4 +49,45 @@ class ReminderConfigViewModelTest {
             assertEquals(OperationUiState.Success, awaitItem().saveOperation)
         }
     }
+
+    @Test
+    fun `offline mode shows stored config from resolveConfig when network fails`() = runTest {
+        mockkObject(ServiceLocator)
+        val repo = mockk<ua.vn.home.bptracker.data.repository.ReminderConfigRepository>(relaxed = true)
+        val settings = mockk<ua.vn.home.bptracker.core.config.SettingsStore>(relaxed = true)
+        val scheduler = mockk<ua.vn.home.bptracker.feature.reminders.ReminderScheduler>(relaxed = true)
+
+        every { ServiceLocator.reminderConfigRepository } returns repo
+        every { ServiceLocator.settingsStore } returns settings
+        every { ServiceLocator.reminderScheduler } returns scheduler
+
+        val cachedConfig = ua.vn.home.bptracker.data.dto.ReminderConfigDto(
+            morningTime = "09:15:00",
+            dayTime = "15:30:00",
+            eveningTime = "21:45:00",
+            maxReminders = 4,
+            durationMinutes = 90
+        )
+
+        coEvery { repo.getConfig() } throws java.io.IOException("Network offline")
+        coEvery { repo.resolveConfig() } returns ua.vn.home.bptracker.data.repository.ResolvedConfig(
+            cachedConfig,
+            ua.vn.home.bptracker.data.repository.ConfigSource.CACHE
+        )
+
+        val viewModel = ReminderConfigViewModel(repository = repo)
+
+        viewModel.state.test {
+            var current = awaitItem()
+            while (current.isLoading) {
+                current = awaitItem()
+            }
+            assertEquals("09:15:00", current.morningTime)
+            assertEquals("15:30:00", current.dayTime)
+            assertEquals("21:45:00", current.eveningTime)
+            assertEquals("4", current.maxReminders)
+            assertEquals("90", current.durationMinutes)
+            assertEquals(OperationUiState.Idle, current.saveOperation)
+        }
+    }
 }

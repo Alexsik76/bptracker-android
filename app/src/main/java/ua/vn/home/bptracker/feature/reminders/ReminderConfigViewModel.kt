@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.ReminderConfigDto
+import ua.vn.home.bptracker.data.repository.ReminderConfigRepository
 
 data class ReminderConfigState(
     val morningTime: String = "08:00:00",
@@ -36,8 +37,9 @@ data class ReminderConfigState(
     val isValid = maxRemindersInt > 0 && durationMinutesInt > 0
 }
 
-class ReminderConfigViewModel : ViewModel() {
-    private val repository = ServiceLocator.reminderConfigRepository
+class ReminderConfigViewModel(
+    private val repository: ReminderConfigRepository = ServiceLocator.reminderConfigRepository
+) : ViewModel() {
     private val _state = MutableStateFlow(ReminderConfigState())
     val state: StateFlow<ReminderConfigState> = _state.asStateFlow()
 
@@ -49,23 +51,38 @@ class ReminderConfigViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, saveOperation = OperationUiState.Idle)
             try {
-                val config = repository.getConfig()
+                var networkError: Exception? = null
+                val config = try {
+                    repository.getConfig()
+                } catch (e: Exception) {
+                    networkError = e
+                    repository.resolveConfig().config
+                }
                 if (config != null) {
-                    _state.value = _state.value.copy(
-                        morningTime = config.morningTime,
-                        dayTime = config.dayTime,
-                        eveningTime = config.eveningTime,
-                        maxReminders = config.maxReminders.toString(),
-                        durationMinutes = config.durationMinutes.toString(),
-                        isLoading = false
-                    )
+                    applyConfig(config)
+                    _state.value = _state.value.copy(isLoading = false)
+                } else if (networkError != null) {
+                    throw networkError
                 } else {
                     _state.value = _state.value.copy(isLoading = false)
                 }
             } catch (e: Exception) {
-                _state.value = _state.value.copy(isLoading = false, saveOperation = OperationUiState.Error(e.message ?: "Failed to load config"))
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    saveOperation = OperationUiState.Error(e.message ?: "Failed to load config")
+                )
             }
         }
+    }
+
+    private fun applyConfig(config: ReminderConfigDto) {
+        _state.value = _state.value.copy(
+            morningTime = config.morningTime,
+            dayTime = config.dayTime,
+            eveningTime = config.eveningTime,
+            maxReminders = config.maxReminders.toString(),
+            durationMinutes = config.durationMinutes.toString()
+        )
     }
 
     fun onTimeChange(slot: String, hour: Int, minute: Int) {

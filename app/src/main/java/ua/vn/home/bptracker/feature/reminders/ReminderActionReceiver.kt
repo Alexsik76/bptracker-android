@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -11,7 +12,6 @@ import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.WhenSlot
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 class ReminderActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -33,31 +33,26 @@ class ReminderActionReceiver : BroadcastReceiver() {
 
             val slot = WhenSlot.valueOf(period)
 
-            val pendingResult = goAsync()
+            val pendingResult = try { goAsync() } catch (_: Exception) { null }
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     ServiceLocator.confirmIntakeUseCase(slot, date, takenAt = null)
 
                     if (date == LocalDate.now()) {
                         val resolved = ServiceLocator.reminderConfigRepository.resolveConfig()
-                        val config = resolved.config
-                        if (config != null) {
-                            val timeStr = when (period) {
-                                "Morning" -> config.morningTime
-                                "Day" -> config.dayTime
-                                "Evening" -> config.eveningTime
-                                else -> null
-                            }
-                            if (timeStr != null) {
-                                val baseTime = LocalDateTime.of(LocalDate.now(), LocalTime.parse(timeStr))
-                                ServiceLocator.reminderScheduler.scheduleAlarmAt(period, baseTime.plusDays(1))
-                            }
-                        } else {
-                            Log.e("ReminderDiag", "ReminderActionReceiver failure: could not resolve config for reschedule")
-                        }
+                        val config = resolved.config ?: ServiceLocator.reminderConfigRepository.getCachedConfig() ?: DEFAULT_REMINDER_CONFIG
+                        val nextMoment = computeNextReminder(slot, config, isConfirmed = true, now = LocalDateTime.now())
+                        ServiceLocator.reminderScheduler.scheduleAlarmAt(period, nextMoment)
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (t: Throwable) {
+                    Log.e("ReminderDiag", "ReminderActionReceiver failure", t)
                 } finally {
-                    pendingResult.finish()
+                    try {
+                        pendingResult?.finish()
+                    } catch (_: Exception) {
+                    }
                 }
             }
         }
