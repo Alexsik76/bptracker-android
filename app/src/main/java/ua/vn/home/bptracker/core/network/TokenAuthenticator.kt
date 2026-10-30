@@ -7,9 +7,11 @@ import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
+import retrofit2.HttpException
 import ua.vn.home.bptracker.core.auth.TokenStore
 import ua.vn.home.bptracker.data.api.AuthApi
 import ua.vn.home.bptracker.data.dto.RefreshRequest
+import java.io.IOException
 
 class TokenAuthenticator(
     private val tokenStore: TokenStore,
@@ -28,6 +30,8 @@ class TokenAuthenticator(
 
         return runBlocking {
             mutex.withLock {
+                tokenStore.ensureLoaded()
+
                 // Someone else refreshed while we waited on the mutex.
                 // Retry with the fresh token instead of refreshing again.
                 val current = tokenStore.cachedAccessToken
@@ -41,9 +45,16 @@ class TokenAuthenticator(
                     val pair = authApi.refresh(RefreshRequest(refresh))
                     tokenStore.save(pair.accessToken, pair.refreshToken)
                     response.request.withToken(pair.accessToken)
-                } catch (_: Exception) {
-                    tokenStore.clear()   // refresh rejected: the session is dead
+                } catch (e: HttpException) {
+                    if (e.code() == 400 || e.code() == 401) {
+                        tokenStore.clear()   // refresh rejected: the session is dead
+                        tokenStore.notifySessionExpired()
+                    }
                     null                 // OkHttp surfaces the original 401
+                } catch (_: IOException) {
+                    null                 // network error: keep tokens, no retry
+                } catch (_: Exception) {
+                    null                 // timeout or other error: keep tokens, no retry
                 }
             }
         }
