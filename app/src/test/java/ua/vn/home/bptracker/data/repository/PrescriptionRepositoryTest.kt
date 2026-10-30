@@ -69,13 +69,17 @@ class PrescriptionRepositoryTest {
     }
 
     @Test
-    fun `deletePrescription calls API and then DAO`() = runTest {
+    fun `deletePrescription deletes locally and then calls API`() = runTest {
+        repository = RealPrescriptionRepository(db, pApi, iApi, pDao, iDao, this)
         coEvery { pApi.deletePrescription("p1") } just Runs
         
         repository.deletePrescription("p1")
+        testScheduler.advanceUntilIdle()
 
-        coVerify { pApi.deletePrescription("p1") }
-        coVerify { pDao.deleteById("p1") }
+        coVerifyOrder {
+            pDao.deleteById("p1")
+            pApi.deletePrescription("p1")
+        }
     }
 
     @Test

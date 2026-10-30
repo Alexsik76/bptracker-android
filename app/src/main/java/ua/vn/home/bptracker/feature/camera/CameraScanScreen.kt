@@ -45,6 +45,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.scale
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.ui.theme.spacing
@@ -67,9 +72,10 @@ fun CameraScanScreen(
     val density = LocalDensity.current
     val hapticFeedback = LocalHapticFeedback.current
     val mediaActionSound = remember { MediaActionSound() }
-    val shutterSoundEnabled by ServiceLocator.settingsStore.liveOcrShutterSound.collectAsState(initial = true)
+    val shutterSoundEnabled by ServiceLocator.settingsStore.liveOcrShutterSound.collectAsStateWithLifecycle(initialValue = true)
     val currentShutterSoundEnabled by rememberUpdatedState(shutterSoundEnabled)
     var voteProgress by remember { mutableIntStateOf(0) }
+    var isCapturing by remember { mutableStateOf(false) }
     val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
     val cameraProviderRef = remember { AtomicReference<ProcessCameraProvider?>(null) }
 
@@ -144,43 +150,45 @@ fun CameraScanScreen(
 
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
             AndroidView(
-                factory = { previewView },
+                factory = {
+                    previewView.also { view ->
+                        view.post {
+                            cameraProviderFuture.addListener(
+                                {
+                                    val cameraProvider = cameraProviderFuture.get()
+                                    cameraProviderRef.set(cameraProvider)
+                                    val preview = Preview.Builder().build().also {
+                                        it.surfaceProvider = view.surfaceProvider
+                                    }
+
+                                    val viewPort = view.viewPort
+                                    if (viewPort != null) {
+                                        val useCaseGroup = UseCaseGroup.Builder()
+                                            .addUseCase(preview)
+                                            .addUseCase(imageCapture)
+                                            .addUseCase(imageAnalysis)
+                                            .setViewPort(viewPort)
+                                            .build()
+
+                                        try {
+                                            cameraProvider.unbindAll()
+                                            cameraProvider.bindToLifecycle(
+                                                lifecycleOwner,
+                                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                                useCaseGroup,
+                                            )
+                                        } catch (e: Exception) {
+                                            Log.e("CameraScan", "Use case binding failed", e)
+                                        }
+                                    }
+                                },
+                                ContextCompat.getMainExecutor(context),
+                            )
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxSize(),
-            ) { view ->
-                view.post {
-                    cameraProviderFuture.addListener(
-                        {
-                            val cameraProvider = cameraProviderFuture.get()
-                            cameraProviderRef.set(cameraProvider)
-                            val preview = Preview.Builder().build().also {
-                                it.surfaceProvider = view.surfaceProvider
-                            }
-
-                            val viewPort = view.viewPort
-                            if (viewPort != null) {
-                                val useCaseGroup = UseCaseGroup.Builder()
-                                    .addUseCase(preview)
-                                    .addUseCase(imageCapture)
-                                    .addUseCase(imageAnalysis)
-                                    .setViewPort(viewPort)
-                                    .build()
-
-                                try {
-                                    cameraProvider.unbindAll()
-                                    cameraProvider.bindToLifecycle(
-                                        lifecycleOwner,
-                                        CameraSelector.DEFAULT_BACK_CAMERA,
-                                        useCaseGroup,
-                                    )
-                                } catch (e: Exception) {
-                                    Log.e("CameraScan", "Use case binding failed", e)
-                                }
-                            }
-                        },
-                        ContextCompat.getMainExecutor(context),
-                    )
-                }
-            }
+            )
 
             // Viewfinder with Dimmed Background
             val frameWidthPx = with(density) { FRAME_WIDTH.toPx() }
@@ -291,9 +299,11 @@ fun CameraScanScreen(
                         modifier = Modifier
                             .size(80.dp)
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .background(if (isCapturing) Color.LightGray else Color.White)
                             .border(4.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
-                            .clickable {
+                            .clickable(enabled = !isCapturing) {
+                                if (isCapturing) return@clickable
+                                isCapturing = true
                                 imageAnalysis.clearAnalyzer()
                                 cameraProviderRef.get()?.unbind(imageAnalysis)
                                 liveOcrAnalyzer.stop()
@@ -305,6 +315,7 @@ fun CameraScanScreen(
                                     frameWidthPx = frameWidthPx,
                                     frameHeightPx = frameHeightPx,
                                     onCapture = onCapture,
+                                    onComplete = { isCapturing = false },
                                 )
                             }
                     )
@@ -329,93 +340,113 @@ private fun capturePhoto(
     frameWidthPx: Float,
     frameHeightPx: Float,
     onCapture: (Bitmap) -> Unit,
+    onComplete: () -> Unit,
 ) {
     imageCapture.takePicture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                val rotation = image.imageInfo.rotationDegrees
-                val cropRect = image.cropRect
-                val fullBitmap = image.toBitmap()
-                image.close()
+                CoroutineScope(Dispatchers.Default).launch {
+                    val finalBitmap = try {
+                        image.use { img ->
+                            val rotation = img.imageInfo.rotationDegrees
+                            val cropRect = img.cropRect
+                            val fullBitmap = img.toBitmap()
 
-                // 1. ViewPort crop (as now)
-                val viewPortCropped = Bitmap.createBitmap(
-                    fullBitmap,
-                    cropRect.left,
-                    cropRect.top,
-                    cropRect.width(),
-                    cropRect.height(),
-                )
-                if (viewPortCropped !== fullBitmap) {
-                    fullBitmap.recycle()
-                }
+                            // 1. ViewPort crop (as now)
+                            val viewPortCropped = Bitmap.createBitmap(
+                                fullBitmap,
+                                cropRect.left,
+                                cropRect.top,
+                                cropRect.width(),
+                                cropRect.height(),
+                            )
+                            if (viewPortCropped !== fullBitmap) {
+                                fullBitmap.recycle()
+                            }
 
-                // 2. Rotate (as now)
-                val matrix = Matrix().apply {
-                    postRotate(rotation.toFloat())
-                }
-                val rotated = Bitmap.createBitmap(
-                    viewPortCropped,
-                    0,
-                    0,
-                    viewPortCropped.width,
-                    viewPortCropped.height,
-                    matrix,
-                    true,
-                )
-                if (rotated !== viewPortCropped) {
-                    viewPortCropped.recycle()
-                }
+                            // 2. Rotate (as now)
+                            val matrix = Matrix().apply {
+                                postRotate(rotation.toFloat())
+                            }
+                            val rotated = Bitmap.createBitmap(
+                                viewPortCropped,
+                                0,
+                                0,
+                                viewPortCropped.width,
+                                viewPortCropped.height,
+                                matrix,
+                                true,
+                            )
+                            if (rotated !== viewPortCropped) {
+                                viewPortCropped.recycle()
+                            }
 
-                // 3. Viewfinder crop
-                val crop = viewfinderCropRect(
-                    imageWidth = rotated.width,
-                    imageHeight = rotated.height,
-                    viewWidthPx = viewWidthPx,
-                    viewHeightPx = viewHeightPx,
-                    frameWidthPx = frameWidthPx,
-                    frameHeightPx = frameHeightPx,
-                    margin = FRAME_MARGIN,
-                )
-                val viewfinderCropped = Bitmap.createBitmap(
-                    rotated,
-                    crop.left,
-                    crop.top,
-                    crop.width,
-                    crop.height,
-                )
-                if (viewfinderCropped !== rotated) {
-                    rotated.recycle()
-                }
+                            // 3. Viewfinder crop
+                            val crop = viewfinderCropRect(
+                                imageWidth = rotated.width,
+                                imageHeight = rotated.height,
+                                viewWidthPx = viewWidthPx,
+                                viewHeightPx = viewHeightPx,
+                                frameWidthPx = frameWidthPx,
+                                frameHeightPx = frameHeightPx,
+                                margin = FRAME_MARGIN,
+                            )
+                            val viewfinderCropped = Bitmap.createBitmap(
+                                rotated,
+                                crop.left,
+                                crop.top,
+                                crop.width,
+                                crop.height,
+                            )
+                            if (viewfinderCropped !== rotated) {
+                                rotated.recycle()
+                            }
 
-                // 4. Downscale to <= 1024 px on long edge (as now)
-                val targetSize = 1024f
-                val scale = if (viewfinderCropped.width > viewfinderCropped.height) {
-                    targetSize / viewfinderCropped.width
-                } else {
-                    targetSize / viewfinderCropped.height
-                }
-                val finalBitmap = if (scale < 1f) {
-                    val scaled = viewfinderCropped.scale(
-                        width = (viewfinderCropped.width * scale).toInt(),
-                        height = (viewfinderCropped.height * scale).toInt(),
-                        filter = true,
-                    )
-                    if (scaled !== viewfinderCropped) {
-                        viewfinderCropped.recycle()
+                            // 4. Downscale to <= 1024 px on long edge (as now)
+                            val targetSize = 1024f
+                            val scale = if (viewfinderCropped.width > viewfinderCropped.height) {
+                                targetSize / viewfinderCropped.width
+                            } else {
+                                targetSize / viewfinderCropped.height
+                            }
+                            val scaled = if (scale < 1f) {
+                                val s = viewfinderCropped.scale(
+                                    width = (viewfinderCropped.width * scale).toInt(),
+                                    height = (viewfinderCropped.height * scale).toInt(),
+                                    filter = true,
+                                )
+                                if (s !== viewfinderCropped) {
+                                    viewfinderCropped.recycle()
+                                }
+                                s
+                            } else {
+                                viewfinderCropped
+                            }
+
+                            Log.d("CameraScan", "Final bitmap size: ${scaled.width}x${scaled.height}")
+                            scaled
+                        }
+                    } catch (e: Exception) {
+                        Log.e("CameraScan", "Processing captured photo failed", e)
+                        null
+                    } finally {
+                        withContext(Dispatchers.Main) {
+                            onComplete()
+                        }
                     }
-                    scaled
-                } else {
-                    viewfinderCropped
-                }
 
-                Log.d("CameraScan", "Final bitmap size: ${finalBitmap.width}x${finalBitmap.height}")
-                onCapture(finalBitmap)
+                    if (finalBitmap != null) {
+                        withContext(Dispatchers.Main) {
+                            onCapture(finalBitmap)
+                        }
+                    }
+                }
             }
 
             override fun onError(exception: ImageCaptureException) {
                 Log.e("CameraScan", "Capture failed", exception)
+                onComplete()
             }
         }
     )

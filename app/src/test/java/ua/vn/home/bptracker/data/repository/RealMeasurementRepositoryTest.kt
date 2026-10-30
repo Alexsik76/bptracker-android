@@ -8,6 +8,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -411,11 +414,26 @@ class RealMeasurementRepositoryTest {
         Unit
     }
 
-    @Test(expected = CancellationException::class)
-    fun `deleteMeasurement rethrows CancellationException`() = runBlocking {
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun `deleting a measurement sets PENDING_DELETE in the local store before the network delete call`() = runTest {
+        val testScope = TestScope(UnconfinedTestDispatcher(testScheduler))
+        val repo = RealMeasurementRepository(db, api, dao, exportDao, settingsStore, testScope)
         storage["server_id"] = MeasurementEntity("server_id", 1000L, 130, 85, 75, SyncState.SYNCED)
-        coEvery { api.deleteMeasurement("server_id") } throws CancellationException("cancelled")
-        repository.deleteMeasurement("server_id")
+
+        var stateAtNetworkCall: String? = null
+        coEvery { api.deleteMeasurement("server_id") } coAnswers {
+            stateAtNetworkCall = storage["server_id"]?.syncState
+        }
+
+        repo.deleteMeasurement("server_id")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(SyncState.PENDING_DELETE, stateAtNetworkCall)
+        coVerifyOrder {
+            dao.markPendingDelete("server_id")
+            api.deleteMeasurement("server_id")
+        }
     }
 
     @Test(expected = CancellationException::class)

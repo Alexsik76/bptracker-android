@@ -50,6 +50,7 @@ interface MeasurementRepository {
      */
     suspend fun reconcilePeriod(dateFrom: OffsetDateTime?, dateTo: OffsetDateTime?): Int
     suspend fun createMeasurement(sys: Int, dia: Int, pulse: Int): MeasurementDto
+    suspend fun getMeasurement(id: String): MeasurementDto?
     suspend fun deleteMeasurement(id: String)
     suspend fun syncPending()
     suspend fun enqueueAllSyncedForExport()
@@ -62,9 +63,9 @@ open class RealMeasurementRepository(
     private val dao: MeasurementDao,
     private val exportDao: HealthConnectExportDao? = null,
     private val settingsStore: SettingsStore? = null,
+    private val repositoryScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : MeasurementRepository {
     
-    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val syncMutex = Mutex()
 
     private suspend fun enqueueExportForSynced(ids: List<String>) {
@@ -244,6 +245,10 @@ open class RealMeasurementRepository(
         return local
     }
 
+    override suspend fun getMeasurement(id: String): MeasurementDto? {
+        return dao.getById(id)?.toDto()
+    }
+
     override suspend fun deleteMeasurement(id: String) {
         val all = dao.getAll()
         val existing = all.find { it.id == id } ?: return
@@ -253,22 +258,23 @@ open class RealMeasurementRepository(
             return
         }
 
+        dao.markPendingDelete(id)
         enqueueDeleteForRecords(listOf(id))
 
-        try {
-            api.deleteMeasurement(id)
-            dao.deleteById(id)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: HttpException) {
-            Log.w("MeasRepo", "Delete failed for $id: ${e.code()}")
-            if (e.code() == 404) {
+        repositoryScope.launch {
+            try {
+                api.deleteMeasurement(id)
                 dao.deleteById(id)
-            } else {
-                dao.markPendingDelete(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: HttpException) {
+                Log.w("MeasRepo", "Delete failed for $id: ${e.code()}")
+                if (e.code() == 404) {
+                    dao.deleteById(id)
+                }
+            } catch (e: Exception) {
+                Log.w("MeasRepo", "Delete failed for $id", e)
             }
-        } catch (_: Exception) {
-            dao.markPendingDelete(id)
         }
     }
 
@@ -356,6 +362,10 @@ class MockMeasurementRepository : MeasurementRepository {
         mockList.add(0, newReading)
         _stream.value = mockList.toList()
         return newReading
+    }
+
+    override suspend fun getMeasurement(id: String): MeasurementDto? {
+        return mockList.find { it.id == id }
     }
 
     override suspend fun deleteMeasurement(id: String) {

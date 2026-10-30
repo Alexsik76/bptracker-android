@@ -1,8 +1,14 @@
 package ua.vn.home.bptracker.data.repository
 
+import android.util.Log
 import androidx.room.withTransaction
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.data.api.MedicationItemApi
 import ua.vn.home.bptracker.data.api.PrescriptionApi
 import ua.vn.home.bptracker.data.dto.*
@@ -30,7 +36,8 @@ class RealPrescriptionRepository(
     private val pApi: PrescriptionApi,
     private val iApi: MedicationItemApi,
     private val pDao: PrescriptionDao,
-    private val iDao: MedicationItemDao
+    private val iDao: MedicationItemDao,
+    private val repositoryScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : PrescriptionRepository {
 
     override fun getPrescriptions(): Flow<List<PrescriptionReadDto>> {
@@ -74,8 +81,16 @@ class RealPrescriptionRepository(
     }
 
     override suspend fun deletePrescription(id: String) {
-        pApi.deletePrescription(id)
         pDao.deleteById(id)
+        repositoryScope.launch {
+            try {
+                pApi.deletePrescription(id)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w("PrescRepo", "Failed to delete prescription on server: $id", e)
+            }
+        }
     }
 
     override fun getItems(prescriptionId: String): Flow<List<MedicationItemReadDto>> {
