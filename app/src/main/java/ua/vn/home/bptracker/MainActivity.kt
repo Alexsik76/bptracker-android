@@ -9,7 +9,9 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +43,7 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
@@ -60,7 +63,7 @@ import ua.vn.home.bptracker.ui.components.LocalActivity
 import ua.vn.home.bptracker.ui.theme.BPTrackerTheme
 import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -86,6 +89,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val storedLanguage = runBlocking { ServiceLocator.settingsStore.language.first() }
+        if (storedLanguage != AppLanguage.SYSTEM && AppCompatDelegate.getApplicationLocales().isEmpty) {
+            val locales = when (storedLanguage) {
+                AppLanguage.UA -> LocaleListCompat.forLanguageTags("uk")
+                AppLanguage.EN -> LocaleListCompat.forLanguageTags("en")
+                AppLanguage.SYSTEM -> LocaleListCompat.getEmptyLocaleList()
+            }
+            AppCompatDelegate.setApplicationLocales(locales)
+        }
+
         setContent {
             val settingsVm: SettingsViewModel = viewModel()
             val settingsState by settingsVm.state.collectAsStateWithLifecycle()
@@ -96,19 +109,7 @@ class MainActivity : ComponentActivity() {
                 ua.vn.home.bptracker.core.config.AppTheme.DARK -> true
             }
 
-            val locale = when (settingsState.language) {
-                AppLanguage.UA -> Locale.forLanguageTag("uk")
-                AppLanguage.EN -> Locale.forLanguageTag("en")
-                AppLanguage.SYSTEM -> Locale.getDefault()
-            }
-
-            val context = LocalContext.current
-            val configuration = Configuration(LocalConfiguration.current)
-            configuration.setLocale(locale)
-            val localizedContext = context.createConfigurationContext(configuration)
-
             CompositionLocalProvider(
-                LocalContext provides localizedContext,
                 LocalActivity provides this,
                 LocalActivityResultRegistryOwner provides this
             ) {
@@ -413,7 +414,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     reminderHealth = reminderHealth,
                     onThemeSelect = settingsVm::setTheme,
                     onLanguageSelect = settingsVm::setLanguage,
-                    onOcrImprovementToggle = settingsVm::setOcrImprovement,
                     onLiveOcrShutterSoundToggle = settingsVm::setLiveOcrShutterSound,
                     onRemindersToggle = settingsVm::setRemindersEnabled,
                     onHealthConnectToggle = settingsVm::setHealthConnectEnabled,

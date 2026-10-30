@@ -8,6 +8,7 @@ import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import androidx.core.graphics.createBitmap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -72,6 +73,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
                 meanConf = allConfs.average().toFloat(),
             )
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             OcrOutcome.Failure("ocr-error: ${e.message}")
         }
     }
@@ -94,6 +96,7 @@ class OnnxOcrEngine(private val context: Context) : OcrEngine {
                 meanConf = 1.0f,
             )
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             OcrOutcome.Failure("remote-ocr-error: ${e.message}")
         }
     }

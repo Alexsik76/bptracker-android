@@ -1,6 +1,8 @@
 package ua.vn.home.bptracker.feature.settings
 
 import android.util.Log
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
@@ -15,9 +17,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 data class SettingsState(
-    val theme: AppTheme = AppTheme.AUTO,
+    val theme: AppTheme = ServiceLocator.settingsStore.getInitialTheme(),
     val language: AppLanguage = AppLanguage.SYSTEM,
-    val ocrImprovement: Boolean = true,
     val liveOcrShutterSound: Boolean = true,
     val version: String = BuildConfig.VERSION_NAME,
     val remindersActive: Boolean? = null,
@@ -50,7 +51,6 @@ class SettingsViewModel : ViewModel() {
     val state: StateFlow<SettingsState> = combine(
         settingsStore.theme,
         settingsStore.language,
-        settingsStore.ocrImprovement,
         settingsStore.remindersEnabled,
         settingsStore.healthConnectEnabled,
         settingsStore.liveOcrShutterSound,
@@ -58,16 +58,14 @@ class SettingsViewModel : ViewModel() {
     ) { flows ->
         val theme = flows[0] as AppTheme
         val lang = flows[1] as AppLanguage
-        val ocr = flows[2] as Boolean
-        val reminders = flows[3] as Boolean
-        val hcEnabled = flows[4] as Boolean
-        val shutterSound = flows[5] as Boolean
+        val reminders = flows[2] as Boolean
+        val hcEnabled = flows[3] as Boolean
+        val shutterSound = flows[4] as Boolean
         @Suppress("UNCHECKED_CAST")
-        val template = flows[6] as Pair<String?, Boolean?>
+        val template = flows[5] as Pair<String?, Boolean?>
         SettingsState(
             theme = theme,
             language = lang,
-            ocrImprovement = ocr,
             liveOcrShutterSound = shutterSound,
             version = BuildConfig.VERSION_NAME,
             remindersActive = reminders,
@@ -127,11 +125,13 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun setLanguage(lang: AppLanguage) {
+        val locales = when (lang) {
+            AppLanguage.UA -> LocaleListCompat.forLanguageTags("uk")
+            AppLanguage.EN -> LocaleListCompat.forLanguageTags("en")
+            AppLanguage.SYSTEM -> LocaleListCompat.getEmptyLocaleList()
+        }
+        AppCompatDelegate.setApplicationLocales(locales)
         viewModelScope.launch { settingsStore.setLanguage(lang) }
-    }
-
-    fun setOcrImprovement(enabled: Boolean) {
-        viewModelScope.launch { settingsStore.setOcrImprovement(enabled) }
     }
 
     fun setLiveOcrShutterSound(enabled: Boolean) {

@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.core.network
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -53,7 +54,8 @@ class TokenAuthenticator(
                     null                 // OkHttp surfaces the original 401
                 } catch (_: IOException) {
                     null                 // network error: keep tokens, no retry
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     null                 // timeout or other error: keep tokens, no retry
                 }
             }

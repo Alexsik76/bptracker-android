@@ -129,6 +129,7 @@ class ReminderReceiver(
             try {
                 scheduleFallback(intent)
             } catch (fallbackError: Throwable) {
+                if (fallbackError is CancellationException) throw fallbackError
                 Log.e("ReminderDiag", "Failed to schedule fallback alarm", fallbackError)
             }
         }
@@ -138,13 +139,18 @@ class ReminderReceiver(
         val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD)
         val fallbackConfig = try {
             getConfigRepository().getCachedConfig()
-        } catch (_: Throwable) {
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
             null
         } ?: DEFAULT_REMINDER_CONFIG
         val now = LocalDateTime.now()
 
         if (period != null) {
-            val slot = WhenSlot.entries.find { it.name.equals(period, ignoreCase = true) }
+            val slot = try {
+                WhenSlot.valueOf(period)
+            } catch (_: Exception) {
+                WhenSlot.entries.find { it.name.equals(period, ignoreCase = true) }
+            }
             val nextMoment = if (slot != null) {
                 computeNextReminder(slot, fallbackConfig, isConfirmed = false, now = now)
             } else {

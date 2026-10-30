@@ -17,6 +17,12 @@ class ReminderActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == NotificationHelper.ACTION_TAKEN) {
             val period = intent.getStringExtra(NotificationHelper.EXTRA_PERIOD) ?: return
+            val slot = try {
+                WhenSlot.valueOf(period)
+            } catch (_: Exception) {
+                Log.w("ReminderDiag", "Invalid period in EXTRA_PERIOD: $period")
+                return
+            }
             val dateStr = intent.getStringExtra(NotificationHelper.EXTRA_DATE)
 
             val date = if (dateStr != null) {
@@ -31,8 +37,6 @@ class ReminderActionReceiver : BroadcastReceiver() {
                 LocalDate.now()
             }
 
-            val slot = WhenSlot.valueOf(period)
-
             val pendingResult = try { goAsync() } catch (_: Exception) { null }
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -42,7 +46,7 @@ class ReminderActionReceiver : BroadcastReceiver() {
                         val resolved = ServiceLocator.reminderConfigRepository.resolveConfig()
                         val config = resolved.config ?: ServiceLocator.reminderConfigRepository.getCachedConfig() ?: DEFAULT_REMINDER_CONFIG
                         val nextMoment = computeNextReminder(slot, config, isConfirmed = true, now = LocalDateTime.now())
-                        ServiceLocator.reminderScheduler.scheduleAlarmAt(period, nextMoment)
+                        ServiceLocator.reminderScheduler.scheduleAlarmAt(slot.name, nextMoment)
                     }
                 } catch (e: CancellationException) {
                     throw e

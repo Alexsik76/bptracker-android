@@ -3,6 +3,7 @@ package ua.vn.home.bptracker.feature.prescriptions
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -64,6 +65,7 @@ class PrescriptionDetailViewModel @JvmOverloads constructor(
                 _deleted.value = true
                 _prescriptionId.value = null
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 // Handle error
             }
         }
@@ -75,6 +77,7 @@ class PrescriptionDetailViewModel @JvmOverloads constructor(
             try {
                 repository.deleteItem(pId, itemId)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 // Handle error
             }
         }

@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -177,7 +178,8 @@ class ScanReviewViewModel @JvmOverloads constructor(
                 _state.update { s ->
                     (s as? ScanReviewState.Ready)?.copy(saveOperation = OperationUiState.Success) ?: s
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _state.update { s ->
                     (s as? ScanReviewState.Ready)?.copy(saveOperation = OperationUiState.Error("Save failed")) ?: s
                 }

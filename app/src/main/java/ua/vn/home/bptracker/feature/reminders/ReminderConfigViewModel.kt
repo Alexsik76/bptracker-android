@@ -1,17 +1,21 @@
 package ua.vn.home.bptracker.feature.reminders
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.ReminderConfigDto
 import ua.vn.home.bptracker.data.repository.ReminderConfigRepository
+import java.util.Locale
 
 data class ReminderConfigState(
     val morningTime: String = "08:00:00",
@@ -40,6 +44,15 @@ data class ReminderConfigState(
 class ReminderConfigViewModel(
     private val repository: ReminderConfigRepository = ServiceLocator.reminderConfigRepository
 ) : ViewModel() {
+
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Error"
+        }
+    }
+
     private val _state = MutableStateFlow(ReminderConfigState())
     val state: StateFlow<ReminderConfigState> = _state.asStateFlow()
 
@@ -55,6 +68,7 @@ class ReminderConfigViewModel(
                 val config = try {
                     repository.getConfig()
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     networkError = e
                     repository.resolveConfig().config
                 }
@@ -67,9 +81,10 @@ class ReminderConfigViewModel(
                     _state.value = _state.value.copy(isLoading = false)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    saveOperation = OperationUiState.Error(e.message ?: "Failed to load config")
+                    saveOperation = OperationUiState.Error(getString(R.string.error_load_config_failed))
                 )
             }
         }
@@ -86,7 +101,7 @@ class ReminderConfigViewModel(
     }
 
     fun onTimeChange(slot: String, hour: Int, minute: Int) {
-        val timeStr = String.format("%02d:%02d:00", hour, minute)
+        val timeStr = String.format(Locale.ROOT, "%02d:%02d:00", hour, minute)
         when (slot) {
             "morning" -> _state.value = _state.value.copy(morningTime = timeStr)
             "day" -> _state.value = _state.value.copy(dayTime = timeStr)
@@ -125,7 +140,8 @@ class ReminderConfigViewModel(
                 }
                 _state.value = _state.value.copy(saveOperation = OperationUiState.Success)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
+                if (e is CancellationException) throw e
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(getString(R.string.error_save_failed)))
             }
         }
     }

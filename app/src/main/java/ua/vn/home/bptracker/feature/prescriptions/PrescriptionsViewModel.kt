@@ -1,15 +1,29 @@
 package ua.vn.home.bptracker.feature.prescriptions
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
+import ua.vn.home.bptracker.data.repository.PrescriptionRepository
 
-class PrescriptionsViewModel : ViewModel() {
-    private val repository = ServiceLocator.prescriptionRepository
+class PrescriptionsViewModel(
+    private val repository: PrescriptionRepository = ServiceLocator.prescriptionRepository
+) : ViewModel() {
+
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Failed to refresh prescriptions"
+        }
+    }
+
     private val _refreshing = MutableStateFlow(false)
     private val _error = MutableStateFlow<String?>(null)
 
@@ -36,7 +50,8 @@ class PrescriptionsViewModel : ViewModel() {
             try {
                 repository.refresh()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Failed to refresh prescriptions"
+                if (e is CancellationException) throw e
+                _error.value = getString(R.string.error_refresh_prescriptions_failed)
             } finally {
                 _refreshing.value = false
             }

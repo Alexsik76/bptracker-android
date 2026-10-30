@@ -1,7 +1,9 @@
 package ua.vn.home.bptracker.feature.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,11 +13,13 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.repository.MeasurementRepository
 import ua.vn.home.bptracker.data.repository.SYNC_WINDOW_DAYS
 import java.time.OffsetDateTime
 
@@ -41,9 +45,17 @@ data class HomePayload(
     }
 }
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val repository: MeasurementRepository = ServiceLocator.measurementRepository
+) : ViewModel() {
 
-    private val repository = ServiceLocator.measurementRepository
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Failed to sync data"
+        }
+    }
     
     private val _refreshError = MutableStateFlow<String?>(null)
     private val _isRefreshing = MutableStateFlow(false)
@@ -83,7 +95,8 @@ class HomeViewModel : ViewModel() {
                 repository.syncPending()
                 repository.syncRecent()
             } catch (e: Exception) {
-                _refreshError.value = e.message ?: "Unknown error"
+                if (e is CancellationException) throw e
+                _refreshError.value = getString(R.string.error_sync_failed)
             } finally {
                 _isRefreshing.value = false
             }

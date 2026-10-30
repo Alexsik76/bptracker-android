@@ -132,7 +132,9 @@ class AuthViewModel(
                 withContext(Dispatchers.IO) {
                     it.clearAllTables()
                 }
-            } catch (_: Throwable) { }
+            } catch (t: Throwable) {
+                if (t is CancellationException) throw t
+            }
         }
 
         val scheduler = reminderScheduler ?: try { ServiceLocator.reminderScheduler } catch (_: Throwable) { null }
@@ -164,13 +166,29 @@ class AuthViewModel(
         _passkeyResult.value = null
     }
 
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            (appContext ?: ServiceLocator.applicationContext).getString(resId)
+        } catch (_: Exception) {
+            when (resId) {
+                R.string.auth_login_link_error -> "Failed to send the link. Please try again."
+                R.string.auth_login_link_expired -> "The link is invalid, expired, or already used."
+                R.string.auth_no_passkeys_found -> "No passkeys found for this account."
+                R.string.auth_sign_in_failed -> "Sign-in failed. Please try again."
+                R.string.auth_passkey_failed -> "Failed to register passkey. Please try again."
+                else -> "Error"
+            }
+        }
+    }
+
     fun requestMagicLink(email: String) {
         viewModelScope.launch {
             try {
                 api.requestMagicLink(MagicLinkRequest(email))
                 _state.value = AuthState.LoggedOut(linkSent = true)
             } catch (e: Exception) {
-                _state.value = AuthState.LoggedOut(info = "Failed to send link: ${e.message}")
+                if (e is CancellationException) throw e
+                _state.value = AuthState.LoggedOut(info = getString(R.string.auth_login_link_error))
             }
         }
     }
@@ -188,7 +206,7 @@ class AuthViewModel(
                     _state.value = AuthState.LoggedIn(me.email, showEnrollPrompt = true)
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e
-                    _state.value = AuthState.LoggedOut(info = "Link expired or already used.")
+                    _state.value = AuthState.LoggedOut(info = getString(R.string.auth_login_link_expired))
                 }
             }
         }
@@ -225,11 +243,13 @@ class AuthViewModel(
                 } catch (_: GetCredentialCancellationException) {
                     _state.value = AuthState.LoggedOut(info = null)
                 } catch (_: NoCredentialException) {
-                    _state.value = AuthState.LoggedOut(info = "No passkeys found for this account.")
+                    _state.value = AuthState.LoggedOut(info = getString(R.string.auth_no_passkeys_found))
                 } catch (e: GetCredentialException) {
-                    _state.value = AuthState.LoggedOut(info = "Passkey: ${e.type} | ${e.errorMessage}")
+                    Log.w("AuthViewModel", "GetCredentialException: ${e.type} | ${e.errorMessage}")
+                    _state.value = AuthState.LoggedOut(info = getString(R.string.auth_sign_in_failed))
                 } catch (e: Exception) {
-                    _state.value = AuthState.LoggedOut(info = "Sign-in failed: ${e.message}")
+                    Log.w("AuthViewModel", "Sign-in exception", e)
+                    _state.value = AuthState.LoggedOut(info = getString(R.string.auth_sign_in_failed))
                 }
             }
         }
@@ -256,21 +276,16 @@ class AuthViewModel(
                 Log.e("PasskeyReg", "Registration cancelled", e)
                 // User canceled, no feedback needed
             } catch (e: CreateCredentialException) {
-                val msg = "Passkey: ${e.type} | ${e.errorMessage}"
-                Log.e("PasskeyReg", "Credential creation failed: $msg", e)
-                if (e is CreatePublicKeyCredentialDomException) {
-                    Log.e("PasskeyReg", "DOM Error: ${e.domError}", e)
-                }
-                _passkeyResult.value = msg
+                Log.e("PasskeyReg", "Credential creation failed: ${e.type} | ${e.errorMessage}", e)
+                _passkeyResult.value = getString(R.string.auth_passkey_failed)
             } catch (e: HttpException) {
                 val errorBody = e.response()?.errorBody()?.string() ?: ""
-                val msg = "HTTP ${e.code()} | $errorBody"
-                Log.e("PasskeyReg", "Network error during registration: $msg", e)
-                _passkeyResult.value = msg
+                Log.e("PasskeyReg", "Network error during registration: HTTP ${e.code()} | $errorBody", e)
+                _passkeyResult.value = getString(R.string.auth_passkey_failed)
             } catch (e: Exception) {
-                val msg = "Registration failed: ${e.javaClass.simpleName} | ${e.message}"
-                Log.e("PasskeyReg", "Unexpected error during registration", e)
-                _passkeyResult.value = msg
+                if (e is CancellationException) throw e
+                Log.e("PasskeyReg", "Unexpected error during registration: ${e.javaClass.simpleName} | ${e.message}", e)
+                _passkeyResult.value = getString(R.string.auth_passkey_failed)
             }
         }
     }
@@ -288,7 +303,11 @@ class AuthViewModel(
             authMutex.withLock {
                 val refresh = tokenStore.cachedRefreshToken
                 if (refresh != null) {
-                    try { sessionApi.logout(RefreshRequest(refresh)) } catch (_: Exception) { }
+                    try {
+                        sessionApi.logout(RefreshRequest(refresh))
+                    } catch (e: Exception) {
+                        if (e is CancellationException) throw e
+                    }
                 }
                 tokenStore.clear()
                 clearUserData()

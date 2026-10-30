@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import ua.vn.home.bptracker.core.di.ServiceLocator
@@ -42,9 +43,9 @@ class ReminderScheduler(private val context: Context) {
         val repository = ServiceLocator.reminderConfigRepository
         val resolved = repository.resolveConfig()
         
-        val morningIntent = getAlarmIntent("Morning")
-        val dayIntent = getAlarmIntent("Day")
-        val eveningIntent = getAlarmIntent("Evening")
+        val morningIntent = getAlarmIntent(WhenSlot.Morning)
+        val dayIntent = getAlarmIntent(WhenSlot.Day)
+        val eveningIntent = getAlarmIntent(WhenSlot.Evening)
 
         val health = ReminderHealth(
             morningAlarm = morningIntent != null,
@@ -70,6 +71,8 @@ class ReminderScheduler(private val context: Context) {
 
         return health
     }
+
+    private fun getAlarmIntent(slot: WhenSlot): PendingIntent? = getAlarmIntent(slot.name)
 
     private fun getAlarmIntent(period: String): PendingIntent? {
         val intent = Intent(context, ReminderReceiver::class.java)
@@ -122,6 +125,7 @@ class ReminderScheduler(private val context: Context) {
         val schedule = try {
             ServiceLocator.todayScheduleUseCase.getTodayOnce(today)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             Log.w("ReminderDiag", "Failed to get today schedule in rescheduleAll", e)
             null
         }
@@ -144,11 +148,11 @@ class ReminderScheduler(private val context: Context) {
     }
 
     fun cancelAllReminders() {
-        listOf("Morning", "Day", "Evening").forEach { period ->
+        WhenSlot.entries.forEach { slot ->
             val intent = Intent(context, ReminderReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
-                period.hashCode(),
+                slot.name.hashCode(),
                 intent,
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )

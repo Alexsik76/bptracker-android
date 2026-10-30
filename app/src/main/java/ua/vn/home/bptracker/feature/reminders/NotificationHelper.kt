@@ -32,8 +32,8 @@ class NotificationHelper(private val context: Context) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     fun createNotificationChannel() {
-        val name = "Medication Reminders"
-        val descriptionText = "Notifications for scheduled medications"
+        val name = context.getString(R.string.notification_channel_name)
+        val descriptionText = context.getString(R.string.notification_channel_description)
         val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
             description = descriptionText
@@ -67,7 +67,14 @@ class NotificationHelper(private val context: Context) {
         )
 
         val medList = meds.joinToString(", ")
-        val title = context.getString(R.string.notification_reminder_title, slot.name)
+        val slotTitle = context.getString(
+            when (slot) {
+                WhenSlot.Morning -> R.string.period_morning
+                WhenSlot.Day -> R.string.period_day
+                WhenSlot.Evening -> R.string.period_evening
+            }
+        )
+        val title = context.getString(R.string.notification_reminder_title, slotTitle)
         val actionText = context.getString(R.string.notification_action_taken)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
