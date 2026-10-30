@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.prescriptions
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
+import ua.vn.home.bptracker.data.repository.PrescriptionRepository
 import java.time.LocalDate
 
 data class PrescriptionFormState(
@@ -22,10 +24,19 @@ data class PrescriptionFormState(
     val isValid = doctor.isNotBlank() && prescribedOn.isNotBlank()
 }
 
-class PrescriptionFormViewModel : ViewModel() {
-    private val repository = ServiceLocator.prescriptionRepository
+class PrescriptionFormViewModel @JvmOverloads constructor(
+    savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val repository: PrescriptionRepository = ServiceLocator.prescriptionRepository,
+) : ViewModel() {
     private val _state = MutableStateFlow(PrescriptionFormState())
     val state: StateFlow<PrescriptionFormState> = _state.asStateFlow()
+
+    init {
+        val prescriptionId = savedStateHandle.get<String>("prescriptionId")
+        if (prescriptionId != null) {
+            init(prescriptionId)
+        }
+    }
 
     fun init(id: String?) {
         if (id == null) {

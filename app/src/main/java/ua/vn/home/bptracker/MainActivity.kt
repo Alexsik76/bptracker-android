@@ -6,6 +6,7 @@ import android.util.Log
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.LocalActivityResultRegistryOwner
@@ -43,6 +45,7 @@ import ua.vn.home.bptracker.core.config.AppLanguage
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import java.io.File
 import ua.vn.home.bptracker.feature.camera.CameraScanScreen
 import ua.vn.home.bptracker.feature.home.*
 import ua.vn.home.bptracker.feature.login.AuthState
@@ -85,7 +88,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settingsVm: SettingsViewModel = viewModel()
-            val settingsState by settingsVm.state.collectAsState()
+            val settingsState by settingsVm.state.collectAsStateWithLifecycle()
             
             val isDark = when (settingsState.theme) {
                 ua.vn.home.bptracker.core.config.AppTheme.AUTO -> isSystemInDarkTheme()
@@ -111,8 +114,8 @@ class MainActivity : ComponentActivity() {
             ) {
                 BPTrackerTheme(darkTheme = isDark) {
                     val authVm: AuthViewModel = viewModel()
-                    val state by authVm.state.collectAsState()
-                    val passkeyResult by authVm.passkeyResult.collectAsState()
+                    val state by authVm.state.collectAsStateWithLifecycle()
+                    val passkeyResult by authVm.passkeyResult.collectAsStateWithLifecycle()
                     val snackbarHostState = remember { SnackbarHostState() }
 
                     Scaffold(
@@ -202,20 +205,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class LiveOcrData(
-    val bitmap: Bitmap,
-    val sys: Int,
-    val dia: Int,
-    val pul: Int,
-)
-
 @Composable
 fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
     val navController = rememberNavController()
     val homeVm: HomeViewModel = viewModel()
     var selectedMeasurement by remember { mutableStateOf<MeasurementDto?>(null) }
-    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var liveOcrData by remember { mutableStateOf<LiveOcrData?>(null) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -258,7 +252,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             popExitTransition = { fadeOut(tween(300)) + slideOutHorizontally(tween(300)) { it / 10 } },
         ) {
             composable("home") {
-                val homeState by homeVm.state.collectAsState()
+                val homeState by homeVm.state.collectAsStateWithLifecycle()
 
                 HomeScreen(
                     state = homeState,
@@ -271,15 +265,14 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     },
                     onHistoryClick = { navController.navigate("history") },
                     onMeasurementClick = { m ->
-                        selectedMeasurement = m
-                        navController.navigate("measurement_detail")
+                        navController.navigate("measurement_detail/${m.id}")
                     }
                 )
             }
 
             composable("schedule") {
                 val scheduleVm: ScheduleViewModel = viewModel()
-                val scheduleState by scheduleVm.state.collectAsState()
+                val scheduleState by scheduleVm.state.collectAsStateWithLifecycle()
 
                 LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                     scheduleVm.refresh()
@@ -297,44 +290,56 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             }
 
             composable("camera") {
+                val context = LocalContext.current
                 CameraScanScreen(
                     onCapture = { bitmap ->
-                        capturedBitmap = bitmap
-                        liveOcrData = null
-                        navController.navigate("ocr_review")
+                        val file = File(context.cacheDir, "scan_capture.jpg")
+                        file.outputStream().use { out ->
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                        }
+                        val encodedPath = Uri.encode(file.absolutePath)
+                        navController.navigate("ocr_review?imagePath=$encodedPath")
                     },
                     onLiveResult = { bitmap, sys, dia, pul ->
-                        capturedBitmap = bitmap
-                        liveOcrData = LiveOcrData(bitmap, sys, dia, pul)
-                        navController.navigate("ocr_review")
+                        val file = File(context.cacheDir, "scan_capture.jpg")
+                        file.outputStream().use { out ->
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                        }
+                        val encodedPath = Uri.encode(file.absolutePath)
+                        navController.navigate("ocr_review?imagePath=$encodedPath&sys=$sys&dia=$dia&pul=$pul")
                     },
                     onEnterManually = { navController.navigate("manual_entry") },
                     onCancel = { navController.popBackStack() }
                 )
             }
 
-            composable("ocr_review") {
-                val reviewVm: ScanReviewViewModel = viewModel()
-                val reviewState by reviewVm.state.collectAsState()
-
-                val currentBitmap = capturedBitmap
-
-                LaunchedEffect(currentBitmap) {
-                    if (currentBitmap != null) {
-                        val live = liveOcrData
-                        if (live != null && live.bitmap == currentBitmap) {
-                            liveOcrData = null
-                            reviewVm.initWithResult(
-                                image = currentBitmap,
-                                sys = live.sys,
-                                dia = live.dia,
-                                pul = live.pul,
-                            )
-                        } else {
-                            reviewVm.initWithImage(currentBitmap)
-                        }
+            composable(
+                route = "ocr_review?imagePath={imagePath}&sys={sys}&dia={dia}&pul={pul}",
+                arguments = listOf(
+                    navArgument("imagePath") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("sys") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("dia") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("pul") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
-                }
+                )
+            ) {
+                val reviewVm: ScanReviewViewModel = viewModel()
+                val reviewState by reviewVm.state.collectAsStateWithLifecycle()
 
                 ScanReviewScreen(
                     state = reviewState,
@@ -344,22 +349,19 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     onSave = reviewVm::save,
                     onRetake = {
                         reviewVm.reset()
-                        liveOcrData = null
                         navController.popBackStack()
                     },
                     onRemoteOcr = reviewVm::recognizeRemote,
                     onBack = {
                         reviewVm.reset()
-                        liveOcrData = null
                         navController.popBackStack("home", inclusive = false)
-                        capturedBitmap = null
                     }
                 )
             }
 
             composable("manual_entry") {
                 val entryVm: ManualEntryViewModel = viewModel()
-                val entryState by entryVm.state.collectAsState()
+                val entryState by entryVm.state.collectAsStateWithLifecycle()
                 ManualEntryScreen(
                     state = entryState,
                     onSysChange = entryVm::onSysChange,
@@ -370,34 +372,37 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                 )
             }
 
-            composable("measurement_detail") {
+            composable(
+                route = "measurement_detail/{measurementId}",
+                arguments = listOf(navArgument("measurementId") { type = NavType.StringType })
+            ) {
                 val detailVm: MeasurementDetailViewModel = viewModel()
-                val detailState by detailVm.state.collectAsState()
+                val detailState by detailVm.state.collectAsStateWithLifecycle()
 
-                LaunchedEffect(selectedMeasurement) {
-                    selectedMeasurement?.let { detailVm.setMeasurement(it) }
+                LaunchedEffect(detailState.deleted) {
+                    if (detailState.deleted) {
+                        navController.popBackStack()
+                    }
                 }
 
                 MeasurementDetailScreen(
                     state = detailState,
                     onDelete = {
                         detailVm.delete()
-                        navController.popBackStack()
                     },
                     onBack = {
                         navController.popBackStack()
-                        selectedMeasurement = null
                     }
                 )
             }
 
             composable("settings") {
                 val settingsVm: SettingsViewModel = viewModel()
-                val settingsState by settingsVm.state.collectAsState()
-                val exportOperation by settingsVm.exportOperation.collectAsState()
-                val reminderScheduleFailed by settingsVm.reminderScheduleFailed.collectAsState()
-                val reminderHealth by settingsVm.reminderHealth.collectAsState()
-                val exportPeriod by settingsVm.exportPeriod.collectAsState()
+                val settingsState by settingsVm.state.collectAsStateWithLifecycle()
+                val exportOperation by settingsVm.exportOperation.collectAsStateWithLifecycle()
+                val reminderScheduleFailed by settingsVm.reminderScheduleFailed.collectAsStateWithLifecycle()
+                val reminderHealth by settingsVm.reminderHealth.collectAsStateWithLifecycle()
+                val exportPeriod by settingsVm.exportPeriod.collectAsStateWithLifecycle()
                 var showExportSheet by remember { mutableStateOf(false) }
                 val activity = LocalActivity.current
 
@@ -447,7 +452,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
 
             composable("profile") {
                 val profileVm: ProfileViewModel = viewModel()
-                val profileState by profileVm.state.collectAsState()
+                val profileState by profileVm.state.collectAsStateWithLifecycle()
                 ProfileScreen(
                     state = profileState,
                     onNameChange = profileVm::onNameChange,
@@ -458,15 +463,14 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
 
             composable("history") {
                 val historyVm: MeasurementHistoryViewModel = viewModel()
-                val historyState by historyVm.state.collectAsState()
+                val historyState by historyVm.state.collectAsStateWithLifecycle()
 
                 MeasurementHistoryScreen(
                     state = historyState,
                     onRefresh = historyVm::refresh,
                     onPeriodSelect = historyVm::setPeriod,
                     onMeasurementClick = { m ->
-                        selectedMeasurement = m
-                        navController.navigate("measurement_detail")
+                        navController.navigate("measurement_detail/${m.id}")
                     },
                     onBack = { navController.popBackStack() }
                 )
@@ -474,7 +478,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
 
             composable("reminder_config") {
                 val configVm: ReminderConfigViewModel = viewModel()
-                val configState by configVm.state.collectAsState()
+                val configState by configVm.state.collectAsStateWithLifecycle()
 
                 ReminderConfigScreen(
                     state = configState,
@@ -488,7 +492,7 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
 
             composable("prescriptions") {
                 val listVm: PrescriptionsViewModel = viewModel()
-                val listState by listVm.state.collectAsState()
+                val listState by listVm.state.collectAsStateWithLifecycle()
 
                 LaunchedEffect(Unit) { listVm.refresh(isManual = false) }
 
@@ -511,10 +515,13 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
             ) { backStackEntry ->
                 val prescriptionId = backStackEntry.arguments?.getString("prescriptionId")
                 val detailVm: PrescriptionDetailViewModel = viewModel()
-                val detailState by detailVm.state.collectAsState()
+                val detailState by detailVm.state.collectAsStateWithLifecycle()
+                val isDeleted by detailVm.deleted.collectAsStateWithLifecycle()
 
-                LaunchedEffect(prescriptionId) {
-                    prescriptionId?.let { detailVm.setPrescriptionId(it) }
+                LaunchedEffect(isDeleted) {
+                    if (isDeleted) {
+                        navController.popBackStack()
+                    }
                 }
 
                 PrescriptionDetailScreen(
@@ -524,7 +531,6 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     },
                     onDeletePrescription = {
                         detailVm.deletePrescription()
-                        navController.popBackStack()
                     },
                     onAddItem = {
                         navController.navigate("med_item_form/$prescriptionId")
@@ -545,13 +551,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     defaultValue = null
                 })
             ) { backStackEntry ->
-                val prescriptionId = backStackEntry.arguments?.getString("prescriptionId")
                 val formVm: PrescriptionFormViewModel = viewModel()
-                val formState by formVm.state.collectAsState()
-
-                LaunchedEffect(prescriptionId) {
-                    formVm.init(prescriptionId)
-                }
+                val formState by formVm.state.collectAsStateWithLifecycle()
 
                 LaunchedEffect(formState.saveOperation) {
                     if (formState.saveOperation is ua.vn.home.bptracker.core.ui.OperationUiState.Success) {
@@ -587,14 +588,8 @@ fun MainAuthenticatedLayout(authVm: AuthViewModel, onLogout: () -> Unit) {
                     }
                 )
             ) { backStackEntry ->
-                val prescriptionId = backStackEntry.arguments?.getString("prescriptionId") ?: ""
-                val itemId = backStackEntry.arguments?.getString("itemId")
                 val itemFormVm: MedicationItemFormViewModel = viewModel()
-                val itemFormState by itemFormVm.state.collectAsState()
-
-                LaunchedEffect(prescriptionId, itemId) {
-                    itemFormVm.init(prescriptionId, itemId)
-                }
+                val itemFormState by itemFormVm.state.collectAsStateWithLifecycle()
 
                 MedicationItemFormScreen(
                     state = itemFormState,

@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.prescriptions
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +11,7 @@ import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.dto.*
+import ua.vn.home.bptracker.data.repository.PrescriptionRepository
 import java.time.OffsetDateTime
 
 data class MedicationItemFormState(
@@ -39,10 +41,20 @@ data class MedicationItemFormState(
         }
 }
 
-class MedicationItemFormViewModel : ViewModel() {
-    private val repository = ServiceLocator.prescriptionRepository
+class MedicationItemFormViewModel @JvmOverloads constructor(
+    savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val repository: PrescriptionRepository = ServiceLocator.prescriptionRepository,
+) : ViewModel() {
     private val _state = MutableStateFlow(MedicationItemFormState())
     val state: StateFlow<MedicationItemFormState> = _state.asStateFlow()
+
+    init {
+        val prescriptionId = savedStateHandle.get<String>("prescriptionId")
+        val itemId = savedStateHandle.get<String>("itemId")
+        if (prescriptionId != null) {
+            init(prescriptionId, itemId)
+        }
+    }
 
     fun init(prescriptionId: String, itemId: String?) {
         if (itemId == null) {

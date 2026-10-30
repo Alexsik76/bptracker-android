@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.prescriptions
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -9,6 +10,7 @@ import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.data.dto.MedicationItemReadDto
 import ua.vn.home.bptracker.data.dto.PrescriptionReadDto
+import ua.vn.home.bptracker.data.repository.PrescriptionRepository
 
 data class PrescriptionDetailPayload(
     val prescription: PrescriptionReadDto,
@@ -23,9 +25,13 @@ data class PrescriptionDetailPayload(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PrescriptionDetailViewModel : ViewModel() {
-    private val repository = ServiceLocator.prescriptionRepository
-    private val _prescriptionId = MutableStateFlow<String?>(null)
+class PrescriptionDetailViewModel @JvmOverloads constructor(
+    savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val repository: PrescriptionRepository = ServiceLocator.prescriptionRepository,
+) : ViewModel() {
+    private val _prescriptionId = MutableStateFlow<String?>(savedStateHandle.get<String>("prescriptionId"))
+    private val _deleted = MutableStateFlow(false)
+    val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
 
     val state: StateFlow<ListUiState<PrescriptionDetailPayload>> = _prescriptionId
         .filterNotNull()
@@ -55,6 +61,7 @@ class PrescriptionDetailViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 repository.deletePrescription(id)
+                _deleted.value = true
                 _prescriptionId.value = null
             } catch (e: Exception) {
                 // Handle error

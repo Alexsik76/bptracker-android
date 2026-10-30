@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.feature.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.repository.MeasurementRepository
 
 data class MeasurementDetailState(
     val measurement: MeasurementDto? = null,
@@ -16,17 +18,33 @@ data class MeasurementDetailState(
     val error: String? = null
 )
 
-class MeasurementDetailViewModel : ViewModel() {
-    private val repository = ServiceLocator.measurementRepository
+class MeasurementDetailViewModel @JvmOverloads constructor(
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    private val repository: MeasurementRepository = ServiceLocator.measurementRepository,
+) : ViewModel() {
     private val _state = MutableStateFlow(MeasurementDetailState())
     val state: StateFlow<MeasurementDetailState> = _state.asStateFlow()
+
+    init {
+        val measurementId = savedStateHandle.get<String>("measurementId")
+        if (measurementId != null) {
+            viewModelScope.launch {
+                val measurement = repository.getMeasurement(measurementId)
+                if (measurement != null) {
+                    _state.value = _state.value.copy(measurement = measurement)
+                }
+            }
+        }
+    }
 
     fun setMeasurement(m: MeasurementDto) {
         _state.value = _state.value.copy(measurement = m, error = null)
     }
 
     fun delete() {
-        val id = _state.value.measurement?.id ?: return
+        val id = _state.value.measurement?.id
+            ?: savedStateHandle.get<String>("measurementId")
+            ?: return
         viewModelScope.launch {
             _state.value = _state.value.copy(deleting = true, error = null)
             try {
