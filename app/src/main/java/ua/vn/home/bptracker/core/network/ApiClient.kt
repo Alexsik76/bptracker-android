@@ -21,11 +21,28 @@ object ApiClient {
         namingStrategy = JsonNamingStrategy.SnakeCase
     }
 
-    private fun createLoggingInterceptor() = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
-        else HttpLoggingInterceptor.Level.NONE
-        redactHeader("Authorization")
-        redactHeader("Cookie")
+    private fun createLoggingInterceptor(): okhttp3.Interceptor {
+        if (!BuildConfig.DEBUG) {
+            return HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.NONE }
+        }
+        val bodyLogger = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+            redactHeader("Authorization")
+            redactHeader("Cookie")
+        }
+        val headersLogger = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.HEADERS
+            redactHeader("Authorization")
+            redactHeader("Cookie")
+        }
+        return okhttp3.Interceptor { chain ->
+            val path = chain.request().url.encodedPath
+            if (path.contains("/auth/") || path.endsWith("/auth")) {
+                headersLogger.intercept(chain)
+            } else {
+                bodyLogger.intercept(chain)
+            }
+        }
     }
 
     fun plainRetrofit(): Retrofit {

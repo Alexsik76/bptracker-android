@@ -2,6 +2,7 @@ package ua.vn.home.bptracker.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,14 @@ class ScheduleViewModel : ViewModel() {
 
     private val _refreshing = MutableStateFlow(false)
     private val _error = MutableStateFlow<String?>(null)
+
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Failed to sync data"
+        }
+    }
 
     val state: StateFlow<ListUiState<TodaySchedule>> = combine(
         currentDate.flatMapLatest { date -> useCase.observeToday(date.toString()) },
@@ -63,7 +72,8 @@ class ScheduleViewModel : ViewModel() {
                 intakeRepo.syncPending()
                 prescriptionRepo.refresh()
             } catch (e: Exception) {
-                _error.value = e.message ?: "Refresh failed"
+                if (e is CancellationException) throw e
+                _error.value = getString(ua.vn.home.bptracker.R.string.error_sync_failed)
             } finally {
                 _refreshing.value = false
             }

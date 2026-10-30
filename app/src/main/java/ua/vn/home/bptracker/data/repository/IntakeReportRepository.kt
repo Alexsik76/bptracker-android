@@ -1,6 +1,7 @@
 package ua.vn.home.bptracker.data.repository
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
@@ -72,6 +73,7 @@ class RealIntakeReportRepository(
                 }
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             // Ignore for offline-first
         }
     }
@@ -115,6 +117,7 @@ class RealIntakeReportRepository(
                     dao.delete(entity.date, entity.period)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 // Keep pending for transient errors
             }
         }
@@ -155,6 +158,7 @@ class RealIntakeReportRepository(
         } catch (e: HttpException) {
             Log.w("IntakeRepo", "HttpException on confirm: ${e.code()}")
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             // Leave as PENDING_UPSERT for worker
         }
     }
@@ -179,6 +183,7 @@ class RealIntakeReportRepository(
                     dao.delete(date, period.name)
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 // Leave as PENDING_DELETE for worker
             }
         }

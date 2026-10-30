@@ -117,33 +117,27 @@ open class RealMeasurementRepository(
 
     override suspend fun syncRecent(): List<MeasurementDto> {
         return syncMutex.withLock {
-            try {
-                val windowStartDt = OffsetDateTime.now().minusDays(SYNC_WINDOW_DAYS.toLong())
-                val windowStartMs = windowStartDt.toInstant().toEpochMilli()
-                val remote = api.getMeasurements(
-                    dateFrom = windowStartDt.toString(),
-                    limit = 500
-                ).items
-                
-                db.withTransaction {
-                    val remoteIds = remote.map { it.id }.toSet()
-                    val syncedIds = dao.getSyncedIds(windowStartMs)
-                    val absentIds = syncedIds.filter { it !in remoteIds }
-                    if (absentIds.isNotEmpty()) {
-                        absentIds.chunked(500).forEach { chunk ->
-                            dao.deleteByIds(chunk)
-                        }
+            val windowStartDt = OffsetDateTime.now().minusDays(SYNC_WINDOW_DAYS.toLong())
+            val windowStartMs = windowStartDt.toInstant().toEpochMilli()
+            val remote = api.getMeasurements(
+                dateFrom = windowStartDt.toString(),
+                limit = 500
+            ).items
+            
+            db.withTransaction {
+                val remoteIds = remote.map { it.id }.toSet()
+                val syncedIds = dao.getSyncedIds(windowStartMs)
+                val absentIds = syncedIds.filter { it !in remoteIds }
+                if (absentIds.isNotEmpty()) {
+                    absentIds.chunked(500).forEach { chunk ->
+                        dao.deleteByIds(chunk)
                     }
-                    enqueueDeleteForRecords(absentIds)
-                    dao.upsertSynced(remote.map { it.toEntity(SyncState.SYNCED) })
-                    enqueueExportForSynced(remote.map { it.id })
                 }
-                dao.getAll().map { it.toDto() }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                dao.getAll().map { it.toDto() }
+                enqueueDeleteForRecords(absentIds)
+                dao.upsertSynced(remote.map { it.toEntity(SyncState.SYNCED) })
+                enqueueExportForSynced(remote.map { it.id })
             }
+            dao.getAll().map { it.toDto() }
         }
     }
 
@@ -250,8 +244,7 @@ open class RealMeasurementRepository(
     }
 
     override suspend fun deleteMeasurement(id: String) {
-        val all = dao.getAll()
-        val existing = all.find { it.id == id } ?: return
+        val existing = dao.getById(id) ?: return
 
         if (existing.syncState == SyncState.PENDING_CREATE) {
             dao.deleteById(id)
@@ -314,7 +307,8 @@ open class RealMeasurementRepository(
                         enqueueDeleteForRecords(listOf(entity.id))
                         dao.deleteById(entity.id)
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     // Keep pending for next run
                 }
             }

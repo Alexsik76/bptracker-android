@@ -82,7 +82,7 @@ fun MeasurementDetailScreen(
                 },
                 actions = {
                     IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.common_delete), tint = MaterialTheme.colorScheme.error)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

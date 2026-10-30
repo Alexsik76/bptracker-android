@@ -277,4 +277,17 @@
     <string name="med_enum_freq_h">год.</string>
     <string name="med_enum_freq_d">дн.</string>
     <string name="med_enum_freq_wk">тиж.</string>
+    <string name="notification_channel_name">Нагадування про ліки</string>
+    <string name="notification_channel_description">Сповіщення про запланований прийом ліків</string>
+    <string name="camera_permission_required">Потрібен дозвіл на використання камери</string>
+    <string name="auth_no_passkeys_found">Для цього акаунта не знайдено Passkey.</string>
+    <string name="auth_sign_in_failed">Не вдалося увійти. Будь ласка, спробуйте ще раз.</string>
+    <string name="auth_login_or">— АБО —</string>
+    <string name="error_sync_failed">Не вдалося синхронізувати дані. Перевірте з’єднання з мережею.</string>
+    <string name="error_save_failed">Не вдалося зберегти дані. Будь ласка, спробуйте ще раз.</string>
+    <string name="error_delete_failed">Не вдалося видалити. Будь ласка, спробуйте ще раз.</string>
+    <string name="error_refresh_prescriptions_failed">Не вдалося оновити рецепти.</string>
+    <string name="error_load_config_failed">Не вдалося завантажити налаштування нагадувань.</string>
+    <string name="error_load_profile_failed">Не вдалося завантажити профіль.</string>
+    <string name="error_save_profile_failed">Не вдалося зберегти профіль.</string>
 </resources>

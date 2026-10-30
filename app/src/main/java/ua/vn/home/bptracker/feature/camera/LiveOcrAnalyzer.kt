@@ -7,6 +7,7 @@ import android.os.Looper
 import android.os.SystemClock
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import ua.vn.home.bptracker.feature.ocr.AcceptedReading
 import ua.vn.home.bptracker.feature.ocr.Consensus
@@ -139,6 +140,7 @@ class LiveOcrAnalyzer(
         val outcome = try {
             runBlocking { ocrEngine.recognize(rotated) }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             OcrOutcome.Failure("exception: ${e.message}")
         }
         val ocrDuration = SystemClock.uptimeMillis() - ocrStartTime

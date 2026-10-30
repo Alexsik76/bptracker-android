@@ -46,6 +46,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.scale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -78,6 +79,12 @@ fun CameraScanScreen(
     var isCapturing by remember { mutableStateOf(false) }
     val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
     val cameraProviderRef = remember { AtomicReference<ProcessCameraProvider?>(null) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.Default) {
+            ServiceLocator.ocrEngine.warmUp()
+        }
+    }
 
     val imageAnalysis = remember {
         ImageAnalysis.Builder()
@@ -327,7 +334,7 @@ fun CameraScanScreen(
         }
     } else {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Camera permission required", color = Color.White)
+            Text(stringResource(R.string.camera_permission_required), color = Color.White)
         }
     }
 }
@@ -428,6 +435,7 @@ private fun capturePhoto(
                             scaled
                         }
                     } catch (e: Exception) {
+                        if (e is CancellationException) throw e
                         Log.e("CameraScan", "Processing captured photo failed", e)
                         null
                     } finally {

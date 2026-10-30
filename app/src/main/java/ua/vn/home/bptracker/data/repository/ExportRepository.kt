@@ -29,6 +29,7 @@ class RealExportRepository(
                 }
             }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             ExportResult.Error(e.message)
         }
     }

@@ -1,5 +1,6 @@
 package ua.vn.home.bptracker.data.repository
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,6 +64,7 @@ class RealReminderConfigRepository(
                 ResolvedConfig(null, ConfigSource.NONE)
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             ResolvedConfig(null, ConfigSource.NONE)
         }
     }

@@ -99,7 +99,7 @@ fun PrescriptionsScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = MaterialTheme.spacing.large)
                         ) {
-                            items(list) { prescription ->
+                            items(list, key = { it.id }) { prescription ->
                                 PrescriptionRow(
                                     prescription = prescription,
                                     onClick = { onPrescriptionClick(prescription) }

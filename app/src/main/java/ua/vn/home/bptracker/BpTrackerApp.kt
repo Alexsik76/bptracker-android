@@ -18,11 +18,8 @@ class BpTrackerApp : Application() {
         // Initialize notification channels
         NotificationHelper(this).createNotificationChannel()
 
-        // Preload OCR models on a background thread so the first scan is fast
+        // Schedule reminders
         CoroutineScope(Dispatchers.Default).launch {
-            ServiceLocator.ocrEngine.warmUp()
-            
-            // Schedule reminders
             if (ServiceLocator.settingsStore.remindersEnabled.first()) {
                 Log.i("ReminderDiag", "call=BpTrackerApp.onCreate thread=${Thread.currentThread().name}")
                 ServiceLocator.reminderScheduler.rescheduleAll()

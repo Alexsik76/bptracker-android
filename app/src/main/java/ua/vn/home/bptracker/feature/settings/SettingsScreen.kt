@@ -45,7 +45,6 @@ fun SettingsScreen(
     reminderHealth: ReminderHealth?,
     onThemeSelect: (AppTheme) -> Unit,
     onLanguageSelect: (AppLanguage) -> Unit,
-    onOcrImprovementToggle: (Boolean) -> Unit,
     onLiveOcrShutterSoundToggle: (Boolean) -> Unit,
     onRemindersToggle: (Boolean) -> Unit,
     onHealthConnectToggle: (Boolean) -> Unit = {},
@@ -100,12 +99,12 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onHelpClick) {
-                        Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = "Help")
+                        Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = stringResource(R.string.settings_group_help))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -177,32 +176,9 @@ fun SettingsScreen(
                 }
             }
 
-            // Privacy
+            // Privacy & Reminders
             ListGroupCard(title = stringResource(R.string.settings_group_privacy)) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = MaterialTheme.spacing.medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.settings_ocr_improve), style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            stringResource(R.string.settings_ocr_improve_hint),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = state.ocrImprovement,
-                        onCheckedChange = onOcrImprovementToggle
-                    )
-                }
-
                 if (state.healthConnectAvailable) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -231,9 +207,9 @@ fun SettingsScreen(
                             }
                         )
                     }
-                }
 
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                }
 
                 Column {
                     Row(

@@ -1,13 +1,16 @@
 package ua.vn.home.bptracker.feature.prescriptions
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
 import ua.vn.home.bptracker.data.repository.PrescriptionRepository
@@ -26,10 +29,18 @@ data class PrescriptionFormState(
 
 class PrescriptionFormViewModel @JvmOverloads constructor(
     savedStateHandle: SavedStateHandle = SavedStateHandle(),
-    private val repository: PrescriptionRepository = ServiceLocator.prescriptionRepository,
+    private val repository: PrescriptionRepository = ServiceLocator.prescriptionRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(PrescriptionFormState())
     val state: StateFlow<PrescriptionFormState> = _state.asStateFlow()
+
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Save failed"
+        }
+    }
 
     init {
         val prescriptionId = savedStateHandle.get<String>("prescriptionId")
@@ -86,7 +97,8 @@ class PrescriptionFormViewModel @JvmOverloads constructor(
                 }
                 _state.value = _state.value.copy(saveOperation = OperationUiState.Success, savedId = savedId)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
+                if (e is CancellationException) throw e
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(getString(R.string.error_save_failed)))
             }
         }
     }

@@ -101,7 +101,7 @@ fun MeasurementHistoryScreen(
                         contentPadding = PaddingValues(bottom = MaterialTheme.spacing.large),
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
-                        items(data.measurements) { m ->
+                        items(data.measurements, key = { it.id }) { m ->
                             MeasurementRow(m, onClick = { onMeasurementClick(m) })
                             HorizontalDivider(
                                 modifier = Modifier.padding(horizontal = MaterialTheme.spacing.cardPadding),

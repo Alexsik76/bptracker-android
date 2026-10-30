@@ -56,7 +56,7 @@ class ManualEntryViewModelTest {
             assertEquals(OperationUiState.InProgress, awaitItem().saveOperation)
             val errorState = awaitItem().saveOperation
             assertTrue(errorState is OperationUiState.Error)
-            assertEquals("Network error", (errorState as OperationUiState.Error).message)
+            assertEquals("Save failed", (errorState as OperationUiState.Error).message)
         }
     }
 }

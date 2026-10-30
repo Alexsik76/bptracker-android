@@ -1,14 +1,19 @@
 package ua.vn.home.bptracker.feature.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.ListUiState
 import ua.vn.home.bptracker.core.utils.TimeUtils
 import ua.vn.home.bptracker.data.dto.MeasurementDto
+import ua.vn.home.bptracker.data.repository.MeasurementRepository
+import ua.vn.home.bptracker.data.repository.PrescriptionRepository
 import java.time.Instant
 import java.time.OffsetDateTime
 
@@ -23,10 +28,18 @@ data class HistoryState(
     val isFilling: Boolean = false
 )
 
-class MeasurementHistoryViewModel : ViewModel() {
+class MeasurementHistoryViewModel(
+    private val repository: MeasurementRepository = ServiceLocator.measurementRepository,
+    private val prescriptionRepo: PrescriptionRepository = ServiceLocator.prescriptionRepository
+) : ViewModel() {
 
-    private val repository = ServiceLocator.measurementRepository
-    private val prescriptionRepo = ServiceLocator.prescriptionRepository
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Sync failed"
+        }
+    }
 
     private val _period = MutableStateFlow(MeasurementPeriod.MONTH)
     private val _isRefreshing = MutableStateFlow(false)
@@ -115,7 +128,8 @@ class MeasurementHistoryViewModel : ViewModel() {
                 val total = repository.reconcilePeriod(dateFrom, null)
                 _totalCount.value = total
             } catch (e: Exception) {
-                _error.value = e.message ?: "Reconciliation failed"
+                if (e is CancellationException) throw e
+                _error.value = getString(R.string.error_sync_failed)
             } finally {
                 _isRefreshing.value = false
             }
@@ -145,7 +159,8 @@ class MeasurementHistoryViewModel : ViewModel() {
                     if (page.items.isEmpty()) break
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Background sync failed"
+                if (e is CancellationException) throw e
+                _error.value = getString(R.string.error_sync_failed)
             } finally {
                 _isFilling.value = false
             }

@@ -16,9 +16,17 @@ enum class AppLanguage { SYSTEM, UA, EN }
 class SettingsStore(private val context: Context) {
     private val themeKey = stringPreferencesKey("app_theme")
     private val langKey = stringPreferencesKey("app_lang")
-    private val ocrImproveKey = booleanPreferencesKey("ocr_improvement")
     private val remindersKey = booleanPreferencesKey("reminders_enabled")
     private val reminderScheduleFailedKey = booleanPreferencesKey("reminder_schedule_failed")
+
+    fun getInitialTheme(): AppTheme {
+        val sp = context.getSharedPreferences("theme_cache", Context.MODE_PRIVATE)
+        val spTheme = sp.getString("app_theme", null)
+        if (spTheme != null) {
+            return try { AppTheme.valueOf(spTheme) } catch (_: Exception) { AppTheme.AUTO }
+        }
+        return AppTheme.AUTO
+    }
 
     val theme: Flow<AppTheme> = context.settingsDataStore.data.map { prefs ->
         try {
@@ -34,10 +42,6 @@ class SettingsStore(private val context: Context) {
         } catch (e: Exception) {
             AppLanguage.SYSTEM
         }
-    }
-
-    val ocrImprovement: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
-        prefs[ocrImproveKey] ?: true
     }
 
     val remindersEnabled: Flow<Boolean> = context.settingsDataStore.data.map { prefs ->
@@ -60,15 +64,15 @@ class SettingsStore(private val context: Context) {
     }
 
     suspend fun setTheme(theme: AppTheme) {
+        context.getSharedPreferences("theme_cache", Context.MODE_PRIVATE)
+            .edit()
+            .putString("app_theme", theme.name)
+            .apply()
         context.settingsDataStore.edit { it[themeKey] = theme.name }
     }
 
     suspend fun setLanguage(lang: AppLanguage) {
         context.settingsDataStore.edit { it[langKey] = lang.name }
-    }
-
-    suspend fun setOcrImprovement(enabled: Boolean) {
-        context.settingsDataStore.edit { it[ocrImproveKey] = enabled }
     }
 
     suspend fun setRemindersEnabled(enabled: Boolean) {

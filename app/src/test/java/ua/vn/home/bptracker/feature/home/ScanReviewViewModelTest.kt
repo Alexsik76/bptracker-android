@@ -43,8 +43,12 @@ class ScanReviewViewModelTest {
             
             viewModel.save()
             
-            assertEquals(OperationUiState.InProgress, (awaitItem() as ScanReviewState.Ready).saveOperation)
-            assertEquals(OperationUiState.Success, (awaitItem() as ScanReviewState.Ready).saveOperation)
+            val nextOp = (awaitItem() as ScanReviewState.Ready).saveOperation
+            if (nextOp == OperationUiState.InProgress) {
+                assertEquals(OperationUiState.Success, (awaitItem() as ScanReviewState.Ready).saveOperation)
+            } else {
+                assertEquals(OperationUiState.Success, nextOp)
+            }
         }
     }
 

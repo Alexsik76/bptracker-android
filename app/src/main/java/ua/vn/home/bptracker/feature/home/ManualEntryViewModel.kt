@@ -1,14 +1,18 @@
 package ua.vn.home.bptracker.feature.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.bp.BpZone
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
+import ua.vn.home.bptracker.data.repository.MeasurementRepository
 
 data class ManualEntryState(
     val sys: String = "",
@@ -31,8 +35,18 @@ data class ManualEntryState(
     } else null
 }
 
-class ManualEntryViewModel : ViewModel() {
-    private val repository = ServiceLocator.measurementRepository
+class ManualEntryViewModel(
+    private val repository: MeasurementRepository = ServiceLocator.measurementRepository
+) : ViewModel() {
+
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Save failed"
+        }
+    }
+
     private val _state = MutableStateFlow(ManualEntryState())
     val state: StateFlow<ManualEntryState> = _state.asStateFlow()
 
@@ -62,7 +76,8 @@ class ManualEntryViewModel : ViewModel() {
                 )
                 _state.value = _state.value.copy(saveOperation = OperationUiState.Success)
             } catch (e: Exception) {
-                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(e.message ?: "Save failed"))
+                if (e is CancellationException) throw e
+                _state.value = _state.value.copy(saveOperation = OperationUiState.Error(getString(R.string.error_save_failed)))
             }
         }
     }

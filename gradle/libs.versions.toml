@@ -1,5 +1,6 @@
 [versions]
 agp = "9.2.1"
+appcompat = "1.8.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -24,10 +25,11 @@ turbine = "1.2.1"
 mockk = "1.14.11"
 healthConnect = "1.1.0"
 work = "2.11.2"
-robolectric = "4.14.1"
-androidxTestCore = "1.6.1"
+robolectric = "4.17"
+androidxTestCore = "1.7.0"
 
 [libraries]
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

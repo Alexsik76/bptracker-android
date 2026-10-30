@@ -125,7 +125,7 @@ fun PrescriptionDetailScreen(
                     )
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(items) { item ->
+                        items(items, key = { it.id }) { item ->
                             MedicationItemRow(
                                 item = item,
                                 onClick = { onEditItem(item) },

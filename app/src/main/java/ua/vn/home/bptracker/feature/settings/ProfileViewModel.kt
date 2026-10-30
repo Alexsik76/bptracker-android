@@ -1,14 +1,18 @@
 package ua.vn.home.bptracker.feature.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.di.ServiceLocator
 import ua.vn.home.bptracker.core.ui.OperationUiState
+import ua.vn.home.bptracker.data.api.UserApi
 import ua.vn.home.bptracker.data.dto.UserUpdateRequest
 
 data class ProfileState(
@@ -18,8 +22,17 @@ data class ProfileState(
     val saveState: OperationUiState = OperationUiState.Idle
 )
 
-class ProfileViewModel : ViewModel() {
-    private val userApi = ServiceLocator.userApi
+class ProfileViewModel(
+    private val userApi: UserApi = ServiceLocator.userApi
+) : ViewModel() {
+
+    private fun getString(@androidx.annotation.StringRes resId: Int): String {
+        return try {
+            ServiceLocator.applicationContext.getString(resId)
+        } catch (_: Exception) {
+            "Error"
+        }
+    }
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
@@ -41,10 +54,11 @@ class ProfileViewModel : ViewModel() {
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _state.update { 
                     it.copy(
                         isLoading = false,
-                        saveState = OperationUiState.Error(e.message ?: "Failed to load profile")
+                        saveState = OperationUiState.Error(getString(R.string.error_load_profile_failed))
                     )
                 }
             }
@@ -78,8 +92,9 @@ class ProfileViewModel : ViewModel() {
                     )
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 _state.update { 
-                    it.copy(saveState = OperationUiState.Error(e.message ?: "Failed to save profile"))
+                    it.copy(saveState = OperationUiState.Error(getString(R.string.error_save_profile_failed)))
                 }
             }
         }

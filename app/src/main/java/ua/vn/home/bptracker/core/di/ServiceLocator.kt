@@ -2,6 +2,10 @@ package ua.vn.home.bptracker.core.di
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.core.content.edit
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import retrofit2.create
 import ua.vn.home.bptracker.core.auth.TokenStore
 import ua.vn.home.bptracker.core.config.MOCK_MODE
@@ -124,5 +128,17 @@ object ServiceLocator {
         applicationContext = context.applicationContext
         tokenStore = TokenStore(applicationContext)
         settingsStore = SettingsStore(applicationContext)
+
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val sp = applicationContext.getSharedPreferences("theme_cache", Context.MODE_PRIVATE)
+                if (!sp.contains("app_theme")) {
+                    val currentTheme = settingsStore.theme.first()
+                    sp.edit { putString("app_theme", currentTheme.name) }
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            }
+        }
     }
 }
