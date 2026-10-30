@@ -16,9 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.ui.OperationUiState
+import ua.vn.home.bptracker.core.utils.datePickerMillisToLocalDate
+import ua.vn.home.bptracker.core.utils.localDateToDatePickerMillis
 import ua.vn.home.bptracker.data.dto.*
 import ua.vn.home.bptracker.ui.theme.*
-import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -51,9 +53,10 @@ fun MedicationItemFormScreen(
 
     if (showDatePicker) {
         val initialDate = try {
-            OffsetDateTime.parse(state.courseStart).toInstant().toEpochMilli()
+            val localDate = OffsetDateTime.parse(state.courseStart).toLocalDate()
+            localDateToDatePickerMillis(localDate)
         } catch (_: Exception) {
-            System.currentTimeMillis()
+            localDateToDatePickerMillis(LocalDate.now())
         }
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDate)
         DatePickerDialog(
@@ -61,7 +64,7 @@ fun MedicationItemFormScreen(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
-                        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                        val date = datePickerMillisToLocalDate(it)
                         val currentDateTime = try {
                             OffsetDateTime.parse(state.courseStart).toLocalDateTime()
                         } catch (_: Exception) {

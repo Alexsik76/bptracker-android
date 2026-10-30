@@ -31,6 +31,7 @@ class IntakeReportRepositoryTest {
     private val mockApi = object : IntakeReportApi {
         var createCalled = false
         var deleteCalled = false
+        var lastDeleteId: String? = null
         var createErrorCode: Int? = null
         var deleteErrorCode: Int? = null
 
@@ -51,6 +52,7 @@ class IntakeReportRepositoryTest {
         override suspend fun getIntakeReport(id: String): IntakeReportReadDto = error("stub")
         override suspend fun deleteIntakeReport(id: String): Response<Unit> {
             deleteCalled = true
+            lastDeleteId = id
             deleteErrorCode?.let { throw httpException(it) }
             return Response.success(Unit)
         }
@@ -139,7 +141,7 @@ class IntakeReportRepositoryTest {
     }
 
     @Test
-    fun `syncPending with 4xx on a PENDING_DELETE row removes it`() = runBlocking {
+    fun `syncPending with 404 on a PENDING_DELETE row removes it`() = runBlocking {
         mockApi.deleteErrorCode = 404
         mockDao.upsert(
             IntakeReportEntity(
@@ -152,6 +154,113 @@ class IntakeReportRepositoryTest {
         )
 
         repository.syncPending()
+
+        assertNull(mockDao.get("2026-07-16", WhenSlot.Morning.name))
+    }
+
+    @Test
+    fun `syncPending with 401 on a PENDING_DELETE row keeps the row`() = runBlocking {
+        mockApi.deleteErrorCode = 401
+        mockDao.upsert(
+            IntakeReportEntity(
+                date = "2026-07-16",
+                period = WhenSlot.Morning.name,
+                takenAt = "now",
+                syncState = SyncState.PENDING_DELETE,
+                serverId = "server_id"
+            )
+        )
+
+        repository.syncPending()
+
+        val entity = mockDao.get("2026-07-16", WhenSlot.Morning.name)
+        assertEquals(SyncState.PENDING_DELETE, entity?.syncState)
+    }
+
+    @Test
+    fun `confirm on existing intake preserves serverId during write`() = runBlocking {
+        val originalServerId = "orig-server-id-789"
+        mockDao.upsert(
+            IntakeReportEntity(
+                date = "2026-07-16",
+                period = WhenSlot.Morning.name,
+                takenAt = "2026-07-16T08:00:00",
+                syncState = SyncState.SYNCED,
+                serverId = originalServerId
+            )
+        )
+
+        // When confirm is called with 401 error, serverId must not be erased
+        mockApi.createErrorCode = 401
+        repository.confirm(WhenSlot.Morning, "2026-07-16", "2026-07-16T10:00:00")
+
+        val entity = mockDao.get("2026-07-16", WhenSlot.Morning.name)
+        assertEquals(SyncState.PENDING_UPSERT, entity?.syncState)
+        assertEquals(originalServerId, entity?.serverId)
+    }
+
+    @Test
+    fun `change time of an intake then delete it sends server delete call with original serverId`() = runBlocking {
+        val originalServerId = "orig-server-id-456"
+        mockDao.upsert(
+            IntakeReportEntity(
+                date = "2026-07-16",
+                period = WhenSlot.Morning.name,
+                takenAt = "2026-07-16T08:00:00",
+                syncState = SyncState.SYNCED,
+                serverId = originalServerId
+            )
+        )
+
+        // Change time while offline / server returns error
+        mockApi.createErrorCode = 503
+        repository.confirm(WhenSlot.Morning, "2026-07-16", "2026-07-16T09:30:00")
+
+        // Local row retains the original serverId
+        val existingAfterConfirm = mockDao.get("2026-07-16", WhenSlot.Morning.name)
+        assertEquals(originalServerId, existingAfterConfirm?.serverId)
+        assertEquals(SyncState.PENDING_UPSERT, existingAfterConfirm?.syncState)
+
+        // Now delete it
+        repository.delete(WhenSlot.Morning, "2026-07-16")
+
+        assertEquals(true, mockApi.deleteCalled)
+        assertEquals(originalServerId, mockApi.lastDeleteId)
+    }
+
+    @Test
+    fun `delete with 401 keeps row as PENDING_DELETE`() = runBlocking {
+        mockApi.deleteErrorCode = 401
+        mockDao.upsert(
+            IntakeReportEntity(
+                date = "2026-07-16",
+                period = WhenSlot.Morning.name,
+                takenAt = "now",
+                syncState = SyncState.SYNCED,
+                serverId = "srv-1"
+            )
+        )
+
+        repository.delete(WhenSlot.Morning, "2026-07-16")
+
+        val entity = mockDao.get("2026-07-16", WhenSlot.Morning.name)
+        assertEquals(SyncState.PENDING_DELETE, entity?.syncState)
+    }
+
+    @Test
+    fun `delete with 404 removes row locally`() = runBlocking {
+        mockApi.deleteErrorCode = 404
+        mockDao.upsert(
+            IntakeReportEntity(
+                date = "2026-07-16",
+                period = WhenSlot.Morning.name,
+                takenAt = "now",
+                syncState = SyncState.SYNCED,
+                serverId = "srv-1"
+            )
+        )
+
+        repository.delete(WhenSlot.Morning, "2026-07-16")
 
         assertNull(mockDao.get("2026-07-16", WhenSlot.Morning.name))
     }

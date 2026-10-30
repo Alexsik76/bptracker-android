@@ -15,11 +15,11 @@ interface PrescriptionDao {
     @Query("SELECT * FROM prescriptions WHERE id = :id")
     suspend fun getById(id: String): PrescriptionEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(prescription: PrescriptionEntity)
+    @Upsert
+    suspend fun upsert(prescription: PrescriptionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(prescriptions: List<PrescriptionEntity>)
+    @Upsert
+    suspend fun upsertAll(prescriptions: List<PrescriptionEntity>)
 
     @Query("DELETE FROM prescriptions WHERE id = :id")
     suspend fun deleteById(id: String)
