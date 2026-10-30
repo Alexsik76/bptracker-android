@@ -15,11 +15,11 @@ interface MedicationItemDao {
     @Query("SELECT * FROM medication_items WHERE id = :id")
     suspend fun getById(id: String): MedicationItemEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(item: MedicationItemEntity)
+    @Upsert
+    suspend fun upsert(item: MedicationItemEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(items: List<MedicationItemEntity>)
+    @Upsert
+    suspend fun upsertAll(items: List<MedicationItemEntity>)
 
     @Query("DELETE FROM medication_items WHERE id = :id")
     suspend fun deleteById(id: String)

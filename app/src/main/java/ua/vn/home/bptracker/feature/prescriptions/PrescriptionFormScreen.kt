@@ -19,10 +19,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ua.vn.home.bptracker.R
 import ua.vn.home.bptracker.core.ui.OperationUiState
+import ua.vn.home.bptracker.core.utils.datePickerMillisToLocalDate
+import ua.vn.home.bptracker.core.utils.localDateToDatePickerMillis
 import ua.vn.home.bptracker.ui.theme.*
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,9 +40,9 @@ fun PrescriptionFormScreen(
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = try {
-                LocalDate.parse(state.prescribedOn).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                localDateToDatePickerMillis(LocalDate.parse(state.prescribedOn))
             } catch (e: Exception) {
-                System.currentTimeMillis()
+                localDateToDatePickerMillis(LocalDate.now())
             }
         )
         DatePickerDialog(
@@ -50,7 +50,7 @@ fun PrescriptionFormScreen(
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
-                        val date = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                        val date = datePickerMillisToLocalDate(it)
                         onDateChange(date.toString())
                     }
                     showDatePicker = false

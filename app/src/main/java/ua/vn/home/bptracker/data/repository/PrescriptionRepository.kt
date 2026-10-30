@@ -51,14 +51,14 @@ class RealPrescriptionRepository(
             pDao.deleteAll()
             iDao.deleteAll()
             
-            pDao.insertAll(remotePrescriptions.map { it.toEntity() })
-            iDao.insertAll(allItems.map { it.toEntity() })
+            pDao.upsertAll(remotePrescriptions.map { it.toEntity() })
+            iDao.upsertAll(allItems.map { it.toEntity() })
         }
     }
 
     override suspend fun createPrescription(doctor: String, prescribedOn: String): PrescriptionReadDto {
         val createdDto = pApi.createPrescription(PrescriptionCreateDto(doctor, prescribedOn))
-        pDao.insert(createdDto.toEntity())
+        pDao.upsert(createdDto.toEntity())
         return createdDto
     }
 
@@ -69,7 +69,7 @@ class RealPrescriptionRepository(
         isActive: Boolean?
     ): PrescriptionReadDto {
         val updatedDto = pApi.updatePrescription(id, PrescriptionPatchDto(doctor, prescribedOn, isActive))
-        pDao.insert(updatedDto.toEntity())
+        pDao.upsert(updatedDto.toEntity())
         return updatedDto
     }
 
@@ -86,7 +86,7 @@ class RealPrescriptionRepository(
 
     override suspend fun createItem(prescriptionId: String, item: MedicationItemCreateDto): MedicationItemReadDto {
         val createdDto = iApi.createItem(prescriptionId, item)
-        iDao.insert(createdDto.toEntity())
+        iDao.upsert(createdDto.toEntity())
         return createdDto
     }
 
@@ -96,7 +96,7 @@ class RealPrescriptionRepository(
         item: MedicationItemPatchDto
     ): MedicationItemReadDto {
         val updatedDto = iApi.updateItem(prescriptionId, itemId, item)
-        iDao.insert(updatedDto.toEntity())
+        iDao.upsert(updatedDto.toEntity())
         return updatedDto
     }
 

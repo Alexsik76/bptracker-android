@@ -52,8 +52,8 @@ class PrescriptionRepositoryTest {
         coVerifyOrder {
             pDao.deleteAll()
             iDao.deleteAll()
-            pDao.insertAll(any())
-            iDao.insertAll(any())
+            pDao.upsertAll(any())
+            iDao.upsertAll(any())
         }
     }
 
@@ -76,5 +76,16 @@ class PrescriptionRepositoryTest {
 
         coVerify { pApi.deletePrescription("p1") }
         coVerify { pDao.deleteById("p1") }
+    }
+
+    @Test
+    fun `updatePrescription calls API and upserts into DAO`() = runTest {
+        val updatedDto = PrescriptionReadDto("p1", "Dr. Updated", "2026-07-21", false, "now")
+        coEvery { pApi.updatePrescription("p1", any()) } returns updatedDto
+
+        val result = repository.updatePrescription("p1", "Dr. Updated", "2026-07-21", false)
+
+        assertEquals("Dr. Updated", result.doctor)
+        coVerify { pDao.upsert(updatedDto.toEntity()) }
     }
 }

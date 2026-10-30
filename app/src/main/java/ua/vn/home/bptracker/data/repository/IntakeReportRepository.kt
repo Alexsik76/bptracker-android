@@ -101,7 +101,7 @@ class RealIntakeReportRepository(
                     SyncState.PENDING_DELETE -> {
                         if (entity.serverId != null) {
                             val response = api.deleteIntakeReport(entity.serverId)
-                            if (response.isSuccessful || response.code() in 400..499) {
+                            if (response.isSuccessful || response.code() == 404) {
                                 dao.delete(entity.date, entity.period)
                             }
                         } else {
@@ -111,7 +111,7 @@ class RealIntakeReportRepository(
                 }
             } catch (e: HttpException) {
                 Log.w("IntakeRepo", "Sync failure for ${entity.date}_${entity.period}: ${e.code()}")
-                if (entity.syncState == SyncState.PENDING_DELETE && e.code() in 400..499) {
+                if (entity.syncState == SyncState.PENDING_DELETE && e.code() == 404) {
                     dao.delete(entity.date, entity.period)
                 }
             } catch (e: Exception) {
@@ -122,13 +122,17 @@ class RealIntakeReportRepository(
 
     override suspend fun confirm(period: WhenSlot, date: String, takenAt: String?) {
         val moment = takenAt ?: OffsetDateTime.now().toString()
+        val existing = dao.get(date, period.name)
         
         // Authoritative local write
         val local = IntakeReportEntity(
             date = date,
             period = period.name,
             takenAt = moment,
-            syncState = SyncState.PENDING_UPSERT
+            syncState = SyncState.PENDING_UPSERT,
+            serverId = existing?.serverId,
+            recordedAt = existing?.recordedAt,
+            snapshotJson = existing?.snapshotJson
         )
         dao.upsert(local)
 
@@ -166,7 +170,12 @@ class RealIntakeReportRepository(
             dao.markPendingDelete(date, period.name)
             try {
                 val response = api.deleteIntakeReport(existing.serverId)
-                if (response.isSuccessful || response.code() in 400..499) {
+                if (response.isSuccessful || response.code() == 404) {
+                    dao.delete(date, period.name)
+                }
+            } catch (e: HttpException) {
+                Log.w("IntakeRepo", "HttpException on delete: ${e.code()}")
+                if (e.code() == 404) {
                     dao.delete(date, period.name)
                 }
             } catch (e: Exception) {
